@@ -102,6 +102,54 @@
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
 
+<h1>Ujian CAT Peserta - TNF Class</h1>
+    <!-- Tombol simulasi selesai ujian -->
+    <button onclick="kirimHasilUjian()">Selesai & Kirim Hasil</button>
+
+    <!-- Script Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Konfigurasi Firebase Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOqX3tudyOhlbhzYTHlTxnzmhP8GvP5i0",
+            authDomain: "tnf-cat-database.firebaseapp.com",
+            projectId: "tnf-cat-database",
+            storageBucket: "tnf-cat-database.firebasestorage.app",
+            messagingSenderId: "591114408241",
+            appId: "1:591114408241:web:91167d0ce6bf8a99e62010"
+        };
+
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Fungsi kirim data otomatis saat ujian selesai
+        window.kirimHasilUjian = async function() {
+            try {
+                const namaPeserta = prompt("Masukkan Nama Lengkap Anda:");
+                if (!namaPeserta) return;
+
+                const nilaiTotal = 410; // Contoh perolehan skor CAT peserta
+
+                const docRef = await addDoc(collection(db, "hasil_ujian"), {
+                    nama: namaPeserta,
+                    score: nilaiTotal,
+                    waktuSelesai: serverTimestamp()
+                });
+
+                alert("Hasil ujian berhasil dikirim dan tersimpan di database!");
+                console.log("Data tersimpan dengan ID: ", docRef.id);
+            } catch (e) {
+                console.error("Gagal menyimpan data: ", e);
+                alert("Terjadi kesalahan saat mengirim hasil ujian.");
+            }
+        };
+    </script>
+</body>
+</html>
+    
     <!-- ==================== GLOBAL HEADER ==================== -->
     <header class="bg-[#0F172A] text-white border-b border-slate-800 sticky top-0 z-40 shadow-lg no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
