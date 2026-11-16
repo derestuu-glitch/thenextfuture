@@ -3085,6 +3085,29 @@ service cloud.firestore {
       modal.classList.remove('flex');
     }
 
+    // Helper anti-popup-blocker: dipanggil secara sinkron tepat saat klik pengguna (sebelum await)
+    function openWhatsAppWithoutBlocker(waUrl) {
+      if (!waUrl) return false;
+      try {
+        const a = document.createElement('a');
+        a.href = waUrl;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return true;
+      } catch (e) {
+        try {
+          const w = window.open(waUrl, '_blank', 'noopener,noreferrer');
+          return Boolean(w);
+        } catch (err) {
+          return false;
+        }
+      }
+    }
+
     // =========================================================================
     // 1. SPA NAVIGATION & MOBILE MENU STATE
     // =========================================================================
@@ -4376,6 +4399,11 @@ service cloud.firestore {
       const paymentNote = (document.getElementById('upg-payment-note')?.value || '').trim();
       const ownedPackages = getUserPackagesList(currentVerifiedUser);
 
+      // Siapkan URL WhatsApp dan buka secara SINKRON tepat saat klik (sebelum await) agar tidak terkena Pop-up Blocker browser
+      const waMsg = `Halo Admin TNF CLASS Mataram, saya *${currentVerifiedUser.nama}* (Email: ${currentVerifiedUser.email}${waNumber ? ' / WA: ' + waNumber : ''}) ingin mengajukan *PENAMBAHAN PAKET* pada akun saya (Paket aktif saat ini: *${ownedPackages.join(', ')}*) dengan menambahkan paket *${targetBatch}* (${targetPrice}).${paymentNote ? ' Catatan: ' + paymentNote + '.' : ''} Berikut saya lampirkan bukti pembayarannya agar paket baru tersebut dapat ditambahkan ke akun saya.`;
+      const waUrl = `https://wa.me/6282339260231?text=${encodeURIComponent(waMsg)}`;
+      openWhatsAppWithoutBlocker(waUrl);
+
       const upgradePayload = {
         mode: 'ADD_PACKAGE',
         currentPackages: ownedPackages,
@@ -4415,17 +4443,21 @@ service cloud.firestore {
 
       closeCustomModal();
 
-      const waMsg = `Halo Admin TNF CLASS Mataram, saya *${currentVerifiedUser.nama}* (Email: ${currentVerifiedUser.email}${waNumber ? ' / WA: ' + waNumber : ''}) ingin mengajukan *PENAMBAHAN PAKET* pada akun saya (Paket aktif saat ini: *${ownedPackages.join(', ')}*) dengan menambahkan paket *${targetBatch}* (${targetPrice}).${paymentNote ? ' Catatan: ' + paymentNote + '.' : ''} Berikut saya lampirkan bukti pembayarannya agar paket baru tersebut dapat ditambahkan ke akun saya.`;
-      window.open(`https://wa.me/6282339260231?text=${encodeURIComponent(waMsg)}`, '_blank', 'noopener,noreferrer');
-
       openCustomModal({
         badge: 'Permintaan Penambahan Paket Tercatat',
         title: 'Lanjutkan Konfirmasi di WhatsApp Admin',
         bodyHtml: `
           <div class="space-y-3 text-xs sm:text-sm text-slate-300">
             <p>Pengajuan penambahan paket <strong class="text-white">${targetBatch}</strong> pada akun <strong class="text-gold-400">${currentVerifiedUser.email}</strong> telah tercatat di sistem.</p>
-            <p>Paket lama Anda (<strong>${ownedPackages.join(', ')}</strong>) tetap aktif. Silakan kirimkan bukti transfer melalui WhatsApp Admin; begitu dikonfirmasi, paket baru akan langsung ditambahkan ke daftar akses akun Anda.</p>
+            <p>Paket lama Anda (<strong>${ownedPackages.join(', ')}</strong>) tetap aktif. Jika tab WhatsApp belum terbuka otomatis di perangkat Anda, klik tombol hijau di bawah ini untuk langsung membuka chat Admin TNF CLASS:</p>
           </div>
+        `,
+        actionsHtml: `
+          <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
+          <a href="${waUrl}" target="_blank" rel="noopener noreferrer" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:brightness-105 text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-lg">
+            <i class="fa-brands fa-whatsapp text-sm"></i>
+            <span>Buka Chat WhatsApp Admin</span>
+          </a>
         `
       });
     }
@@ -4787,6 +4819,11 @@ service cloud.firestore {
           })
         };
 
+        // Buka WhatsApp secara sinkron sebelum await agar tidak diblokir Pop-up Blocker
+        const waUpgradeMsg = `Halo Admin TNF CLASS Mataram, saya *${nama}* (Email: ${email}${wa ? ' / WA: ' + wa : ''}) ingin mengajukan *PENAMBAHAN PAKET* pada akun saya (Paket aktif saat ini: *${ownedPackages.join(', ')}*) dengan menambahkan paket *${packageName}* (${packagePrice}). Berikut saya lampirkan bukti pembayarannya agar paket tersebut dapat ditambahkan ke akun saya.`;
+        const waUpgradeUrl = `https://wa.me/6282339260231?text=${encodeURIComponent(waUpgradeMsg)}`;
+        openWhatsAppWithoutBlocker(waUpgradeUrl);
+
         if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.requestPackageUpgrade === 'function') {
           try {
             await window.TNF_FIREBASE.requestPackageUpgrade(email, upgradePayload);
@@ -4802,14 +4839,24 @@ service cloud.firestore {
         }
 
         closeCustomModal();
-        const waUpgradeMsg = `Halo Admin TNF CLASS Mataram, saya *${nama}* (Email: ${email}${wa ? ' / WA: ' + wa : ''}) ingin mengajukan *PENAMBAHAN PAKET* pada akun saya (Paket aktif saat ini: *${ownedPackages.join(', ')}*) dengan menambahkan paket *${packageName}* (${packagePrice}). Berikut saya lampirkan bukti pembayarannya agar paket tersebut dapat ditambahkan ke akun saya.`;
-        window.open(`https://wa.me/6282339260231?text=${encodeURIComponent(waUpgradeMsg)}`, '_blank', 'noopener,noreferrer');
-
         navigateTo('tnipolri', 'cat');
         switchAuthTab('login');
         const authEmailInp = document.getElementById('auth-email');
         if (authEmailInp) authEmailInp.value = email;
         showAuthAlert(`Pengajuan penambahan paket ${packageName} ke akun ${email} (paket lama: ${ownedPackages.join(', ')}) telah tercatat! Silakan kirimkan bukti pembayaran ke WhatsApp Admin (0823-3926-0231) untuk diproses.`, true);
+
+        openCustomModal({
+          badge: 'Pengajuan Penambahan Paket Tercatat',
+          title: 'Konfirmasi Pembayaran via WhatsApp',
+          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Permintaan penambahan paket <strong class="text-white">${packageName}</strong> untuk email <strong class="text-gold-400">${email}</strong> telah tercatat. Jika WhatsApp belum terbuka otomatis, silakan klik tombol langsung di bawah ini:</p>`,
+          actionsHtml: `
+            <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
+            <a href="${waUpgradeUrl}" target="_blank" rel="noopener noreferrer" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:brightness-105 text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-lg">
+              <i class="fa-brands fa-whatsapp text-sm"></i>
+              <span>Buka Chat WhatsApp Admin</span>
+            </a>
+          `
+        });
         return;
       }
 
@@ -4836,6 +4883,13 @@ service cloud.firestore {
         synced: false
       };
 
+      // Buka WhatsApp secara sinkron sebelum await agar tidak terkena Pop-up Blocker browser
+      const waMsg = isPendingBatch
+        ? `Halo Admin TNF CLASS Mataram, saya *${nama}* (${email}${wa ? ' / WA: ' + wa : ''}) telah mendaftar *${packageName}* (${packagePrice} • Durasi: ${durMeta.durationLabel}) melalui website (Status: Menunggu Aktivasi). Berikut saya lampirkan bukti pembayaran agar akun saya dapat diaktifkan.`
+        : `Halo Admin TNF CLASS Mataram, saya *${nama}* (${email}${wa ? ' / WA: ' + wa : ''}) telah mendaftar *${packageName}* (${packagePrice} • Durasi: ${durMeta.durationLabel}) melalui website. Mohon informasi rekening/konfirmasi aktivasi akun saya.`;
+      const waUrl = `https://wa.me/6282339260231?text=${encodeURIComponent(waMsg)}`;
+      openWhatsAppWithoutBlocker(waUrl);
+
       if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.grantAuthorizedEmail === 'function') {
         try {
           const savedStatus = await window.TNF_FIREBASE.grantAuthorizedEmail(newUser);
@@ -4857,21 +4911,34 @@ service cloud.firestore {
 
       closeCustomModal();
 
-      const waMsg = isPendingBatch
-        ? `Halo Admin TNF CLASS Mataram, saya *${nama}* (${email}${wa ? ' / WA: ' + wa : ''}) telah mendaftar *${packageName}* (${packagePrice}) melalui website (Status: Menunggu Aktivasi). Berikut saya lampirkan bukti pembayaran agar akun saya dapat diaktifkan.`
-        : `Halo Admin TNF CLASS Mataram, saya *${nama}* (${email}${wa ? ' / WA: ' + wa : ''}) telah mendaftar *${packageName}* (${packagePrice}) melalui website. Mohon informasi rekening/konfirmasi aktivasi akun saya.`;
-      window.open(`https://wa.me/6282339260231?text=${encodeURIComponent(waMsg)}`, '_blank', 'noopener,noreferrer');
-
       navigateTo('tnipolri', 'cat');
       switchAuthTab('register');
       const authEmailInp = document.getElementById('auth-email');
       if (authEmailInp) authEmailInp.value = email;
 
       if (newUser.status === 'pending') {
-        showAuthAlert(`Email ${email} berhasil didaftarkan untuk ${packageName} (Status: Menunggu Aktivasi). Silakan kirimkan bukti transfer ke WhatsApp Admin (0823-3926-0231) agar akun Anda diaktifkan secara manual.`, false);
+        showAuthAlert(`Email ${email} berhasil didaftarkan untuk ${packageName} (Durasi: ${durMeta.durationLabel} • Status: Menunggu Aktivasi). Silakan kirimkan bukti transfer ke WhatsApp Admin (0823-3926-0231) agar akun Anda diaktifkan secara manual.`, false);
       } else {
-        showAuthAlert(`Pendaftaran ${packageName} tercatat! Silakan buat kata sandi baru untuk email ${email}.`, true);
+        showAuthAlert(`Pendaftaran ${packageName} (Durasi Aktif: ${durMeta.durationLabel}) tercatat! Silakan buat kata sandi baru untuk email ${email}.`, true);
       }
+
+      openCustomModal({
+        badge: 'Email Terdaftar • Lanjutkan ke WhatsApp',
+        title: `${packageName} (${durMeta.durationLabel})`,
+        bodyHtml: `
+          <div class="space-y-3 text-xs sm:text-sm text-slate-300">
+            <p>Email <strong class="text-gold-400">${email}</strong> telah berhasil didaftarkan untuk program <strong class="text-white">${packageName}</strong> dengan masa aktif <strong class="text-emerald-300">${durMeta.durationLabel}</strong>.</p>
+            <p>Jika jendela WhatsApp belum terbuka otomatis di browser Anda, klik tombol hijau di bawah ini untuk langsung mengirim pesan konfirmasi ke Admin TNF CLASS:</p>
+          </div>
+        `,
+        actionsHtml: `
+          <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Buat Sandi Sekarang</button>
+          <a href="${waUrl}" target="_blank" rel="noopener noreferrer" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:brightness-105 text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-lg">
+            <i class="fa-brands fa-whatsapp text-sm"></i>
+            <span>Buka Chat WhatsApp Admin</span>
+          </a>
+        `
+      });
     }
 
     // =========================================================================
