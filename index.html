@@ -1927,11 +1927,12 @@
       <div id="cpns-account-bar" class="hidden glass-card-gold rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3.5">
           <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center text-lg font-extrabold shrink-0">
-            <i class="fa-solid fa-user-check"></i>
+            <i class="fa-solid fa-circle-check"></i>
           </div>
           <div class="space-y-0.5">
             <div class="text-xs sm:text-sm font-extrabold text-white" id="cpns-logged-in-email">peserta@email.com</div>
             <div class="text-[11px] sm:text-xs text-gold-400 font-semibold" id="cpns-logged-in-batch">Program Aktif: Peserta TNF CLASS</div>
+            <div id="cpns-logged-in-upgrade-status" class="hidden text-[11px] text-amber-300 font-bold pt-0.5"></div>
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2.5">
@@ -1939,10 +1940,105 @@
             <i class="fa-solid fa-circle-plus"></i>
             <span>Tambah / Upgrade Paket CPNS</span>
           </button>
+          <button type="button" onclick="openChangePasswordModal()" class="px-4 py-2.5 rounded-xl bg-navy-950 hover:bg-navy-800 text-slate-200 text-xs font-extrabold border border-gold-500/35 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-key text-gold-400"></i>
+            <span>Ubah Kata Sandi</span>
+          </button>
           <button type="button" onclick="logoutParticipant()" class="px-4 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-extrabold border border-rose-500/35 transition-all flex items-center gap-2">
             <i class="fa-solid fa-right-from-bracket"></i>
             <span>Keluar</span>
           </button>
+        </div>
+      </div>
+
+      <!-- GERBANG LOGIN, BUAT SANDI BARU & LUPA SANDI PESERTA CPNS (SAMA DENGAN TNI/POLRI) -->
+      <div id="cpns-email-auth-gate" class="hidden glass-card-gold rounded-3xl p-6 sm:p-10 max-w-md mx-auto shadow-2xl space-y-6">
+        <div class="text-center space-y-2">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-navy-950 flex items-center justify-center text-2xl font-black mx-auto shadow-lg shadow-gold-500/25">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <span class="text-[11px] font-extrabold uppercase tracking-widest text-gold-400 block">Area Terproteksi Peserta CPNS &amp; Kedinasan</span>
+          <h2 class="text-2xl font-extrabold text-white">Portal Peserta TNF CPNS</h2>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Masuk atau buat kata sandi mandiri menggunakan alamat email yang telah diaktifkan setelah pembayaran untuk mengakses <strong>Simulasi CAT SKD BKN</strong> &amp; <strong>E-Book Modul CPNS</strong>.
+          </p>
+        </div>
+
+        <div class="flex bg-navy-950 p-1.5 rounded-2xl border border-white/10">
+          <button type="button" onclick="switchCpnsAuthTab('login')" id="cpns-tab-btn-login" class="w-1/2 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 shadow transition-all">
+            Masuk (Login)
+          </button>
+          <button type="button" onclick="switchCpnsAuthTab('register')" id="cpns-tab-btn-register" class="w-1/2 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all">
+            Buat Sandi Baru
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label for="cpns-auth-email" class="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">Alamat Email Terdaftar</label>
+            <input
+              type="email"
+              id="cpns-auth-email"
+              onkeydown="if(event.key==='Enter') submitCpnsParticipantAuth()"
+              placeholder="contoh: peserta@gmail.com"
+              class="w-full px-4 py-3.5 rounded-2xl bg-navy-950 border border-white/15 focus:border-gold-500 focus:outline-none text-xs sm:text-sm text-white font-semibold"
+            />
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label for="cpns-auth-password" class="block text-[11px] font-bold uppercase tracking-wider text-slate-300">Kata Sandi</label>
+              <button type="button" onclick="handleCpnsForgotPassword()" id="cpns-btn-forgot-pass" class="text-[11px] text-gold-400 hover:underline font-bold">
+                Lupa Kata Sandi?
+              </button>
+            </div>
+            <div class="relative">
+              <input
+                type="password"
+                id="cpns-auth-password"
+                onkeydown="if(event.key==='Enter') submitCpnsParticipantAuth()"
+                placeholder="Minimal 6 karakter"
+                class="w-full px-4 py-3.5 pr-11 rounded-2xl bg-navy-950 border border-white/15 focus:border-gold-500 focus:outline-none text-xs sm:text-sm text-white font-semibold"
+              />
+              <button type="button" onclick="toggleInputVisibility('cpns-auth-password', 'eye-cpns-auth-pass')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-gold-400 text-xs">
+                <i id="eye-cpns-auth-pass" class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="cpns-confirm-password-wrapper" class="hidden">
+            <label for="cpns-auth-password-confirm" class="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">Ulangi Kata Sandi</label>
+            <div class="relative">
+              <input
+                type="password"
+                id="cpns-auth-password-confirm"
+                onkeydown="if(event.key==='Enter') submitCpnsParticipantAuth()"
+                placeholder="Ketik ulang kata sandi pilihan Anda"
+                class="w-full px-4 py-3.5 pr-11 rounded-2xl bg-navy-950 border border-white/15 focus:border-gold-500 focus:outline-none text-xs sm:text-sm text-white font-semibold"
+              />
+              <button type="button" onclick="toggleInputVisibility('cpns-auth-password-confirm', 'eye-cpns-auth-confirm')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-gold-400 text-xs">
+                <i id="eye-cpns-auth-confirm" class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <p id="cpns-auth-status-msg" class="hidden text-xs font-semibold text-center py-2.5 px-3.5 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30"></p>
+
+          <button type="button" onclick="submitCpnsParticipantAuth()" id="btn-submit-cpns-auth" class="w-full btn-gold py-3.5 rounded-2xl text-xs sm:text-sm font-extrabold shadow-lg">
+            Masuk ke Materi &amp; Simulasi CAT CPNS
+          </button>
+        </div>
+
+        <div class="pt-4 border-t border-white/10 text-center space-y-2.5">
+          <p class="text-[11px] text-slate-400">Belum memiliki akses atau baru saja melakukan transfer?</p>
+          <div class="flex flex-col gap-2">
+            <button type="button" onclick="navigateTo('paket')" class="w-full py-2.5 px-4 rounded-xl bg-navy-950 hover:bg-navy-800 border border-gold-500/35 text-gold-400 text-xs font-extrabold transition-all">
+              <i class="fa-solid fa-cart-shopping mr-1.5"></i> Daftar &amp; Bayar Paket CPNS via Website
+            </button>
+            <a href="https://wa.me/6282339260231?text=Halo%20Admin%20TNF%20CLASS%20Mataram%2C%20saya%20ingin%20konfirmasi%20pembayaran%20paket%20CPNS%20untuk%20aktivasi%20akses%20email%20saya." target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center text-xs font-bold text-emerald-400 hover:underline py-1">
+              <i class="fa-brands fa-whatsapp mr-1.5 text-sm"></i> Konfirmasi Manual ke Admin (082339260231)
+            </a>
+          </div>
         </div>
       </div>
 
@@ -2212,59 +2308,52 @@
       <!-- CPNS SUB-TAB 3: SIMULASI CAT SKD BKN + MINI TRYOUT INTERAKTIF     -->
       <!-- ================================================================= -->
       <div id="cpns-subtab-cat" class="hidden space-y-6">
-        <!-- Panel Simulasi CAT SKD CPNS Terpadu -->
-        <div class="glass-card-gold rounded-3xl p-6 sm:p-8 space-y-6">
-          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-5">
+        <!-- Identitas Peserta Simulasi CAT CPNS -->
+        <div class="glass-card-gold rounded-3xl p-6 sm:p-8 space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
             <div>
-              <span class="text-xs font-extrabold uppercase tracking-wider text-gold-400">Standar Sistem CAT BKN • TWK, TIU &amp; TKP</span>
-              <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">Simulasi CAT SKD CPNS &amp; Kedinasan</h2>
-              <p class="text-xs text-slate-300 mt-1">
-                Latihan simulasi CAT berwaktu dengan rekap nilai otomatis ke Cloud Database TNF CLASS. Pastikan Anda sudah login menggunakan email peserta aktif.
-              </p>
+              <span class="text-xs font-extrabold uppercase tracking-wider text-gold-400">Langkah 1 • Registrasi Sesi Ujian CPNS</span>
+              <h2 class="text-xl font-extrabold text-white mt-0.5">Identitas Peserta Simulasi CAT CPNS &amp; Kedinasan</h2>
             </div>
-            <div class="flex flex-wrap items-center gap-2.5">
+            <div class="flex items-center gap-2">
               <span id="cpns-cat-access-pill" class="px-3.5 py-2 rounded-xl bg-rose-500/15 border border-rose-500/35 text-xs font-extrabold text-rose-300 flex items-center gap-1.5">
-                <i class="fa-solid fa-lock"></i> Login Diperlukan untuk CAT Penuh
+                <i class="fa-solid fa-lock"></i> Terkunci
               </span>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="p-5 rounded-2xl bg-navy-950/90 border border-sky-500/30 flex flex-col justify-between space-y-4">
-              <div class="space-y-2">
-                <span class="px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-300 text-[10px] font-extrabold uppercase">Subtes 1 SKD • TWK</span>
-                <h3 class="text-base font-extrabold text-white">Simulasi CAT TWK (Wawasan Kebangsaan)</h3>
-                <p class="text-xs text-slate-300 leading-relaxed">Nasionalisme, Integritas, Bela Negara, Pilar Negara &amp; Bahasa Negara (Ambang Batas ≥ 65).</p>
-              </div>
-              <button type="button" onclick="startCpnsFullCatSubtest('tka_twk')" class="w-full py-2.5 px-4 rounded-xl bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-navy-950 border border-sky-500/40 text-xs font-extrabold transition-all flex items-center justify-center gap-2">
-                <i class="fa-solid fa-play"></i>
-                <span>Mulai Simulasi CAT TWK</span>
-              </button>
+            <div>
+              <label for="cpns-peserta-nama" class="block text-xs font-bold text-slate-300 mb-1.5">Nama Lengkap Peserta</label>
+              <input type="text" id="cpns-peserta-nama" placeholder="Contoh: Baiq Nadia Putri" class="w-full px-4 py-3 rounded-xl bg-navy-950 border border-white/15 focus:border-gold-500 focus:outline-none text-white text-sm font-semibold" />
             </div>
+            <div>
+              <label for="cpns-peserta-noreg" class="block text-xs font-bold text-slate-300 mb-1.5">Nomor Registrasi / No. Ujian CPNS</label>
+              <input type="text" id="cpns-peserta-noreg" placeholder="Contoh: CPNS-2026-008" class="w-full px-4 py-3 rounded-xl bg-navy-950 border border-white/15 focus:border-gold-500 focus:outline-none text-white text-sm font-extrabold uppercase" />
+            </div>
+            <div>
+              <label for="cpns-peserta-kelas" class="block text-xs font-bold text-slate-300 mb-1.5">Instansi Tujuan / Kelompok Kelas</label>
+              <input type="text" id="cpns-peserta-kelas" placeholder="Contoh: Kemenkumham • CPNS Gold" class="w-full px-4 py-3 rounded-xl bg-navy-950 border border-white/15 focus:border-gold-500 focus:outline-none text-white text-sm font-semibold" />
+            </div>
+          </div>
+        </div>
 
-            <div class="p-5 rounded-2xl bg-navy-950/90 border border-gold-500/35 flex flex-col justify-between space-y-4">
-              <div class="space-y-2">
-                <span class="px-2.5 py-1 rounded-lg bg-gold-500/15 text-gold-400 text-[10px] font-extrabold uppercase">Subtes 2 SKD • TIU</span>
-                <h3 class="text-base font-extrabold text-white">Simulasi CAT TIU (Intelegensia Umum)</h3>
-                <p class="text-xs text-slate-300 leading-relaxed">Kemampuan Verbal (Analogi, Silogisme, Analitis), Numerik (Deret, Berhitung, Perbandingan) &amp; Figural (Ambang Batas ≥ 80).</p>
-              </div>
-              <button type="button" onclick="startCpnsFullCatSubtest('tka_mtk')" class="w-full py-2.5 px-4 rounded-xl bg-gold-500/20 hover:bg-gold-500 text-gold-400 hover:text-navy-950 border border-gold-500/40 text-xs font-extrabold transition-all flex items-center justify-center gap-2">
-                <i class="fa-solid fa-play"></i>
-                <span>Mulai Simulasi CAT TIU</span>
-              </button>
+        <!-- Panel Pilihan Sesi Simulasi CAT SKD & SKB CPNS -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-5">
+            <div>
+              <span class="text-xs font-extrabold uppercase tracking-wider text-gold-400">Langkah 2 • Pilih Subtes CAT BKN (Bank Soal Khusus CPNS)</span>
+              <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">Simulasi CAT SKD (TWK, TIU, TKP) &amp; SKB CPNS</h2>
+              <p class="text-xs text-slate-300 mt-1">
+                Seluruh butir soal pada simulasi di bawah ini terhubung langsung dengan <strong>Bank Soal CPNS</strong> di Dashboard Admin dan terekap otomatis ke Cloud Database.
+              </p>
             </div>
+          </div>
 
-            <div class="p-5 rounded-2xl bg-navy-950/90 border border-emerald-500/30 flex flex-col justify-between space-y-4">
-              <div class="space-y-2">
-                <span class="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 text-[10px] font-extrabold uppercase">Subtes 3 SKD • TKP &amp; PU</span>
-                <h3 class="text-base font-extrabold text-white">Simulasi CAT TKP &amp; Pengetahuan ASN</h3>
-                <p class="text-xs text-slate-300 leading-relaxed">Pelayanan Publik, Jejaring Kerja, Sosial Budaya, TIK, Profesionalisme &amp; Anti-Radikalisme (Ambang Batas ≥ 166).</p>
-              </div>
-              <button type="button" onclick="startCpnsFullCatSubtest('tka_pu')" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-navy-950 border border-emerald-500/40 text-xs font-extrabold transition-all flex items-center justify-center gap-2">
-                <i class="fa-solid fa-play"></i>
-                <span>Mulai Simulasi CAT TKP/PU</span>
-              </button>
-            </div>
+          <div id="cpns-lobby-cat-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button type="button" onclick="startCpnsFullCatSubtest('cpns_twk')" class="hidden">Mulai Simulasi CAT TWK</button>
+            <button type="button" onclick="startCpnsFullCatSubtest('cpns_tiu')" class="hidden">Mulai Simulasi CAT TIU</button>
+            <button type="button" onclick="startCpnsFullCatSubtest('cpns_tkp')" class="hidden">Mulai Simulasi CAT TKP/PU</button>
           </div>
         </div>
 
@@ -2309,6 +2398,30 @@
             </div>
           </div>
 
+          <div id="cpns-ebook-restricted-notice" class="hidden p-6 sm:p-8 rounded-2xl bg-rose-500/10 border border-rose-500/35 text-center max-w-2xl mx-auto space-y-4">
+            <div class="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-2xl flex items-center justify-center mx-auto">
+              <i class="fa-solid fa-lock"></i>
+            </div>
+            <div class="space-y-1.5">
+              <span class="text-[11px] font-extrabold uppercase tracking-widest text-rose-300 block">Akses Fitur Dibatasi</span>
+              <h3 class="text-xl font-extrabold text-white">Fitur E-Book &amp; Modul PDF Tidak Tersedia untuk Paket Khusus CAT</h3>
+              <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Akun Anda saat ini terdaftar pada paket <strong>Simulasi CAT Saja</strong>. Untuk membuka seluruh perpustakaan E-Book &amp; Modul PDF CPNS (TWK, TIU, TKP, dan SKB), silakan ajukan upgrade ke <strong>Paket Bimbel CPNS (Silver / Gold / Premium)</strong> atau <strong>Paket Akses E-Book</strong>.
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <button type="button" onclick="switchCpnsSubTab('cat')" class="px-5 py-3 rounded-xl bg-navy-950 hover:bg-navy-800 border border-white/15 text-slate-200 text-xs font-extrabold flex items-center gap-2">
+                <i class="fa-solid fa-laptop-code text-gold-400"></i>
+                <span>Buka Simulasi CAT SKD CPNS</span>
+              </button>
+              <button type="button" onclick="openUpgradePackageModal('Paket Bimbel CPNS Silver (1 Bulan)')" class="btn-gold px-5 py-3 rounded-xl text-xs font-extrabold inline-flex items-center gap-2">
+                <i class="fa-solid fa-circle-plus"></i>
+                <span>Upgrade ke Paket Bimbel CPNS</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="cpns-ebook-unlocked-content" class="space-y-6">
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" data-cpns-mod-filter="ALL" onclick="renderCpnsModules('ALL')" class="cpns-mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950">
               Semua Modul CPNS
@@ -2329,6 +2442,7 @@
 
           <div id="cpns-ebook-modules-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             <!-- Rendered by renderCpnsModules() -->
+          </div>
           </div>
         </div>
       </div>
@@ -3051,12 +3165,20 @@
               <div class="flex flex-wrap items-center gap-3 flex-1">
                 <input type="text" id="admin-search-result" oninput="renderAdminResultsTable()" placeholder="Cari Nama, No. Registrasi, atau Kelas..." class="w-full sm:w-64 px-4 py-2.5 rounded-xl bg-navy-950 border border-white/15 focus:border-gold-500 focus:outline-none text-white text-xs font-semibold" />
                 <select id="admin-filter-test" onchange="renderAdminResultsTable()" class="px-4 py-2.5 rounded-xl bg-navy-950 border border-white/15 focus:border-gold-500 focus:outline-none text-white text-xs font-semibold">
-                  <option value="ALL">Semua Jenis Tes</option>
-                  <option value="psiko_terpadu">Psikologi (Psiko I Terpadu)</option>
-                  <option value="tka_pu">TKA: Pengetahuan Umum (PU)</option>
-                  <option value="tka_twk">TKA: Wawasan Kebangsaan (TWK)</option>
-                  <option value="tka_tbi">TKA: Bahasa Inggris (TBI)</option>
-                  <option value="tka_mtk">TKA: Matematika (MTK)</option>
+                  <option value="ALL">Semua Jenis Tes (TNI/Polri &amp; CPNS)</option>
+                  <optgroup label="Divisi TNI / POLRI">
+                    <option value="psiko_terpadu">Psikologi (Psiko I Terpadu)</option>
+                    <option value="tka_pu">TKA: Pengetahuan Umum (PU)</option>
+                    <option value="tka_twk">TKA: Wawasan Kebangsaan (TWK)</option>
+                    <option value="tka_tbi">TKA: Bahasa Inggris (TBI)</option>
+                    <option value="tka_mtk">TKA: Matematika (MTK)</option>
+                  </optgroup>
+                  <optgroup label="Divisi CPNS &amp; Kedinasan">
+                    <option value="cpns_twk">CPNS SKD: Wawasan Kebangsaan (TWK)</option>
+                    <option value="cpns_tiu">CPNS SKD: Intelegensia Umum (TIU)</option>
+                    <option value="cpns_tkp">CPNS SKD: Karakteristik Pribadi (TKP)</option>
+                    <option value="cpns_skb">CPNS SKB: Kompetensi Bidang</option>
+                  </optgroup>
                 </select>
                 <select id="admin-sort-result" onchange="renderAdminResultsTable()" class="px-4 py-2.5 rounded-xl bg-navy-950 border border-gold-500/40 focus:border-gold-500 focus:outline-none text-gold-400 text-xs font-extrabold">
                   <option value="SCORE_DESC">Urutkan: Nilai Terbesar ↓</option>
@@ -3476,29 +3598,56 @@ service cloud.firestore {
           </div>
         </div>
 
-        <!-- ADMIN TAB 3: EDITOR BANK SOAL -->
+        <!-- ADMIN TAB 3: EDITOR BANK SOAL (TNI/POLRI & CPNS) -->
         <div id="admin-panel-questions" class="hidden space-y-6">
           <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
               <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-gold-500">Manajemen Konten Ujian</span>
-                <h2 class="text-xl font-extrabold text-white mt-0.5">Editor Bank Soal Psikologi & Akademik</h2>
-                <p class="text-xs text-slate-300 mt-1">Pilih kategori subtes untuk menambah, mengedit, atau menghapus butir soal secara langsung.</p>
+                <span class="text-xs font-bold uppercase tracking-wider text-gold-500">Manajemen Konten Ujian • TNI/POLRI &amp; CPNS</span>
+                <h2 class="text-xl font-extrabold text-white mt-0.5">Editor Bank Soal Psikologi, Akademik (TKA) &amp; CPNS (SKD/SKB)</h2>
+                <p class="text-xs text-slate-300 mt-1">Pilih subtes TNI/POLRI atau CPNS untuk menambah, mengedit teks/gambar Google Drive pada opsi A–E, atau menghapus butir soal.</p>
               </div>
 
               <div class="flex flex-wrap items-center gap-3">
                 <select id="admin-qbank-select" onchange="renderAdminQuestionList()" class="px-4 py-2.5 rounded-xl bg-navy-950 border border-gold-500/40 text-gold-400 text-xs font-extrabold">
-                  <option value="psiko_kecerdasan">Psiko I: Kecerdasan</option>
-                  <option value="psiko_kepribadian">Psiko I: Kepribadian</option>
-                  <option value="tka_pu">TKA: Pengetahuan Umum (PU)</option>
-                  <option value="tka_twk">TKA: Wawasan Kebangsaan (TWK)</option>
-                  <option value="tka_tbi">TKA: Bahasa Inggris (TBI)</option>
-                  <option value="tka_mtk">TKA: Matematika (MTK)</option>
+                  <optgroup label="Divisi TNI / POLRI (Psikologi &amp; TKA)">
+                    <option value="psiko_kecerdasan">Psiko I: Kecerdasan</option>
+                    <option value="psiko_kepribadian">Psiko I: Kepribadian</option>
+                    <option value="tka_pu">TKA Polri/TNI: Pengetahuan Umum (PU)</option>
+                    <option value="tka_twk">TKA Polri/TNI: Wawasan Kebangsaan (TWK)</option>
+                    <option value="tka_tbi">TKA Polri/TNI: Bahasa Inggris (TBI)</option>
+                    <option value="tka_mtk">TKA Polri/TNI: Matematika (MTK)</option>
+                  </optgroup>
+                  <optgroup label="Divisi CPNS &amp; Kedinasan (SKD &amp; SKB BKN)">
+                    <option value="cpns_twk">CPNS SKD: Wawasan Kebangsaan (TWK)</option>
+                    <option value="cpns_tiu">CPNS SKD: Intelegensia Umum (TIU)</option>
+                    <option value="cpns_tkp">CPNS SKD: Karakteristik Pribadi (TKP)</option>
+                    <option value="cpns_skb">CPNS SKB: Seleksi Kompetensi Bidang &amp; ASN</option>
+                  </optgroup>
                 </select>
                 <button type="button" onclick="openQuestionEditorModal(null)" class="btn-gold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2">
                   <i class="fa-solid fa-plus"></i>
                   <span>Tambah Soal Baru</span>
                 </button>
+              </div>
+            </div>
+
+            <!-- Navigasi Cepat Kategori Bank Soal TNI/POLRI vs Bank Soal CPNS -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div class="p-4 rounded-2xl bg-navy-950/90 border border-white/10 space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-gold-400"><i class="fa-solid fa-shield-halved mr-1.5"></i>Bank Soal Divisi TNI / POLRI</span>
+                  <span class="text-[10px] text-slate-400 font-semibold">Psiko I &amp; Akademik TKA</span>
+                </div>
+                <div id="admin-qbank-quick-tnipolri" class="flex flex-wrap gap-1.5"></div>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-navy-950/90 border border-sky-500/35 space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-300"><i class="fa-solid fa-building-columns mr-1.5"></i>Bank Soal Divisi CPNS &amp; Kedinasan</span>
+                  <span class="text-[10px] text-slate-400 font-semibold">Standar CAT BKN (SKD &amp; SKB)</span>
+                </div>
+                <div id="admin-qbank-quick-cpns" class="flex flex-wrap gap-1.5"></div>
               </div>
             </div>
 
@@ -4815,12 +4964,51 @@ service cloud.firestore {
         const cpnsBar = document.getElementById('cpns-account-bar');
         const cpnsEmailEl = document.getElementById('cpns-logged-in-email');
         const cpnsBatchEl = document.getElementById('cpns-logged-in-batch');
+        const cpnsUpgradeStatusEl = document.getElementById('cpns-logged-in-upgrade-status');
         const cpnsCatPill = document.getElementById('cpns-cat-access-pill');
         const cpnsEbookPill = document.getElementById('cpns-ebook-access-pill');
         const durInfoCpns = window.checkAccountDurationStatus(currentVerifiedUser);
         if (cpnsBar) cpnsBar.classList.remove('hidden');
         if (cpnsEmailEl) cpnsEmailEl.textContent = `${currentVerifiedUser.nama} (${currentVerifiedUser.email})`;
-        if (cpnsBatchEl) cpnsBatchEl.textContent = `Paket Aktif: ${activePackages.join(' + ')} • Durasi: ${durInfoCpns.durationLabel} (s/d ${durInfoCpns.expiresAtFormatted})`;
+        if (cpnsBatchEl) {
+          const cpnsBadgesHtml = activePackages.map(pkg => `
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gold-500/15 border border-gold-500/35 text-gold-300 text-[11px] font-extrabold">
+              <i class="fa-solid fa-check-circle text-[10px] text-emerald-400"></i>${pkg}
+            </span>
+          `).join(' ');
+          let cpnsQuotaHtml = '';
+          if (durInfoCpns.akademikQuota !== Infinity && durInfoCpns.akademikQuota > 0) {
+            cpnsQuotaHtml += `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/35 text-sky-300 text-[10px] font-bold">Kuota Sesi CAT: ${Math.max(0, durInfoCpns.akademikQuota - durInfoCpns.akademikUsed)}/${durInfoCpns.akademikQuota}x</span>`;
+          }
+          cpnsBatchEl.innerHTML = `
+            <div class="flex flex-wrap items-center gap-1.5 mt-1"><span class="text-slate-300">Paket Aktif (${activePackages.length}):</span> ${cpnsBadgesHtml}</div>
+            <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-[11px] font-extrabold">
+                <i class="fa-regular fa-clock text-[10px]"></i>
+                <span>Durasi Aktif: ${durInfoCpns.durationLabel}</span>
+              </span>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-navy-950 border border-white/15 text-slate-200 text-[10px] font-bold">
+                <i class="fa-regular fa-calendar-check text-gold-400"></i>
+                <span>Berlaku s/d ${durInfoCpns.expiresAtFormatted} (Sisa ${durInfoCpns.remainingDays} Hari)</span>
+              </span>
+              ${cpnsQuotaHtml}
+            </div>
+          `;
+        }
+        if (cpnsUpgradeStatusEl) {
+          if (currentVerifiedUser.upgradeRequest && currentVerifiedUser.upgradeRequest.targetBatch) {
+            const req = currentVerifiedUser.upgradeRequest;
+            cpnsUpgradeStatusEl.classList.remove('hidden');
+            cpnsUpgradeStatusEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left mr-1"></i>Pengajuan Penambahan Paket <strong>${req.targetBatch}</strong> menunggu konfirmasi Admin.`;
+          } else {
+            cpnsUpgradeStatusEl.classList.add('hidden');
+            cpnsUpgradeStatusEl.innerHTML = '';
+          }
+        }
+        const cpnsNamaInput = document.getElementById('cpns-peserta-nama');
+        const cpnsKelasInput = document.getElementById('cpns-peserta-kelas');
+        if (cpnsNamaInput && !cpnsNamaInput.value.trim()) cpnsNamaInput.value = currentVerifiedUser.nama;
+        if (cpnsKelasInput) cpnsKelasInput.value = activePackages.join(' + ');
         if (cpnsCatPill) {
           cpnsCatPill.className = 'px-3.5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-xs font-extrabold text-emerald-300 flex items-center gap-1.5';
           cpnsCatPill.innerHTML = `<i class="fa-solid fa-user-check"></i> Akun Aktif: ${currentVerifiedUser.email}`;
@@ -5158,11 +5346,29 @@ service cloud.firestore {
       updateAccessStatusPills();
       renderModules('ALL');
       renderCatLobby();
+      if (typeof renderCpnsModules === 'function') renderCpnsModules('ALL');
+      if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
 
       const gate = document.getElementById('email-auth-gate');
       if (gate) gate.classList.add('hidden');
+      const cpnsGate = document.getElementById('cpns-email-auth-gate');
+      if (cpnsGate) cpnsGate.classList.add('hidden');
 
       const perms = getParticipantPermissions();
+
+      // Perbarui sub-tab di halaman TNF CPNS jika sedang di tab terproteksi (cat / ebook)
+      if (typeof currentActiveCpnsSubTab !== 'undefined') {
+        if (currentActiveCpnsSubTab === 'cat' || currentActiveCpnsSubTab === 'ebook') {
+          if (perms.isEbookOnly && currentActiveCpnsSubTab === 'cat') {
+            switchCpnsSubTab('ebook');
+          } else if (!perms.canAccessEbook && currentActiveCpnsSubTab === 'ebook') {
+            switchCpnsSubTab('cat');
+          } else {
+            switchCpnsSubTab(currentActiveCpnsSubTab);
+          }
+        }
+      }
+
       if (perms.isEbookOnly && (currentActiveTniSubTab === 'cat' || pendingProtectedSubTab === 'cat')) {
         switchTniSubTab('ebook');
         return;
@@ -5184,6 +5390,8 @@ service cloud.firestore {
       updateAccessStatusPills();
       renderModules('ALL');
       renderCatLobby();
+      if (typeof renderCpnsModules === 'function') renderCpnsModules('ALL');
+      if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
 
       if (currentActiveTniSubTab === 'ebook' || currentActiveTniSubTab === 'cat') {
         document.getElementById('tni-subtab-ebook')?.classList.add('hidden');
@@ -5192,8 +5400,17 @@ service cloud.firestore {
         document.getElementById('email-auth-gate')?.classList.remove('hidden');
       }
 
+      if (typeof currentActiveCpnsSubTab !== 'undefined' && (currentActiveCpnsSubTab === 'ebook' || currentActiveCpnsSubTab === 'cat')) {
+        document.getElementById('cpns-subtab-ebook')?.classList.add('hidden');
+        document.getElementById('cpns-subtab-cat')?.classList.add('hidden');
+        document.getElementById('cpns-subtab-pg')?.classList.add('hidden');
+        document.getElementById('cpns-subtab-integrasi')?.classList.add('hidden');
+        document.getElementById('cpns-email-auth-gate')?.classList.remove('hidden');
+      }
+
       if (alertMessage) {
         showAuthAlert(alertMessage, false);
+        if (typeof showCpnsAuthAlert === 'function') showCpnsAuthAlert(alertMessage, false);
       }
     };
 
@@ -5815,8 +6032,16 @@ service cloud.firestore {
 
       closeCustomModal();
 
-      navigateTo('tnipolri', 'cat');
-      switchAuthTab('register');
+      if (pkgLower.includes('cpns')) {
+        navigateTo('cpns');
+        switchCpnsSubTab('cat');
+        switchCpnsAuthTab('register');
+        const cpnsAuthEmailInp = document.getElementById('cpns-auth-email');
+        if (cpnsAuthEmailInp) cpnsAuthEmailInp.value = email;
+      } else {
+        navigateTo('tnipolri', 'cat');
+        switchAuthTab('register');
+      }
       const authEmailInp = document.getElementById('auth-email');
       if (authEmailInp) authEmailInp.value = email;
 
@@ -5863,7 +6088,11 @@ service cloud.firestore {
         tka_pu: false,
         tka_twk: false,
         tka_tbi: false,
-        tka_mtk: false
+        tka_mtk: false,
+        cpns_twk: false,
+        cpns_tiu: false,
+        cpns_tkp: false,
+        cpns_skb: false
       },
       psiko: {
         passingGrade: 61,
@@ -5881,7 +6110,11 @@ service cloud.firestore {
         tka_pu: { label: 'Pengetahuan Umum (PU)', short: 'PU', count: 50, durationMin: 60, weight: 30 },
         tka_twk: { label: 'Wawasan Kebangsaan (TWK)', short: 'TWK', count: 50, durationMin: 60, weight: 20 },
         tka_tbi: { label: 'Bahasa Inggris (TBI)', short: 'TBI', count: 50, durationMin: 60, weight: 30 },
-        tka_mtk: { label: 'Matematika (MTK)', short: 'MTK', count: 40, durationMin: 60, weight: 20 }
+        tka_mtk: { label: 'Matematika (MTK)', short: 'MTK', count: 40, durationMin: 60, weight: 20 },
+        cpns_twk: { label: 'CPNS SKD: Wawasan Kebangsaan (TWK)', short: 'CPNS TWK', count: 30, durationMin: 30, weight: 30 },
+        cpns_tiu: { label: 'CPNS SKD: Intelegensia Umum (TIU)', short: 'CPNS TIU', count: 35, durationMin: 35, weight: 35 },
+        cpns_tkp: { label: 'CPNS SKD: Karakteristik Pribadi (TKP)', short: 'CPNS TKP', count: 45, durationMin: 35, weight: 35 },
+        cpns_skb: { label: 'CPNS SKB: Kompetensi Bidang ASN', short: 'CPNS SKB', count: 50, durationMin: 60, weight: 100 }
       }
     };
 
@@ -6013,6 +6246,145 @@ service cloud.firestore {
           correct: 2,
           imageUrl: ''
         }
+      ],
+      cpns_twk: [
+        {
+          q: 'Seorang pejabat pengadaan barang dan jasa menolak pemberian komisi dari rekanan meskipun tidak ada saksi yang melihat. Sikap pejabat tersebut mencerminkan nilai utama...',
+          options: [
+            'Loyalitas terhadap atasan langsung',
+            'Integritas dan kejujuran dalam memegang amanah jabatan publik',
+            'Kepatuhan prosedural semata karena takut sanksi',
+            'Kompetensi teknis pengadaan barang',
+            'Solidaritas sesama aparatur negara'
+          ],
+          correct: 1,
+          explanation: 'Integritas ASN terwujud melalui konsistensi antara tindakan dan nilai moral/antikorupsi meskipun tanpa pengawasan langsung.',
+          imageUrl: ''
+        },
+        {
+          q: 'Upaya mempertahankan kedaulatan negara dan keutuhan wilayah NKRI dari ancaman siber serta disinformasi digital oleh seorang ASN merupakan wujud nyata pengamalan...',
+          options: [
+            'Bela Negara non-fisik sesuai profesi sebagai abdi negara',
+            'Chauvinisme kebangsaan',
+            'Otonomi daerah khusus',
+            'Hak imunitas birokrasi',
+            'Politik luar negeri ekspansionis'
+          ],
+          correct: 0,
+          explanation: 'Sesuai UU No. 23 Tahun 2019, pengabdian sesuai profesi dan literasi ketahanan nasional merupakan bentuk Bela Negara non-fisik.',
+          imageUrl: ''
+        },
+        {
+          q: 'Berdasarkan UUD NRI Tahun 1945 hasil amandemen, lembaga negara yang berwenang menguji undang-undang terhadap Undang-Undang Dasar adalah...',
+          options: [
+            'Mahkamah Agung (MA)',
+            'Komisi Yudisial (KY)',
+            'Mahkamah Konstitusi (MK)',
+            'Majelis Permusyawaratan Rakyat (MPR)',
+            'Dewan Perwakilan Rakyat (DPR)'
+          ],
+          correct: 2,
+          explanation: 'Pasal 24C ayat (1) UUD 1945 menegaskan kewenangan Mahkamah Konstitusi menguji UU terhadap UUD 1945.',
+          imageUrl: ''
+        }
+      ],
+      cpns_tiu: [
+        {
+          q: 'Semua peserta bimbel yang disiplin lulus ambang batas SKD. Sebagian peserta yang lulus ambang batas SKD memilih formasi di Kementerian Keuangan. Simpulan yang tepat adalah...',
+          options: [
+            'Semua peserta bimbel yang disiplin memilih formasi di Kementerian Keuangan',
+            'Sebagian peserta yang lulus ambang batas SKD adalah peserta bimbel yang disiplin atau memilih formasi di Kementerian Keuangan',
+            'Tidak ada peserta disiplin yang memilih formasi di Kementerian Keuangan',
+            'Semua pelamar Kementerian Keuangan tidak mengikuti bimbel',
+            'Sebagian peserta yang disiplin tidak lulus ambang batas SKD'
+          ],
+          correct: 1,
+          explanation: 'Dari premis universal dan partikular yang beririsan pada kelulusan SKD, sebagian yang lulus SKD mencakup peserta disiplin dan pelamar Kemenkeu.',
+          imageUrl: ''
+        },
+        {
+          q: 'Deret angka standar TIU BKN: 4, 9, 19, 39, 79, ... Nilai suku berikutnya adalah...',
+          options: ['149', '158', '159', '161', '169'],
+          correct: 2,
+          explanation: 'Pola deret: ×2 + 1 (4×2+1=9, 9×2+1=19, 19×2+1=39, 39×2+1=79, maka 79×2+1 = 159).',
+          imageUrl: ''
+        },
+        {
+          q: 'Sebuah proyek digitalisasi arsip instansi dapat diselesaikan oleh 12 pegawai dalam waktu 15 hari. Agar proyek tersebut selesai dalam 9 hari, tambahan pegawai yang diperlukan adalah...',
+          options: ['6 orang', '8 orang', '10 orang', '15 orang', '20 orang'],
+          correct: 1,
+          explanation: 'Perbandingan berbalik nilai: (12 × 15) / 9 = 20 orang. Tambahan pegawai = 20 - 12 = 8 orang.',
+          imageUrl: ''
+        }
+      ],
+      cpns_tkp: [
+        {
+          q: 'Saat bertugas di loket pelayanan terpadu, seorang warga lansia tampak kebingungan mengisi formulir pendaftaran online melalui aplikasi. Sikap Anda yang paling tepat (Skor 5) adalah...',
+          options: [
+            'Memintanya bertanya kepada pengunjung lain di ruang tunggu',
+            'Menyapa dengan ramah, membantu memandu pengisian aplikasi secara santun dan efektif tanpa menghambat antrean',
+            'Memintanya pulang dan kembali esok hari bersama anggota keluarganya',
+            'Mengabaikannya karena fokus pada pemohon lain yang berkasnya sudah siap',
+            'Memberikan brosur panduan tanpa penjelasan lisan'
+          ],
+          correct: 1,
+          explanation: 'Aspek Pelayanan Publik TKP menekankan empati, ketanggapan, dan pemberian solusi tuntas bagi kelompok rentan.',
+          imageUrl: ''
+        },
+        {
+          q: 'Instansi Anda baru saja menerapkan sistem tanda tangan elektronik dan manajemen dokumen berbasis cloud, namun beberapa rekan senior kesulitan beradaptasi. Langkah terbaik Anda adalah...',
+          options: [
+            'Tetap menggunakan berkas kertas manual agar rekan senior nyaman',
+            'Mempelajari sistem tersebut hingga mahir lalu berinisiatif mendampingi rekan kerja agar transisi digital berjalan lancar',
+            'Menunggu bagian TI mengadakan pelatihan ulang bulan depan',
+            'Mengeluhkan lambatnya kinerja rekan senior kepada kepala bagian',
+            'Mengerjakan bagian tugas diri sendiri saja tanpa peduli kendala tim'
+          ],
+          correct: 1,
+          explanation: 'Aspek TIK & Jejaring Kerja TKP memberikan poin tertinggi (5) pada adaptasi teknologi yang disertai kolaborasi aktif membantu rekan.',
+          imageUrl: ''
+        },
+        {
+          q: 'Anda menemukan unggahan provokatif bermuatan radikalisme dan ujaran kebencian di grup pesan singkat internal pegawai. Tindakan paling profesional yang Anda ambil adalah...',
+          options: [
+            'Ikut menyebarkan pesan tersebut ke grup lain',
+            'Tidak ikut menyebarkan, mengingatkan secara bijak pentingnya menjaga netralitas & persatuan ASN, serta melaporkan sesuai mekanisme kode etik',
+            'Membalas dengan makian keras di dalam grup',
+            'Keluar dari grup kerja kedinasan tanpa pemberitahuan',
+            'Membiarkan saja karena menganggap itu kebebasan berpendapat mutlak'
+          ],
+          correct: 1,
+          explanation: 'Aspek Anti-Radikalisme TKP menuntut ASN menjadi perekat dan pemersatu bangsa serta menolak penyebaran paham radikal secara terukur.',
+          imageUrl: ''
+        }
+      ],
+      cpns_skb: [
+        {
+          q: 'Berdasarkan Undang-Undang Nomor 20 Tahun 2023 tentang Aparatur Sipil Negara (UU ASN), nilai dasar (Core Values) ASN yang berlaku secara nasional adalah...',
+          options: [
+            'BerAKHLAK (Berorientasi Pelayanan, Akuntabel, Kompeten, Harmonis, Loyal, Adaptif, Kolaboratif)',
+            'Tribrata dan Catur Prasetya',
+            'Sapta Marga dan Sumpah Prajurit',
+            'Panca Prasetya Korpri Lama',
+            'Birokrasi Sentralistik'
+          ],
+          correct: 0,
+          explanation: 'UU No. 20 Tahun 2023 menetapkan Core Values ASN BerAKHLAK dan Employer Branding Bangga Melayani Bangsa.',
+          imageUrl: ''
+        },
+        {
+          q: 'Dalam penyelenggaraan Sistem Pemerintahan Berbasis Elektronik (SPBE), tujuan utama integrasi layanan digital antar-instansi pemerintah adalah...',
+          options: [
+            'Memperbanyak aplikasi terpisah di setiap bidang',
+            'Mewujudkan tata kelola pemerintahan yang bersih, efektif, transparan, akuntabel, serta pelayanan publik yangpadu dan berkualitas',
+            'Menghapus seluruh fungsi pengawasan internal',
+            'Membatasi akses informasi publik bagi masyarakat',
+            'Menyerahkan pengelolaan data negara sepenuhnya kepada pihak asing'
+          ],
+          correct: 1,
+          explanation: 'Perpres No. 95 Tahun 2018 tentang SPBE bertujuan mewujudkan birokrasi efisien, transparan, dan layanan publik terintegrasi.',
+          imageUrl: ''
+        }
       ]
     };
 
@@ -6045,7 +6417,11 @@ service cloud.firestore {
                 tka_pu: { ...DEFAULT_CAT_CONFIG.tka.tka_pu, ...(parsed.tka?.tka_pu || {}) },
                 tka_twk: { ...DEFAULT_CAT_CONFIG.tka.tka_twk, ...(parsed.tka?.tka_twk || {}) },
                 tka_tbi: { ...DEFAULT_CAT_CONFIG.tka.tka_tbi, ...(parsed.tka?.tka_tbi || {}) },
-                tka_mtk: { ...DEFAULT_CAT_CONFIG.tka.tka_mtk, ...(parsed.tka?.tka_mtk || {}) }
+                tka_mtk: { ...DEFAULT_CAT_CONFIG.tka.tka_mtk, ...(parsed.tka?.tka_mtk || {}) },
+                cpns_twk: { ...DEFAULT_CAT_CONFIG.tka.cpns_twk, ...(parsed.tka?.cpns_twk || {}) },
+                cpns_tiu: { ...DEFAULT_CAT_CONFIG.tka.cpns_tiu, ...(parsed.tka?.cpns_tiu || {}) },
+                cpns_tkp: { ...DEFAULT_CAT_CONFIG.tka.cpns_tkp, ...(parsed.tka?.cpns_tkp || {}) },
+                cpns_skb: { ...DEFAULT_CAT_CONFIG.tka.cpns_skb, ...(parsed.tka?.cpns_skb || {}) }
               }
             };
           }
@@ -7310,12 +7686,18 @@ service cloud.firestore {
     }
 
     function exitCatToLobby() {
+      const lastExamType = examRuntime.examType || "";
       stopExamTimer();
       examRuntime.active = false;
       document.getElementById('cat-arena').classList.add('hidden');
       document.getElementById('cat-result').classList.add('hidden');
       document.getElementById('cat-lobby').classList.remove('hidden');
       renderCatLobby();
+      if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
+      if (String(lastExamType).startsWith('cpns_')) {
+        navigateTo('cpns');
+        switchCpnsSubTab('cat');
+      }
     }
 
     // =========================================================================
@@ -8338,11 +8720,15 @@ service cloud.firestore {
       if (!grid) return;
 
       const items = [
-        { key: 'psiko_terpadu', label: 'Tes Psikologi (Psiko I Terpadu)' },
+        { key: 'psiko_terpadu', label: 'Polri/TNI: Tes Psikologi (Psiko I Terpadu)' },
         { key: 'tka_pu', label: 'TKA: Pengetahuan Umum (PU)' },
         { key: 'tka_twk', label: 'TKA: Wawasan Kebangsaan (TWK)' },
         { key: 'tka_tbi', label: 'TKA: Bahasa Inggris (TBI)' },
-        { key: 'tka_mtk', label: 'TKA: Matematika (MTK)' }
+        { key: 'tka_mtk', label: 'TKA: Matematika (MTK)' },
+        { key: 'cpns_twk', label: 'CPNS SKD: Wawasan Kebangsaan (TWK)' },
+        { key: 'cpns_tiu', label: 'CPNS SKD: Intelegensia Umum (TIU)' },
+        { key: 'cpns_tkp', label: 'CPNS SKD: Karakteristik Pribadi (TKP)' },
+        { key: 'cpns_skb', label: 'CPNS SKB: Kompetensi Bidang ASN' }
       ];
 
       grid.innerHTML = items.map(it => {
@@ -8372,6 +8758,7 @@ service cloud.firestore {
       saveCatConfigToStorage();
       renderAdminLockControls();
       renderCatLobby();
+      if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
     }
 
     function setAllTestsLock(lockState) {
@@ -8381,6 +8768,7 @@ service cloud.firestore {
       saveCatConfigToStorage();
       renderAdminLockControls();
       renderCatLobby();
+      if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
     }
 
     function populateAdminSettingsForm() {
@@ -8751,14 +9139,104 @@ service cloud.firestore {
       }
     }
 
+    const QUESTION_BANK_LABELS = {
+      psiko_kecerdasan: 'Psiko I: Kecerdasan (TNI/Polri)',
+      psiko_kepribadian: 'Psiko I: Kepribadian (TNI/Polri)',
+      tka_pu: 'TKA: Pengetahuan Umum (PU)',
+      tka_twk: 'TKA: Wawasan Kebangsaan (TWK)',
+      tka_tbi: 'TKA: Bahasa Inggris (TBI)',
+      tka_mtk: 'TKA: Matematika (MTK)',
+      cpns_twk: 'CPNS SKD: Tes Wawasan Kebangsaan (TWK)',
+      cpns_tiu: 'CPNS SKD: Tes Intelegensia Umum (TIU)',
+      cpns_tkp: 'CPNS SKD: Tes Karakteristik Pribadi (TKP)',
+      cpns_skb: 'CPNS SKB: Seleksi Kompetensi Bidang & ASN'
+    };
+
+    function selectAdminQuestionBankCategory(bankKey) {
+      const sel = document.getElementById('admin-qbank-select');
+      if (sel) {
+        sel.value = bankKey;
+      }
+      renderAdminQuestionList();
+    }
+
+    function renderAdminQuestionQuickNav(activeBankKey) {
+      const tniPolriContainer = document.getElementById('admin-qbank-quick-tnipolri');
+      const cpnsContainer = document.getElementById('admin-qbank-quick-cpns');
+
+      const tniPolriBanks = [
+        { key: 'psiko_kecerdasan', short: 'Kecerdasan' },
+        { key: 'psiko_kepribadian', short: 'Kepribadian' },
+        { key: 'tka_pu', short: 'TKA PU' },
+        { key: 'tka_twk', short: 'TKA TWK' },
+        { key: 'tka_tbi', short: 'TKA TBI' },
+        { key: 'tka_mtk', short: 'TKA MTK' }
+      ];
+
+      const cpnsBanks = [
+        { key: 'cpns_twk', short: 'CPNS TWK' },
+        { key: 'cpns_tiu', short: 'CPNS TIU' },
+        { key: 'cpns_tkp', short: 'CPNS TKP' },
+        { key: 'cpns_skb', short: 'CPNS SKB' }
+      ];
+
+      if (tniPolriContainer) {
+        tniPolriContainer.innerHTML = tniPolriBanks.map(b => {
+          const count = Array.isArray(QUESTION_BANK[b.key]) ? QUESTION_BANK[b.key].length : 0;
+          const isAct = b.key === activeBankKey;
+          return `
+            <button type="button" onclick="selectAdminQuestionBankCategory('${b.key}')" class="px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1.5 ${
+              isAct
+                ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 shadow'
+                : 'bg-navy-900 hover:bg-white/10 text-slate-300 border border-white/10'
+            }">
+              <span>${b.short}</span>
+              <span class="px-1.5 py-0.2 rounded-md text-[10px] ${isAct ? 'bg-navy-950/20 text-navy-950' : 'bg-white/10 text-gold-400'}">${count}</span>
+            </button>
+          `;
+        }).join('');
+      }
+
+      if (cpnsContainer) {
+        cpnsContainer.innerHTML = cpnsBanks.map(b => {
+          const count = Array.isArray(QUESTION_BANK[b.key]) ? QUESTION_BANK[b.key].length : 0;
+          const isAct = b.key === activeBankKey;
+          return `
+            <button type="button" onclick="selectAdminQuestionBankCategory('${b.key}')" class="px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1.5 ${
+              isAct
+                ? 'bg-gradient-to-r from-sky-400 to-sky-500 text-navy-950 shadow'
+                : 'bg-navy-900 hover:bg-sky-500/15 text-sky-200 border border-sky-500/30'
+            }">
+              <span>${b.short}</span>
+              <span class="px-1.5 py-0.2 rounded-md text-[10px] ${isAct ? 'bg-navy-950/20 text-navy-950' : 'bg-sky-500/20 text-sky-300'}">${count}</span>
+            </button>
+          `;
+        }).join('');
+      }
+    }
+
     function renderAdminQuestionList() {
       const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
+      if (!Array.isArray(QUESTION_BANK[bankKey])) {
+        QUESTION_BANK[bankKey] = Array.isArray(DEFAULT_QUESTION_BANK[bankKey])
+          ? JSON.parse(JSON.stringify(DEFAULT_QUESTION_BANK[bankKey]))
+          : [];
+      }
       const list = QUESTION_BANK[bankKey] || [];
       const infoEl = document.getElementById('admin-qbank-info');
       const listEl = document.getElementById('admin-qbank-list');
 
+      renderAdminQuestionQuickNav(bankKey);
+
+      const bankLabel = QUESTION_BANK_LABELS[bankKey] || bankKey.toUpperCase();
+      const isCpnsBank = bankKey.startsWith('cpns_');
+
       if (infoEl) {
-        infoEl.innerHTML = `Terdapat <strong class="text-gold-400">${list.length}</strong> butir soal kustom pada kategori ini. Apabila target jumlah soal ujian lebih besar dari jumlah soal kustom, sistem akan melengkapi sisanya secara otomatis menggunakan generator soal terukur.`;
+        infoEl.innerHTML = `Kategori Aktif: <strong class="${isCpnsBank ? 'text-sky-300' : 'text-gold-400'}">${bankLabel}</strong> — Terdapat <strong class="text-gold-400">${list.length}</strong> butir soal kustom. ${
+          isCpnsBank
+            ? 'Soal pada kategori ini otomatis digunakan pada <strong>Simulasi CAT SKD/SKB CPNS</strong> dan <strong>Mini Tryout SKD</strong> di halaman TNF CPNS.'
+            : 'Apabila target jumlah soal ujian lebih besar dari jumlah soal kustom, sistem akan melengkapi sisanya secara otomatis menggunakan generator soal terukur.'
+        }`;
       }
 
       if (!listEl) return;
@@ -8803,6 +9281,7 @@ service cloud.firestore {
                 `;
               }).join('')}
             </div>
+            ${item.explanation ? `<div class="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/25 text-[11px] text-sky-200"><strong>Pembahasan:</strong> ${formatMathExponents(item.explanation)}</div>` : ''}
           </div>
         `;
       }).join('');
@@ -8826,7 +9305,7 @@ service cloud.firestore {
 
       openCustomModal({
         badge: editIndex !== null ? `Edit Soal #${editIndex + 1}` : 'Tambah Soal Baru',
-        title: `Bank Soal: ${bankKey.toUpperCase()}`,
+        title: `Bank Soal: ${QUESTION_BANK_LABELS[bankKey] || bankKey.toUpperCase()}`,
         bodyHtml: `
           <div class="space-y-3.5 text-xs">
             <div>
@@ -8938,12 +9417,17 @@ service cloud.firestore {
             </div>
 
             <div>
-              <label for="qedit-correct" class="block font-bold text-slate-300 mb-1">Kunci Jawaban Benar</label>
+              <label for="qedit-correct" class="block font-bold text-slate-300 mb-1">Kunci Jawaban Benar (Skor Tertinggi)</label>
               <select id="qedit-correct" onchange="updateQuestionEditorPreview()" class="w-full px-3.5 py-2.5 rounded-xl bg-navy-950 border border-gold-500/40 text-gold-400 font-extrabold">
                 ${['A', 'B', 'C', 'D', 'E'].map((ltr, idx) => `
                   <option value="${idx}" ${existing && existing.correct === idx ? 'selected' : ''}>Pilihan ${ltr}</option>
                 `).join('')}
               </select>
+            </div>
+
+            <div>
+              <label for="qedit-explanation" class="block font-bold text-slate-300 mb-1">Pembahasan / Penjelasan Kunci Jawaban (Opsional • Ditampilkan pada Evaluasi/Mini Tryout)</label>
+              <textarea id="qedit-explanation" rows="2" placeholder="Tuliskan pembahasan singkat mengapa jawaban tersebut benar..." class="w-full p-3 rounded-xl bg-navy-950 border border-white/15 text-white font-semibold focus:border-gold-500 focus:outline-none">${existing?.explanation || ''}</textarea>
             </div>
 
             <!-- PRATINJAU LANGSUNG HASIL RENDER MATEMATIKA & GAMBAR OPSI -->
@@ -8987,10 +9471,11 @@ service cloud.firestore {
         return rawText;
       });
       const correct = Number(document.getElementById('qedit-correct')?.value) || 0;
+      const explanation = (document.getElementById('qedit-explanation')?.value || '').trim();
 
       if (!qText && !imageUrl) return;
 
-      const payload = { q: qText || 'Perhatikan gambar berikut:', options, optionImages, optionTypes, correct, imageUrl };
+      const payload = { q: qText || 'Perhatikan gambar berikut:', options, optionImages, optionTypes, correct, explanation, imageUrl };
       if (!Array.isArray(QUESTION_BANK[bankKey])) QUESTION_BANK[bankKey] = [];
 
       if (editIndex !== null && editIndex >= 0 && editIndex < QUESTION_BANK[bankKey].length) {
@@ -9002,6 +9487,8 @@ service cloud.firestore {
       saveQuestionBankToStorage();
       closeCustomModal();
       renderAdminQuestionList();
+      if (typeof renderMiniSkd === 'function') renderMiniSkd();
+      if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
     }
 
     function deleteQuestionFromBank(index) {
@@ -9010,6 +9497,8 @@ service cloud.firestore {
         QUESTION_BANK[bankKey].splice(index, 1);
         saveQuestionBankToStorage();
         renderAdminQuestionList();
+        if (typeof renderMiniSkd === 'function') renderMiniSkd();
+        if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
       }
     }
 
@@ -9570,19 +10059,60 @@ service cloud.firestore {
       }
     ];
 
-    let miniSkdAnswers = new Array(MINI_SKD_QUESTIONS.length).fill(null);
+    function getActiveMiniSkdQuestions() {
+      const combined = [];
+      const bankSources = [
+        { key: 'cpns_twk', badge: 'SKD CPNS • TWK' },
+        { key: 'cpns_tiu', badge: 'SKD CPNS • TIU' },
+        { key: 'cpns_tkp', badge: 'SKD CPNS • TKP' }
+      ];
+      bankSources.forEach(src => {
+        const arr = Array.isArray(QUESTION_BANK[src.key]) ? QUESTION_BANK[src.key] : [];
+        arr.slice(0, 2).forEach(item => {
+          const opts = Array.isArray(item.options) ? item.options : [];
+          const correctIdx = Number(item.correct) || 0;
+          const scores = opts.map((_, idx) => {
+            if (idx === correctIdx) return 5;
+            return src.key === 'cpns_tkp' ? Math.max(1, 4 - Math.abs(idx - correctIdx)) : 0;
+          });
+          combined.push({
+            category: src.badge,
+            q: item.q,
+            imageUrl: item.imageUrl || '',
+            options: opts,
+            optionImages: Array.isArray(item.optionImages) ? item.optionImages : [],
+            optionTypes: Array.isArray(item.optionTypes) ? item.optionTypes : [],
+            scores,
+            explanation: item.explanation || `Jawaban terbaik adalah Pilihan ${['A', 'B', 'C', 'D', 'E'][correctIdx] || 'A'} (5 Poin).`
+          });
+        });
+      });
+      return combined.length > 0 ? combined : MINI_SKD_QUESTIONS;
+    }
+
+    let miniSkdAnswers = [];
     let miniSkdGraded = false;
 
     function renderMiniSkd() {
       const container = document.getElementById('mini-skd-container');
       if (!container) return;
 
-      const letters = ['A', 'B', 'C', 'D'];
-      container.innerHTML = MINI_SKD_QUESTIONS.map((item, qIdx) => {
+      const activeQuestions = getActiveMiniSkdQuestions();
+      if (miniSkdAnswers.length !== activeQuestions.length) {
+        miniSkdAnswers = new Array(activeQuestions.length).fill(null);
+      }
+
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+      container.innerHTML = activeQuestions.map((item, qIdx) => {
         const chosen = miniSkdAnswers[qIdx];
-        const optionsHtml = item.options.map((opt, oIdx) => {
+        const mainImgUrl = normalizeImageUrl(item.imageUrl || '');
+        const optionsHtml = (item.options || []).map((opt, oIdx) => {
           const isSelected = chosen === oIdx;
-          const pts = item.scores[oIdx];
+          const pts = item.scores[oIdx] ?? 0;
+          const optImg = (item.optionImages && item.optionImages[oIdx]) ? normalizeImageUrl(item.optionImages[oIdx]) : '';
+          const optType = (item.optionTypes && item.optionTypes[oIdx]) ? item.optionTypes[oIdx] : (optImg && !opt ? 'image' : 'text');
+          const showText = optType !== 'image' && Boolean(opt);
+          const showImg = optType !== 'text' && Boolean(optImg);
 
           let borderCls = isSelected
             ? 'border-gold-500 bg-gold-500/15 text-white'
@@ -9595,8 +10125,11 @@ service cloud.firestore {
 
           return `
             <button type="button" onclick="selectMiniSkdOption(${qIdx}, ${oIdx})" class="w-full text-left p-3 rounded-xl border text-xs transition-all flex items-start gap-2.5 ${borderCls}">
-              <span class="w-6 h-6 rounded-lg bg-navy-950 text-gold-400 font-extrabold flex items-center justify-center shrink-0">${letters[oIdx]}</span>
-              <span class="pt-0.5 leading-relaxed">${opt} ${miniSkdGraded ? `<strong class="text-gold-400">(${pts} Poin)</strong>` : ''}</span>
+              <span class="w-6 h-6 rounded-lg bg-navy-950 text-gold-400 font-extrabold flex items-center justify-center shrink-0">${letters[oIdx] || ''}</span>
+              <div class="flex flex-col gap-1.5 pt-0.5 flex-1">
+                ${showText ? `<span class="leading-relaxed">${formatMathExponents(opt)} ${miniSkdGraded ? `<strong class="text-gold-400">(${pts} Poin)</strong>` : ''}</span>` : (miniSkdGraded ? `<strong class="text-gold-400">(${pts} Poin)</strong>` : '')}
+                ${showImg ? `<img src="${optImg}" alt="Pilihan ${letters[oIdx]}" class="max-h-28 w-auto rounded-lg object-contain bg-navy-950 p-1 border border-white/10" />` : ''}
+              </div>
             </button>
           `;
         }).join('');
@@ -9607,11 +10140,12 @@ service cloud.firestore {
               <span class="px-2.5 py-1 rounded-lg bg-gold-500/15 text-gold-400 text-[11px] font-extrabold">${item.category}</span>
               <span class="text-xs font-bold text-slate-400">Soal #${qIdx + 1}</span>
             </div>
-            <p class="text-xs sm:text-sm font-bold text-white leading-relaxed">${item.q}</p>
+            <p class="text-xs sm:text-sm font-bold text-white leading-relaxed">${formatMathExponents(item.q)}</p>
+            ${mainImgUrl ? `<img src="${mainImgUrl}" alt="Gambar Soal" class="max-h-44 w-auto rounded-xl border border-white/10 object-contain bg-navy-950 p-1.5" />` : ''}
             <div class="space-y-2">${optionsHtml}</div>
             ${miniSkdGraded ? `
               <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] text-emerald-200 leading-relaxed">
-                <strong>Pembahasan:</strong> ${item.explanation}
+                <strong>Pembahasan:</strong> ${formatMathExponents(item.explanation)}
               </div>
             ` : ''}
           </div>
@@ -9627,9 +10161,10 @@ service cloud.firestore {
 
     function gradeMiniSkd() {
       miniSkdGraded = true;
+      const activeQuestions = getActiveMiniSkdQuestions();
       let totalScore = 0;
-      const maxScore = MINI_SKD_QUESTIONS.length * 5;
-      MINI_SKD_QUESTIONS.forEach((q, idx) => {
+      const maxScore = activeQuestions.length * 5;
+      activeQuestions.forEach((q, idx) => {
         const ans = miniSkdAnswers[idx];
         if (ans !== null) {
           totalScore += q.scores[ans] || 0;
@@ -9645,7 +10180,8 @@ service cloud.firestore {
     }
 
     function resetMiniSkd() {
-      miniSkdAnswers = new Array(MINI_SKD_QUESTIONS.length).fill(null);
+      const activeQuestions = getActiveMiniSkdQuestions();
+      miniSkdAnswers = new Array(activeQuestions.length).fill(null);
       miniSkdGraded = false;
       document.getElementById('mini-skd-summary')?.classList.add('hidden');
       renderMiniSkd();
@@ -9737,6 +10273,110 @@ service cloud.firestore {
       }
     ];
 
+    let currentCpnsAuthTab = 'login';
+    let pendingProtectedCpnsSubTab = null;
+
+    function switchCpnsAuthTab(mode) {
+      currentCpnsAuthTab = mode === 'register' ? 'register' : 'login';
+      const btnLogin = document.getElementById('cpns-tab-btn-login');
+      const btnReg = document.getElementById('cpns-tab-btn-register');
+      const confirmWrap = document.getElementById('cpns-confirm-password-wrapper');
+      const submitBtn = document.getElementById('btn-submit-cpns-auth');
+      const forgotBtn = document.getElementById('cpns-btn-forgot-pass');
+      const statusMsg = document.getElementById('cpns-auth-status-msg');
+
+      if (statusMsg) statusMsg.classList.add('hidden');
+
+      if (currentCpnsAuthTab === 'register') {
+        if (btnReg) btnReg.className = 'w-1/2 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 shadow transition-all';
+        if (btnLogin) btnLogin.className = 'w-1/2 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all';
+        confirmWrap?.classList.remove('hidden');
+        forgotBtn?.classList.add('hidden');
+        if (submitBtn) submitBtn.textContent = 'Buat Kata Sandi & Buka Akses CPNS';
+      } else {
+        if (btnLogin) btnLogin.className = 'w-1/2 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 shadow transition-all';
+        if (btnReg) btnReg.className = 'w-1/2 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all';
+        confirmWrap?.classList.add('hidden');
+        forgotBtn?.classList.remove('hidden');
+        if (submitBtn) submitBtn.textContent = 'Masuk ke Materi & Simulasi CAT CPNS';
+      }
+    }
+
+    function showCpnsAuthAlert(msg, isSuccess = false) {
+      const el = document.getElementById('cpns-auth-status-msg');
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      el.className = isSuccess
+        ? 'text-xs font-semibold text-center py-2.5 px-3.5 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+        : 'text-xs font-semibold text-center py-2.5 px-3.5 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30';
+    }
+
+    async function submitCpnsParticipantAuth() {
+      const email = (document.getElementById('cpns-auth-email')?.value || '').trim().toLowerCase();
+      const password = document.getElementById('cpns-auth-password')?.value || '';
+      const confirmPass = document.getElementById('cpns-auth-password-confirm')?.value || '';
+      const submitBtn = document.getElementById('btn-submit-cpns-auth');
+
+      if (!email || !email.includes('@')) {
+        showCpnsAuthAlert('Harap masukkan alamat email yang valid.');
+        return;
+      }
+      if (password.length < 6) {
+        showCpnsAuthAlert('Kata sandi minimal harus terdiri dari 6 karakter.');
+        return;
+      }
+      if (currentCpnsAuthTab === 'register' && password !== confirmPass) {
+        showCpnsAuthAlert('Konfirmasi kata sandi tidak cocok.');
+        return;
+      }
+
+      // Sinkronkan ke form utama dan jalankan autentikasi terpadu
+      const mainEmail = document.getElementById('auth-email');
+      const mainPass = document.getElementById('auth-password');
+      const mainConf = document.getElementById('auth-password-confirm');
+      if (mainEmail) mainEmail.value = email;
+      if (mainPass) mainPass.value = password;
+      if (mainConf) mainConf.value = confirmPass;
+      switchAuthTab(currentCpnsAuthTab);
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Memverifikasi Akses...';
+      }
+
+      try {
+        await submitParticipantAuth();
+        const mainMsg = document.getElementById('auth-status-msg');
+        if (!isStudentAccessVerified() && mainMsg && !mainMsg.classList.contains('hidden')) {
+          showCpnsAuthAlert(mainMsg.textContent, false);
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = currentCpnsAuthTab === 'register'
+            ? 'Buat Kata Sandi & Buka Akses CPNS'
+            : 'Masuk ke Materi & Simulasi CAT CPNS';
+        }
+      }
+    }
+
+    async function handleCpnsForgotPassword() {
+      const email = (document.getElementById('cpns-auth-email')?.value || '').trim().toLowerCase();
+      if (!email || !email.includes('@')) {
+        showCpnsAuthAlert('Masukkan alamat email terdaftar Anda pada kolom di atas terlebih dahulu sebelum klik Lupa Kata Sandi.');
+        return;
+      }
+      try {
+        if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.sendResetPassword === 'function') {
+          await window.TNF_FIREBASE.sendResetPassword(email);
+          showCpnsAuthAlert(`Tautan atur ulang kata sandi telah dikirim ke ${email}. Periksa kotak masuk atau folder Spam Anda.`, true);
+        }
+      } catch (err) {
+        showCpnsAuthAlert(err?.message || 'Gagal mengirim email reset kata sandi.');
+      }
+    }
+
     function switchCpnsSubTab(subTab) {
       const validTabs = ['pg', 'integrasi', 'cat', 'ebook'];
       const target = validTabs.includes(subTab) ? subTab : 'pg';
@@ -9755,15 +10395,53 @@ service cloud.firestore {
       const intPanel = document.getElementById('cpns-subtab-integrasi');
       const catPanel = document.getElementById('cpns-subtab-cat');
       const ebookPanel = document.getElementById('cpns-subtab-ebook');
+      const cpnsAuthGate = document.getElementById('cpns-email-auth-gate');
 
-      pgPanel?.classList.toggle('hidden', target !== 'pg');
-      intPanel?.classList.toggle('hidden', target !== 'integrasi');
-      catPanel?.classList.toggle('hidden', target !== 'cat');
-      ebookPanel?.classList.toggle('hidden', target !== 'ebook');
+      if (target === 'pg') {
+        cpnsAuthGate?.classList.add('hidden');
+        intPanel?.classList.add('hidden');
+        catPanel?.classList.add('hidden');
+        ebookPanel?.classList.add('hidden');
+        pgPanel?.classList.remove('hidden');
+        calculateCpnsSkdPg();
+        return;
+      }
 
-      if (target === 'pg') calculateCpnsSkdPg();
-      if (target === 'integrasi') calculateCpnsIntegrasi();
-      if (target === 'ebook') renderCpnsModules('ALL');
+      if (target === 'integrasi') {
+        cpnsAuthGate?.classList.add('hidden');
+        pgPanel?.classList.add('hidden');
+        catPanel?.classList.add('hidden');
+        ebookPanel?.classList.add('hidden');
+        intPanel?.classList.remove('hidden');
+        calculateCpnsIntegrasi();
+        return;
+      }
+
+      pendingProtectedCpnsSubTab = target;
+
+      if (!isStudentAccessVerified()) {
+        pgPanel?.classList.add('hidden');
+        intPanel?.classList.add('hidden');
+        catPanel?.classList.add('hidden');
+        ebookPanel?.classList.add('hidden');
+        cpnsAuthGate?.classList.remove('hidden');
+        return;
+      }
+
+      cpnsAuthGate?.classList.add('hidden');
+      pgPanel?.classList.add('hidden');
+      intPanel?.classList.add('hidden');
+
+      if (target === 'ebook') {
+        catPanel?.classList.add('hidden');
+        ebookPanel?.classList.remove('hidden');
+        renderCpnsModules('ALL');
+      } else {
+        ebookPanel?.classList.add('hidden');
+        catPanel?.classList.remove('hidden');
+        renderCpnsCatLobby();
+        renderMiniSkd();
+      }
     }
 
     function syncCpnsTwkInput(source) {
@@ -10025,21 +10703,120 @@ service cloud.firestore {
       }
     }
 
+    function renderCpnsCatLobby() {
+      const container = document.getElementById('cpns-lobby-cat-cards');
+      if (!container) return;
+
+      const cpnsExams = [
+        {
+          key: 'cpns_twk',
+          badge: 'Subtes 1 SKD • TWK',
+          color: 'sky',
+          desc: 'Nasionalisme, Integritas, Bela Negara, Pilar Negara & Bahasa Negara (Ambang Batas ≥ 65).'
+        },
+        {
+          key: 'cpns_tiu',
+          badge: 'Subtes 2 SKD • TIU',
+          color: 'gold',
+          desc: 'Kemampuan Verbal (Analogi, Silogisme, Analitis), Numerik (Deret, Berhitung) & Figural (Ambang Batas ≥ 80).'
+        },
+        {
+          key: 'cpns_tkp',
+          badge: 'Subtes 3 SKD • TKP',
+          color: 'emerald',
+          desc: 'Pelayanan Publik, Jejaring Kerja, Sosial Budaya, TIK, Profesionalisme & Anti-Radikalisme (Ambang Batas ≥ 166).'
+        },
+        {
+          key: 'cpns_skb',
+          badge: 'Tahap Lanjutan • SKB ASN',
+          color: 'amber',
+          desc: 'Seleksi Kompetensi Bidang (Bobot 60%), UU ASN No. 20/2023, Core Values BerAKHLAK & Literasi Digital.'
+        }
+      ];
+
+      const perms = getParticipantPermissions();
+      const blockedByPackage = perms.isAuthenticated && !perms.canAccessCatAkademik;
+
+      container.innerHTML = cpnsExams.map(ex => {
+        const cfg = CAT_CONFIG.tka[ex.key] || { label: ex.key, short: ex.key, count: 30, durationMin: 30 };
+        const customCount = Array.isArray(QUESTION_BANK[ex.key]) ? QUESTION_BANK[ex.key].length : 0;
+        const isAdminLocked = Boolean(CAT_CONFIG.locks[ex.key]);
+        const isLocked = isAdminLocked || blockedByPackage;
+
+        return `
+          <div class="p-5 rounded-2xl bg-navy-950/90 border ${isLocked ? 'border-rose-500/30 opacity-80' : 'border-white/10 hover:border-gold-500/40'} flex flex-col justify-between space-y-4 transition-all">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-2.5 py-1 rounded-lg bg-gold-500/15 text-gold-400 text-[10px] font-extrabold uppercase">${ex.badge}</span>
+                <span class="text-[10px] font-extrabold ${isLocked ? 'text-rose-400' : 'text-emerald-400'}">
+                  <i class="fa-solid ${isLocked ? 'fa-lock' : 'fa-lock-open'} mr-1"></i>${isAdminLocked ? 'DIKUNCI ADMIN' : (blockedByPackage ? 'TERKUNCI PAKET' : 'TERBUKA')}
+                </span>
+              </div>
+              <h3 class="text-sm sm:text-base font-extrabold text-white leading-snug">${cfg.label}</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">${ex.desc}</p>
+              <div class="pt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                <span><i class="fa-regular fa-file-lines text-gold-400 mr-1"></i>${cfg.count} Soal (${customCount} Bank Admin)</span>
+                <span>•</span>
+                <span><i class="fa-regular fa-clock text-gold-400 mr-1"></i>${cfg.durationMin} Menit</span>
+              </div>
+            </div>
+            <button type="button" onclick="startCpnsFullCatSubtest('${ex.key}')" class="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 ${
+              isLocked
+                ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed'
+                : 'bg-gold-500/20 hover:bg-gold-500 text-gold-400 hover:text-navy-950 border border-gold-500/40'
+            }">
+              <i class="fa-solid ${isLocked ? 'fa-lock' : 'fa-play'}"></i>
+              <span>${isAdminLocked ? 'Dikunci Admin' : (blockedByPackage ? 'Terkunci Paket' : 'Mulai ' + cfg.short)}</span>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
     function startCpnsFullCatSubtest(examKey) {
       if (!isStudentAccessVerified()) {
-        navigateTo('tnipolri', 'cat');
-        showAuthAlert('Silakan masuk dengan Email & Kata Sandi peserta terlebih dahulu untuk memulai Simulasi CAT berwaktu.', false);
+        switchCpnsSubTab('cat');
+        showCpnsAuthAlert('Silakan masuk atau buat kata sandi peserta terlebih dahulu untuk memulai Simulasi CAT CPNS.', false);
         return;
       }
+
+      // Sinkronkan identitas peserta dari form CPNS ke form utama CAT
+      const cpnsNama = (document.getElementById('cpns-peserta-nama')?.value || '').trim();
+      const cpnsNoreg = (document.getElementById('cpns-peserta-noreg')?.value || '').trim().toUpperCase();
+      const cpnsKelas = (document.getElementById('cpns-peserta-kelas')?.value || '').trim();
+
+      const mainNama = document.getElementById('peserta-nama');
+      const mainNoreg = document.getElementById('peserta-noreg');
+      const mainKelas = document.getElementById('peserta-kelas');
+
+      if (mainNama) mainNama.value = cpnsNama || currentVerifiedUser?.nama || 'Peserta CPNS';
+      if (mainNoreg) mainNoreg.value = cpnsNoreg || `CPNS-${Math.floor(100 + Math.random() * 900)}`;
+      if (mainKelas) mainKelas.value = cpnsKelas || currentVerifiedUser?.batch || 'Divisi CPNS';
+
       navigateTo('tnipolri', 'cat');
       setTimeout(() => {
         initiateExamStart(examKey);
-      }, 80);
+      }, 60);
     }
 
     function renderCpnsModules(filterCat = 'ALL') {
       const grid = document.getElementById('cpns-ebook-modules-grid');
+      const unlockedWrapper = document.getElementById('cpns-ebook-unlocked-content');
+      const restrictedNotice = document.getElementById('cpns-ebook-restricted-notice');
       if (!grid) return;
+
+      const perms = getParticipantPermissions();
+      if (unlockedWrapper && restrictedNotice) {
+        if (perms.isAuthenticated && !perms.canAccessEbook) {
+          unlockedWrapper.classList.add('hidden');
+          restrictedNotice.classList.remove('hidden');
+          grid.innerHTML = '';
+          return;
+        } else {
+          unlockedWrapper.classList.remove('hidden');
+          restrictedNotice.classList.add('hidden');
+        }
+      }
 
       document.querySelectorAll('.cpns-mod-filter-btn').forEach(btn => {
         const isSel = btn.dataset.cpnsModFilter === filterCat;
@@ -10085,8 +10862,8 @@ service cloud.firestore {
     function previewCpnsEbookModule(modId) {
       const perms = getParticipantPermissions();
       if (!perms.isAuthenticated) {
-        navigateTo('tnipolri', 'ebook');
-        showAuthAlert('Silakan login menggunakan email peserta yang terdaftar untuk membuka E-Book & Modul PDF CPNS.', false);
+        switchCpnsSubTab('ebook');
+        showCpnsAuthAlert('Silakan login menggunakan email peserta yang terdaftar untuk membuka E-Book & Modul PDF CPNS.', false);
         return;
       }
       if (!perms.canAccessEbook) {
@@ -10122,8 +10899,8 @@ service cloud.firestore {
     function downloadCpnsEbookSummary(modId) {
       const perms = getParticipantPermissions();
       if (!perms.isAuthenticated) {
-        navigateTo('tnipolri', 'ebook');
-        showAuthAlert('Silakan login menggunakan email peserta yang terdaftar untuk mengunduh E-Book & Modul PDF CPNS.', false);
+        switchCpnsSubTab('ebook');
+        showCpnsAuthAlert('Silakan login menggunakan email peserta yang terdaftar untuk mengunduh E-Book & Modul PDF CPNS.', false);
         return;
       }
       if (!perms.canAccessEbook) {
@@ -10273,6 +11050,7 @@ service cloud.firestore {
       renderModules('ALL');
       renderCpnsModules('ALL');
       renderCatLobby();
+      renderCpnsCatLobby();
       setTkjGender('pria');
       calculateTotalAspek();
       calculateCpnsSkdPg();
