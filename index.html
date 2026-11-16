@@ -132,6 +132,12 @@
                   packages: normalizedPackages,
                   status: data.status || "active",
                   source: data.source || "admin_manual",
+                  activatedAt: data.activatedAt || null,
+                  expiresAt: data.expiresAt || null,
+                  durationDays: data.durationDays || null,
+                  durationLabel: data.durationLabel || "",
+                  catPsikoUsed: Number(data.catPsikoUsed) || 0,
+                  catAkademikUsed: Number(data.catAkademikUsed) || 0,
                   upgradeRequest: data.upgradeRequest || null,
                   lastUpgradeNote: data.lastUpgradeNote || "",
                   synced: true
@@ -173,7 +179,7 @@
             await deleteDoc(doc(db, "tnf_cat_results", docId));
           },
 
-          async grantAuthorizedEmail({ nama, email, batch, packages = null, status = "active", source = "admin_manual", upgradeRequest = null, lastUpgradeNote = "" }) {
+          async grantAuthorizedEmail({ nama, email, batch, packages = null, status = "active", source = "admin_manual", activatedAt = null, expiresAt = null, durationDays = null, durationLabel = "", catPsikoUsed = 0, catAkademikUsed = 0, upgradeRequest = null, lastUpgradeNote = "" }) {
             const cleanEmail = email.trim().toLowerCase();
             await ensureWriteSession();
             const userRef = doc(db, "authorized_users", cleanEmail);
@@ -195,6 +201,9 @@
               ? packages
               : [batch || "Batch 1 - 2026"];
             const finalBatchLabel = batch || finalPackages.join(" + ");
+            const durMeta = typeof window.computePackagesDurationSummary === "function"
+              ? window.computePackagesDurationSummary(finalPackages, activatedAt || Date.now())
+              : { activatedAt: activatedAt || Date.now(), expiresAt: expiresAt || (Date.now() + 30 * 86400000), durationDays: durationDays || 30, durationLabel: durationLabel || "1 Bulan (30 Hari)" };
 
             const payload = {
               nama: nama.trim(),
@@ -203,6 +212,12 @@
               packages: finalPackages,
               status: finalStatus,
               source: source,
+              activatedAt: activatedAt || durMeta.activatedAt,
+              expiresAt: expiresAt || durMeta.expiresAt,
+              durationDays: durationDays || durMeta.durationDays,
+              durationLabel: durationLabel || durMeta.durationLabel,
+              catPsikoUsed: Number(catPsikoUsed) || 0,
+              catAkademikUsed: Number(catAkademikUsed) || 0,
               updatedAt: serverTimestamp()
             };
 
@@ -242,6 +257,12 @@
               ? updatedPackages
               : [newBatch];
             const combinedBatchLabel = finalPackages.join(" + ");
+            const baseStart = fallbackData.activatedAt && fallbackData.expiresAt && fallbackData.expiresAt > Date.now()
+              ? fallbackData.activatedAt
+              : Date.now();
+            const durMeta = typeof window.computePackagesDurationSummary === "function"
+              ? window.computePackagesDurationSummary(finalPackages, baseStart)
+              : { activatedAt: baseStart, expiresAt: baseStart + 30 * 86400000, durationDays: 30, durationLabel: "1 Bulan (30 Hari)" };
             await setDoc(
               doc(db, "authorized_users", cleanEmail),
               {
@@ -251,6 +272,10 @@
                 packages: finalPackages,
                 status: "active",
                 source: fallbackData.source || "admin_upgrade",
+                activatedAt: durMeta.activatedAt,
+                expiresAt: durMeta.expiresAt,
+                durationDays: durMeta.durationDays,
+                durationLabel: durMeta.durationLabel,
                 upgradeRequest: null,
                 lastUpgradeNote: adminNote || "Paket tambahan diaktifkan oleh Admin setelah konfirmasi pembayaran WA",
                 upgradedAt: serverTimestamp(),
@@ -260,6 +285,19 @@
             );
             this.connected = true;
             this.lastError = "";
+          },
+
+          async updateAuthorizedUserFields(email, extraFields = {}) {
+            const cleanEmail = email.trim().toLowerCase();
+            await ensureWriteSession();
+            await setDoc(
+              doc(db, "authorized_users", cleanEmail),
+              {
+                ...extraFields,
+                updatedAt: serverTimestamp()
+              },
+              { merge: true }
+            );
           },
 
           async clearUpgradeRequest(email) {
@@ -278,16 +316,30 @@
           async setAuthorizedEmailStatus(email, newStatus, fallbackData = {}) {
             const cleanEmail = email.trim().toLowerCase();
             await ensureWriteSession();
+            const pkgs = Array.isArray(fallbackData.packages) && fallbackData.packages.length > 0
+              ? fallbackData.packages
+              : [fallbackData.batch || "Batch 1 - 2026"];
+            const durMeta = typeof window.computePackagesDurationSummary === "function"
+              ? window.computePackagesDurationSummary(pkgs, newStatus === "active" ? Date.now() : (fallbackData.activatedAt || Date.now()))
+              : null;
+            const updateObj = {
+              nama: fallbackData.nama || "Peserta TNF CLASS",
+              email: cleanEmail,
+              batch: fallbackData.batch || "Batch 1 - 2026",
+              packages: pkgs,
+              source: fallbackData.source || "admin_manual",
+              status: newStatus,
+              updatedAt: serverTimestamp()
+            };
+            if (durMeta && newStatus === "active") {
+              updateObj.activatedAt = durMeta.activatedAt;
+              updateObj.expiresAt = durMeta.expiresAt;
+              updateObj.durationDays = durMeta.durationDays;
+              updateObj.durationLabel = durMeta.durationLabel;
+            }
             await setDoc(
               doc(db, "authorized_users", cleanEmail),
-              {
-                nama: fallbackData.nama || "Peserta TNF CLASS",
-                email: cleanEmail,
-                batch: fallbackData.batch || "Batch 1 - 2026",
-                source: fallbackData.source || "admin_manual",
-                status: newStatus,
-                updatedAt: serverTimestamp()
-              },
+              updateObj,
               { merge: true }
             );
           },
@@ -361,15 +413,30 @@
                   const normalizedPackages = Array.isArray(data.packages) && data.packages.length > 0
                     ? data.packages
                     : [fallbackBatch];
-                  if (typeof window.handleVerifiedParticipantSession === "function") {
-                    window.handleVerifiedParticipantSession({
-                      email: cleanEmail,
-                      nama: data.nama || cleanEmail,
-                      batch: data.batch || normalizedPackages.join(" + "),
-                      packages: normalizedPackages,
-                      upgradeRequest: data.upgradeRequest || null,
-                      lastUpgradeNote: data.lastUpgradeNote || ""
-                    });
+                  const candidateSession = {
+                    email: cleanEmail,
+                    nama: data.nama || cleanEmail,
+                    batch: data.batch || normalizedPackages.join(" + "),
+                    packages: normalizedPackages,
+                    activatedAt: data.activatedAt || null,
+                    expiresAt: data.expiresAt || null,
+                    durationDays: data.durationDays || null,
+                    durationLabel: data.durationLabel || "",
+                    catPsikoUsed: Number(data.catPsikoUsed) || 0,
+                    catAkademikUsed: Number(data.catAkademikUsed) || 0,
+                    upgradeRequest: data.upgradeRequest || null,
+                    lastUpgradeNote: data.lastUpgradeNote || ""
+                  };
+                  const expCheck = typeof window.checkAccountDurationStatus === "function"
+                    ? window.checkAccountDurationStatus(candidateSession)
+                    : { isExpired: false };
+                  if (expCheck.isExpired) {
+                    await signOut(auth);
+                    if (typeof window.handleRevokedParticipantSession === "function") {
+                      window.handleRevokedParticipantSession(expCheck.reasonMessage);
+                    }
+                  } else if (typeof window.handleVerifiedParticipantSession === "function") {
+                    window.handleVerifiedParticipantSession(candidateSession);
                   }
                 } else {
                   const localUser = typeof window.getLocalAuthorizedUser === "function"
@@ -2976,9 +3043,16 @@ service cloud.firestore {
       if (gdriveMatch && gdriveMatch[1]) {
         return `https://lh3.googleusercontent.com/d/${gdriveMatch[1]}`;
       }
-      const openIdMatch = clean.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+      const openIdMatch = clean.match(/drive\.google\.com\/(?:open|uc|thumbnail)\?(?:[^#]*&)?id=([a-zA-Z0-9_-]+)/);
       if (openIdMatch && openIdMatch[1]) {
         return `https://lh3.googleusercontent.com/d/${openIdMatch[1]}`;
+      }
+      const lh3Match = clean.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+      if (lh3Match && lh3Match[1]) {
+        return `https://lh3.googleusercontent.com/d/${lh3Match[1]}`;
+      }
+      if (/^[a-zA-Z0-9_-]{25,}$/.test(clean)) {
+        return `https://lh3.googleusercontent.com/d/${clean}`;
       }
       return clean;
     }
@@ -3119,6 +3193,222 @@ service cloud.firestore {
       }
       return list;
     }
+
+    // =========================================================================
+    // DURASI AKUN AKTIF SESUAI JENIS PAKET YANG DIPILIH
+    // =========================================================================
+    function getSinglePackageDurationSpec(pkgName) {
+      const raw = (pkgName || '').trim();
+      const lower = raw.toLowerCase();
+
+      if (lower.includes('premium') || lower.includes('3 bulan')) {
+        return {
+          days: 90,
+          months: 3,
+          label: '3 Bulan (90 Hari)',
+          type: 'time',
+          psikoQuota: Infinity,
+          akademikQuota: Infinity
+        };
+      }
+      if (lower.includes('gold') || lower.includes('2 bulan')) {
+        return {
+          days: 60,
+          months: 2,
+          label: '2 Bulan (60 Hari)',
+          type: 'time',
+          psikoQuota: Infinity,
+          akademikQuota: Infinity
+        };
+      }
+      if (lower.includes('silver') || lower.includes('1 bulan')) {
+        return {
+          days: 30,
+          months: 1,
+          label: '1 Bulan (30 Hari)',
+          type: 'time',
+          psikoQuota: Infinity,
+          akademikQuota: Infinity
+        };
+      }
+      if (lower.includes('e-book saja') || lower.includes('ebook saja')) {
+        return {
+          days: 30,
+          months: 1,
+          label: '1 Bulan (30 Hari • Akses E-Book)',
+          type: 'time',
+          psikoQuota: 0,
+          akademikQuota: 0
+        };
+      }
+      if (lower.includes('psiko') && (lower.includes('1x') || lower.includes('sekali') || lower.includes('batch simulasi cat'))) {
+        return {
+          days: 7,
+          months: 0,
+          label: '1x Sesi CAT Psiko (Aktif 7 Hari)',
+          type: 'once_psiko',
+          psikoQuota: 1,
+          akademikQuota: 0
+        };
+      }
+      if (lower.includes('akademik') && (lower.includes('1x') || lower.includes('sekali') || lower.includes('batch simulasi cat'))) {
+        return {
+          days: 7,
+          months: 0,
+          label: '1x Sesi CAT Akademik (Aktif 7 Hari)',
+          type: 'once_akademik',
+          psikoQuota: 0,
+          akademikQuota: 1
+        };
+      }
+      return {
+        days: 30,
+        months: 1,
+        label: '1 Bulan (30 Hari)',
+        type: 'time',
+        psikoQuota: Infinity,
+        akademikQuota: Infinity
+      };
+    }
+
+    window.computePackagesDurationSummary = function (packagesInput, startTimestampMs = null) {
+      const pkgs = Array.isArray(packagesInput) && packagesInput.length > 0
+        ? packagesInput
+        : ['Paket Silver (1 Bulan)'];
+      const baseTime = Number(startTimestampMs) > 0 ? Number(startTimestampMs) : Date.now();
+
+      let totalTimeDays = 0;
+      let totalMonths = 0;
+      let hasUnlimitedPsiko = false;
+      let hasUnlimitedAkademik = false;
+      let psikoQuotaCount = 0;
+      let akademikQuotaCount = 0;
+      let onlyOnceCatPackages = true;
+      const specLabels = [];
+
+      pkgs.forEach(p => {
+        const spec = getSinglePackageDurationSpec(p);
+        specLabels.push(spec.label);
+        if (spec.type === 'time') {
+          onlyOnceCatPackages = false;
+          totalTimeDays += spec.days;
+          totalMonths += spec.months;
+          if (spec.psikoQuota === Infinity) hasUnlimitedPsiko = true;
+          if (spec.akademikQuota === Infinity) hasUnlimitedAkademik = true;
+        } else if (spec.type === 'once_psiko') {
+          psikoQuotaCount += spec.psikoQuota;
+        } else if (spec.type === 'once_akademik') {
+          akademikQuotaCount += spec.akademikQuota;
+        }
+      });
+
+      const finalDurationDays = onlyOnceCatPackages ? 7 : Math.max(30, totalTimeDays);
+      const expiresAt = baseTime + (finalDurationDays * 86400000);
+
+      let durationLabel = '';
+      if (onlyOnceCatPackages) {
+        if (psikoQuotaCount > 0 && akademikQuotaCount > 0) {
+          durationLabel = `${psikoQuotaCount}x CAT Psiko & ${akademikQuotaCount}x CAT Akademik (Masa Aktif 7 Hari)`;
+        } else if (psikoQuotaCount > 0) {
+          durationLabel = `${psikoQuotaCount}x Sesi CAT Psiko (Masa Aktif 7 Hari)`;
+        } else if (akademikQuotaCount > 0) {
+          durationLabel = `${akademikQuotaCount}x Sesi CAT Akademik (Masa Aktif 7 Hari)`;
+        } else {
+          durationLabel = 'Masa Aktif 7 Hari (1x Sesi CAT)';
+        }
+      } else {
+        const monthPart = totalMonths > 0 ? `${totalMonths} Bulan (${finalDurationDays} Hari)` : `${finalDurationDays} Hari`;
+        const extraCatParts = [];
+        if (!hasUnlimitedPsiko && psikoQuotaCount > 0) extraCatParts.push(`+${psikoQuotaCount}x CAT Psiko`);
+        if (!hasUnlimitedAkademik && akademikQuotaCount > 0) extraCatParts.push(`+${akademikQuotaCount}x CAT Akademik`);
+        durationLabel = extraCatParts.length > 0 ? `${monthPart} ${extraCatParts.join(' ')}` : monthPart;
+      }
+
+      return {
+        activatedAt: baseTime,
+        expiresAt,
+        durationDays: finalDurationDays,
+        durationLabel,
+        onlyOnceCatPackages,
+        psikoQuota: hasUnlimitedPsiko ? Infinity : psikoQuotaCount,
+        akademikQuota: hasUnlimitedAkademik ? Infinity : akademikQuotaCount
+      };
+    };
+
+    function formatShortIndoDate(tsMs) {
+      if (!tsMs || isNaN(Number(tsMs))) return '-';
+      return new Date(Number(tsMs)).toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
+    function ensureUserDurationFields(userObj) {
+      if (!userObj) return userObj;
+      const pkgs = getUserPackagesList(userObj);
+      const computed = window.computePackagesDurationSummary(pkgs, userObj.activatedAt || Date.now());
+      if (!userObj.activatedAt) userObj.activatedAt = computed.activatedAt;
+      if (!userObj.expiresAt) userObj.expiresAt = computed.expiresAt;
+      if (!userObj.durationDays) userObj.durationDays = computed.durationDays;
+      if (!userObj.durationLabel) userObj.durationLabel = computed.durationLabel;
+      if (typeof userObj.catPsikoUsed !== 'number') userObj.catPsikoUsed = Number(userObj.catPsikoUsed) || 0;
+      if (typeof userObj.catAkademikUsed !== 'number') userObj.catAkademikUsed = Number(userObj.catAkademikUsed) || 0;
+      return userObj;
+    }
+
+    window.checkAccountDurationStatus = function (userObj) {
+      if (!userObj) return { isExpired: false, remainingDays: 0, summaryText: '' };
+      ensureUserDurationFields(userObj);
+      const pkgs = getUserPackagesList(userObj);
+      const summary = window.computePackagesDurationSummary(pkgs, userObj.activatedAt);
+      const expMs = Number(userObj.expiresAt) || summary.expiresAt;
+      const nowMs = Date.now();
+      const diffMs = expMs - nowMs;
+      const remainingDays = Math.max(0, Math.ceil(diffMs / 86400000));
+
+      const psikoUsed = Number(userObj.catPsikoUsed) || 0;
+      const akademikUsed = Number(userObj.catAkademikUsed) || 0;
+
+      // Cek apakah waktu masa aktif paket sudah habis
+      if (diffMs <= 0) {
+        return {
+          isExpired: true,
+          remainingDays: 0,
+          expiresAtFormatted: formatShortIndoDate(expMs),
+          durationLabel: userObj.durationLabel || summary.durationLabel,
+          reasonMessage: `Masa aktif akun Anda untuk paket (${pkgs.join(' + ')}) dengan durasi ${userObj.durationLabel || summary.durationLabel} telah berakhir pada ${formatShortIndoDate(expMs)}. Silakan daftar ulang atau upgrade paket untuk mengaktifkan kembali akses Anda.`
+        };
+      }
+
+      // Jika akun hanya memiliki paket sekali CAT (1x CAT) dan seluruh kuota sesinya telah terpakai
+      if (summary.onlyOnceCatPackages) {
+        const psikoExhausted = summary.psikoQuota === 0 || psikoUsed >= summary.psikoQuota;
+        const akademikExhausted = summary.akademikQuota === 0 || akademikUsed >= summary.akademikQuota;
+        if (psikoExhausted && akademikExhausted && (summary.psikoQuota > 0 || summary.akademikQuota > 0)) {
+          return {
+            isExpired: true,
+            remainingDays,
+            expiresAtFormatted: formatShortIndoDate(expMs),
+            durationLabel: userObj.durationLabel || summary.durationLabel,
+            reasonMessage: `Kuota sesi ujian pada paket (${pkgs.join(' + ')}) Anda telah selesai digunakan (1x CAT). Silakan tambah atau upgrade paket untuk mengikuti simulasi CAT kembali.`
+          };
+        }
+      }
+
+      return {
+        isExpired: false,
+        remainingDays,
+        expiresAtFormatted: formatShortIndoDate(expMs),
+        activatedAtFormatted: formatShortIndoDate(userObj.activatedAt),
+        durationLabel: userObj.durationLabel || summary.durationLabel,
+        psikoQuota: summary.psikoQuota,
+        akademikQuota: summary.akademikQuota,
+        psikoUsed,
+        akademikUsed,
+        onlyOnceCatPackages: summary.onlyOnceCatPackages
+      };
+    };
 
     const UPGRADEABLE_PACKAGES = [
       {
@@ -3392,13 +3682,28 @@ service cloud.firestore {
       AUTHORIZED_USERS_LIST.forEach(u => {
         if (u && u.email) {
           const pkgs = getUserPackagesList(u);
-          mergedMap.set(u.email.toLowerCase(), { ...u, packages: pkgs, batch: pkgs.join(' + ') || u.batch });
+          const item = ensureUserDurationFields({ ...u, packages: pkgs, batch: pkgs.join(' + ') || u.batch });
+          mergedMap.set(u.email.toLowerCase(), item);
         }
       });
       cloudUsers.forEach(u => {
         if (u && u.email) {
+          const prev = mergedMap.get(u.email.toLowerCase()) || {};
           const pkgs = getUserPackagesList(u);
-          mergedMap.set(u.email.toLowerCase(), { ...u, packages: pkgs, batch: pkgs.join(' + ') || u.batch, synced: true });
+          const item = ensureUserDurationFields({
+            ...prev,
+            ...u,
+            activatedAt: u.activatedAt || prev.activatedAt || null,
+            expiresAt: u.expiresAt || prev.expiresAt || null,
+            durationDays: u.durationDays || prev.durationDays || null,
+            durationLabel: u.durationLabel || prev.durationLabel || '',
+            catPsikoUsed: Number(u.catPsikoUsed ?? prev.catPsikoUsed) || 0,
+            catAkademikUsed: Number(u.catAkademikUsed ?? prev.catAkademikUsed) || 0,
+            packages: pkgs,
+            batch: pkgs.join(' + ') || u.batch,
+            synced: true
+          });
+          mergedMap.set(u.email.toLowerCase(), item);
         }
       });
       AUTHORIZED_USERS_LIST = Array.from(mergedMap.values());
@@ -3408,17 +3713,28 @@ service cloud.firestore {
         const latestSelf = mergedMap.get(currentVerifiedUser.email.toLowerCase());
         if (latestSelf && latestSelf.status === 'active') {
           const latestPkgs = getUserPackagesList(latestSelf);
-          currentVerifiedUser = {
+          currentVerifiedUser = ensureUserDurationFields({
             ...currentVerifiedUser,
             nama: latestSelf.nama || currentVerifiedUser.nama,
             packages: latestPkgs,
             batch: latestPkgs.join(' + ') || latestSelf.batch || currentVerifiedUser.batch,
+            activatedAt: latestSelf.activatedAt || currentVerifiedUser.activatedAt,
+            expiresAt: latestSelf.expiresAt || currentVerifiedUser.expiresAt,
+            durationDays: latestSelf.durationDays || currentVerifiedUser.durationDays,
+            durationLabel: latestSelf.durationLabel || currentVerifiedUser.durationLabel,
+            catPsikoUsed: Number(latestSelf.catPsikoUsed) || 0,
+            catAkademikUsed: Number(latestSelf.catAkademikUsed) || 0,
             upgradeRequest: latestSelf.upgradeRequest || null,
             lastUpgradeNote: latestSelf.lastUpgradeNote || ''
-          };
-          updateAccessStatusPills();
-          renderModules('ALL');
-          renderCatLobby();
+          });
+          const durCheck = window.checkAccountDurationStatus(currentVerifiedUser);
+          if (durCheck.isExpired) {
+            window.handleRevokedParticipantSession(durCheck.reasonMessage);
+          } else {
+            updateAccessStatusPills();
+            renderModules('ALL');
+            renderCatLobby();
+          }
         }
       }
 
@@ -3550,12 +3866,33 @@ service cloud.firestore {
           const batchEl = document.getElementById('logged-in-user-batch');
           if (emailEl) emailEl.textContent = `${currentVerifiedUser.nama} (${currentVerifiedUser.email})`;
           if (batchEl) {
+            const durInfo = window.checkAccountDurationStatus(currentVerifiedUser);
             const badgesHtml = activePackages.map(pkg => `
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gold-500/15 border border-gold-500/35 text-gold-300 text-[11px] font-extrabold">
                 <i class="fa-solid fa-check-circle text-[10px] text-emerald-400"></i>${pkg}
               </span>
             `).join(' ');
-            batchEl.innerHTML = `<div class="flex flex-wrap items-center gap-1.5 mt-1"><span class="text-slate-300">Paket Aktif (${activePackages.length}):</span> ${badgesHtml}</div>`;
+            let quotaExtraHtml = '';
+            if (durInfo.psikoQuota !== Infinity && durInfo.psikoQuota > 0) {
+              quotaExtraHtml += `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/35 text-sky-300 text-[10px] font-bold">Kuota CAT Psiko: ${Math.max(0, durInfo.psikoQuota - durInfo.psikoUsed)}/${durInfo.psikoQuota}x</span>`;
+            }
+            if (durInfo.akademikQuota !== Infinity && durInfo.akademikQuota > 0) {
+              quotaExtraHtml += `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/35 text-sky-300 text-[10px] font-bold">Kuota CAT Akademik: ${Math.max(0, durInfo.akademikQuota - durInfo.akademikUsed)}/${durInfo.akademikQuota}x</span>`;
+            }
+            const durationBadgeHtml = `
+              <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-[11px] font-extrabold">
+                  <i class="fa-regular fa-clock text-[10px]"></i>
+                  <span>Durasi Aktif: ${durInfo.durationLabel}</span>
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-navy-950 border border-white/15 text-slate-200 text-[10px] font-bold">
+                  <i class="fa-regular fa-calendar-check text-gold-400"></i>
+                  <span>Berlaku s/d ${durInfo.expiresAtFormatted} (Sisa ${durInfo.remainingDays} Hari)</span>
+                </span>
+                ${quotaExtraHtml}
+              </div>
+            `;
+            batchEl.innerHTML = `<div class="flex flex-wrap items-center gap-1.5 mt-1"><span class="text-slate-300">Paket Aktif (${activePackages.length}):</span> ${badgesHtml}</div>${durationBadgeHtml}`;
           }
 
           if (upgradeStatusEl) {
@@ -3756,16 +4093,28 @@ service cloud.firestore {
           return;
         }
 
-        const authorizedRecord = userRecord;
+        const authorizedRecord = ensureUserDurationFields(userRecord);
         const resolvedPackages = getUserPackagesList(authorizedRecord);
-        const sessionProfile = {
+        const sessionProfile = ensureUserDurationFields({
           email: email,
           nama: authorizedRecord.nama || email,
           batch: resolvedPackages.join(' + ') || authorizedRecord.batch || 'Peserta Aktif',
           packages: resolvedPackages.length > 0 ? resolvedPackages : [authorizedRecord.batch || 'Peserta Aktif'],
+          activatedAt: authorizedRecord.activatedAt,
+          expiresAt: authorizedRecord.expiresAt,
+          durationDays: authorizedRecord.durationDays,
+          durationLabel: authorizedRecord.durationLabel,
+          catPsikoUsed: Number(authorizedRecord.catPsikoUsed) || 0,
+          catAkademikUsed: Number(authorizedRecord.catAkademikUsed) || 0,
           upgradeRequest: authorizedRecord.upgradeRequest || null,
           lastUpgradeNote: authorizedRecord.lastUpgradeNote || ''
-        };
+        });
+
+        const durCheck = window.checkAccountDurationStatus(sessionProfile);
+        if (durCheck.isExpired) {
+          showAuthAlert(durCheck.reasonMessage, false);
+          return;
+        }
 
         if (currentAuthTab === 'register') {
           if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.registerParticipantWithPassword === 'function') {
@@ -4469,6 +4818,7 @@ service cloud.firestore {
       const isPendingBatch = !isTerpadu;
       const targetStatus = isPendingBatch ? 'pending' : 'active';
 
+      const durMeta = window.computePackagesDurationSummary([packageName], Date.now());
       const newUser = {
         nama,
         email,
@@ -4476,6 +4826,12 @@ service cloud.firestore {
         packages: [packageName],
         status: targetStatus,
         source: 'website_checkout',
+        activatedAt: durMeta.activatedAt,
+        expiresAt: durMeta.expiresAt,
+        durationDays: durMeta.durationDays,
+        durationLabel: durMeta.durationLabel,
+        catPsikoUsed: 0,
+        catAkademikUsed: 0,
         upgradeRequest: null,
         synced: false
       };
@@ -4756,7 +5112,12 @@ service cloud.firestore {
 
       const shuffledCustom = customList.sort(() => Math.random() - 0.5);
       for (let i = 0; i < Math.min(targetCount, shuffledCustom.length); i++) {
-        pool.push({ ...shuffledCustom[i] });
+        pool.push({
+          ...shuffledCustom[i],
+          options: [...(shuffledCustom[i].options || ['', '', '', '', ''])],
+          optionImages: [...(shuffledCustom[i].optionImages || ['', '', '', '', ''])],
+          optionTypes: [...(shuffledCustom[i].optionTypes || ['text', 'text', 'text', 'text', 'text'])]
+        });
       }
 
       while (pool.length < targetCount) {
@@ -4790,7 +5151,9 @@ service cloud.firestore {
           if (base) {
             pool.push({
               q: `[Variasi #${n}] ${base.q}`,
-              options: [...base.options],
+              options: [...(base.options || ['', '', '', '', ''])],
+              optionImages: [...(base.optionImages || ['', '', '', '', ''])],
+              optionTypes: [...(base.optionTypes || ['text', 'text', 'text', 'text', 'text'])],
               correct: base.correct,
               imageUrl: base.imageUrl || ''
             });
@@ -5131,6 +5494,46 @@ service cloud.firestore {
         return;
       }
 
+      if (currentVerifiedUser) {
+        const durStatus = window.checkAccountDurationStatus(currentVerifiedUser);
+        if (durStatus.isExpired) {
+          openCustomModal({
+            badge: 'Masa Aktif / Kuota Paket Berakhir',
+            title: 'Durasi Paket Akun Telah Habis',
+            bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">${durStatus.reasonMessage}</p>`,
+            actionsHtml: `
+              <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
+              <button type="button" onclick="closeCustomModal(); openUpgradePackageModal('Paket Silver (1 Bulan)');" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold">Perpanjang / Tambah Paket</button>
+            `
+          });
+          return;
+        }
+        if (examType === 'psiko_terpadu' && durStatus.psikoQuota !== Infinity && durStatus.psikoQuota > 0 && durStatus.psikoUsed >= durStatus.psikoQuota) {
+          openCustomModal({
+            badge: 'Kuota 1x CAT Psiko Terpakai',
+            title: 'Sesi CAT Psiko Sudah Digunakan',
+            bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Paket Anda (<strong class="text-gold-400">${currentVerifiedUser.batch}</strong>) memiliki kuota <strong>${durStatus.psikoQuota}x Simulasi CAT Psiko</strong> dan telah selesai digunakan. Silakan tambah paket baru atau upgrade ke Paket Terpadu (Silver/Gold/Premium) untuk akses tanpa batas.</p>`,
+            actionsHtml: `
+              <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
+              <button type="button" onclick="closeCustomModal(); openUpgradePackageModal('Paket Silver (1 Bulan)');" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold">Tambah / Upgrade Paket</button>
+            `
+          });
+          return;
+        }
+        if (examType !== 'psiko_terpadu' && durStatus.akademikQuota !== Infinity && durStatus.akademikQuota > 0 && durStatus.akademikUsed >= durStatus.akademikQuota) {
+          openCustomModal({
+            badge: 'Kuota 1x CAT Akademik Terpakai',
+            title: 'Sesi CAT Akademik Sudah Digunakan',
+            bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Paket Anda (<strong class="text-sky-300">${currentVerifiedUser.batch}</strong>) memiliki kuota <strong>${durStatus.akademikQuota}x Simulasi CAT Akademik</strong> dan telah selesai digunakan. Silakan tambah paket baru atau upgrade ke Paket Terpadu (Silver/Gold/Premium) untuk akses tanpa batas.</p>`,
+            actionsHtml: `
+              <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
+              <button type="button" onclick="closeCustomModal(); openUpgradePackageModal('Paket Silver (1 Bulan)');" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold">Tambah / Upgrade Paket</button>
+            `
+          });
+          return;
+        }
+      }
+
       const perms = getParticipantPermissions();
       if (examType === 'psiko_terpadu' && !perms.canAccessCatPsiko) {
         openCustomModal({
@@ -5323,8 +5726,15 @@ service cloud.firestore {
       const chosen = examRuntime.answers[idx];
       const optContainer = document.getElementById('cat-options-container');
       if (optContainer) {
-        optContainer.innerHTML = (qObj.options || []).map((optText, oIdx) => {
+        optContainer.innerHTML = letters.map((ltr, oIdx) => {
+          const optText = (qObj.options && qObj.options[oIdx]) ? String(qObj.options[oIdx]).trim() : '';
+          const rawOptImg = (qObj.optionImages && qObj.optionImages[oIdx]) ? String(qObj.optionImages[oIdx]).trim() : '';
+          const optImgUrl = normalizeImageUrl(rawOptImg);
+          const optType = (qObj.optionTypes && qObj.optionTypes[oIdx]) ? qObj.optionTypes[oIdx] : (optImgUrl && !optText ? 'image' : 'text');
+          const showText = optType !== 'image' && Boolean(optText);
+          const showImg = optType !== 'text' ? Boolean(optImgUrl) : Boolean(optImgUrl);
           const isSelected = chosen === oIdx;
+
           return `
             <button type="button" onclick="selectStandardOption(${oIdx})" class="w-full text-left p-3.5 sm:p-4 rounded-2xl border transition-all flex items-start gap-3 ${
               isSelected
@@ -5333,8 +5743,16 @@ service cloud.firestore {
             }">
               <span class="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-extrabold shrink-0 ${
                 isSelected ? 'bg-gold-500 text-navy-950' : 'bg-navy-900 text-gold-400 border border-white/10'
-              }">${letters[oIdx] || (oIdx + 1)}</span>
-              <span class="text-xs sm:text-sm font-semibold leading-relaxed pt-0.5">${formatMathExponents(optText)}</span>
+              }">${ltr}</span>
+              <div class="flex flex-col gap-2 pt-0.5 flex-1 min-w-0">
+                ${showText ? `<span class="text-xs sm:text-sm font-semibold leading-relaxed">${formatMathExponents(optText)}</span>` : ''}
+                ${showImg ? `
+                  <div class="p-2 rounded-xl bg-navy-950/90 border border-white/10 inline-block max-w-full w-fit">
+                    <img src="${optImgUrl}" alt="Pilihan ${ltr}" class="max-h-44 w-auto max-w-full rounded-lg object-contain" />
+                  </div>
+                ` : ''}
+                ${(!showText && !showImg) ? `<span class="text-xs text-slate-400 italic">Pilihan ${ltr}</span>` : ''}
+              </div>
             </button>
           `;
         }).join('');
@@ -5876,6 +6294,33 @@ service cloud.firestore {
         }
       }
 
+      // Catat pemakaian kuota sesi CAT pada akun peserta
+      if (currentVerifiedUser && currentVerifiedUser.email) {
+        const isPsikoExam = examRuntime.examType === 'psiko_terpadu';
+        if (isPsikoExam) {
+          currentVerifiedUser.catPsikoUsed = (Number(currentVerifiedUser.catPsikoUsed) || 0) + 1;
+        } else {
+          currentVerifiedUser.catAkademikUsed = (Number(currentVerifiedUser.catAkademikUsed) || 0) + 1;
+        }
+        const uIdx = AUTHORIZED_USERS_LIST.findIndex(u => u.email.toLowerCase() === currentVerifiedUser.email.toLowerCase());
+        if (uIdx >= 0) {
+          AUTHORIZED_USERS_LIST[uIdx].catPsikoUsed = currentVerifiedUser.catPsikoUsed;
+          AUTHORIZED_USERS_LIST[uIdx].catAkademikUsed = currentVerifiedUser.catAkademikUsed;
+          saveAuthorizedUsersCache();
+        }
+        if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.updateAuthorizedUserFields === 'function') {
+          try {
+            await window.TNF_FIREBASE.updateAuthorizedUserFields(currentVerifiedUser.email, {
+              catPsikoUsed: currentVerifiedUser.catPsikoUsed,
+              catAkademikUsed: currentVerifiedUser.catAkademikUsed
+            });
+          } catch (e) {
+            // Abaikan jika offline
+          }
+        }
+        updateAccessStatusPills();
+      }
+
       if (isAdminAuthenticated) {
         renderAdminResultsTable();
       }
@@ -6383,7 +6828,9 @@ service cloud.firestore {
       }
 
       listEl.innerHTML = filtered.map(u => {
-        const isActive = u.status === 'active';
+        ensureUserDurationFields(u);
+        const durStatus = window.checkAccountDurationStatus(u);
+        const isActive = u.status === 'active' && !durStatus.isExpired;
         const isPending = u.status === 'pending';
         const hasUpgradeReq = Boolean(u.upgradeRequest && u.upgradeRequest.targetBatch);
         const userPackages = getUserPackagesList(u);
@@ -6399,8 +6846,8 @@ service cloud.firestore {
           : (isPending ? 'bg-amber-500/20 text-amber-300' : 'bg-rose-500/20 text-rose-300');
 
         const badgeLabel = isActive
-          ? 'AKTIF'
-          : (isPending ? 'MENUNGGU KONFIRMASI WA' : 'NONAKTIF');
+          ? `AKTIF (${durStatus.remainingDays} HARI)`
+          : (isPending ? 'MENUNGGU KONFIRMASI WA' : (durStatus.isExpired && u.status === 'active' ? 'MASA AKTIF HABIS' : 'NONAKTIF'));
 
         const packagesBadgesHtml = userPackages.map(pkg => `
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-navy-900 border border-gold-500/30 text-slate-100 text-[10px] font-bold">
@@ -6452,6 +6899,16 @@ service cloud.firestore {
               <div class="space-y-1 pt-0.5">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Paket Aktif (${userPackages.length}):</span>
                 <div class="flex flex-wrap gap-1">${packagesBadgesHtml}</div>
+              </div>
+              <div class="p-2 rounded-xl bg-navy-900/90 border border-white/10 text-[10px] space-y-0.5">
+                <div class="flex items-center justify-between text-slate-300">
+                  <span><i class="fa-regular fa-clock text-gold-400 mr-1"></i>Durasi Paket:</span>
+                  <strong class="text-emerald-300">${durStatus.durationLabel}</strong>
+                </div>
+                <div class="flex items-center justify-between text-slate-400">
+                  <span>Berlaku s/d:</span>
+                  <strong class="${durStatus.isExpired ? 'text-rose-400' : 'text-white'}">${durStatus.expiresAtFormatted} (${durStatus.isExpired ? 'Kedaluwarsa' : 'Sisa ' + durStatus.remainingDays + ' Hari'})</strong>
+                </div>
               </div>
               ${u.lastUpgradeNote ? `<div class="text-[10px] text-emerald-300/90 italic"><i class="fa-solid fa-circle-check mr-1"></i>${u.lastUpgradeNote}</div>` : ''}
               ${upgradeAlertHtml}
@@ -6561,11 +7018,17 @@ service cloud.firestore {
       const updatedPackages = addUniquePackage(previousPackages, addedPackage);
       const waTarget = user.upgradeRequest?.waNumber || '';
 
+      const baseStart = user.activatedAt && user.expiresAt && user.expiresAt > Date.now() ? user.activatedAt : Date.now();
+      const durMeta = window.computePackagesDurationSummary(updatedPackages, baseStart);
       user.packages = updatedPackages;
       user.batch = updatedPackages.join(' + ');
       user.status = 'active';
+      user.activatedAt = durMeta.activatedAt;
+      user.expiresAt = durMeta.expiresAt;
+      user.durationDays = durMeta.durationDays;
+      user.durationLabel = durMeta.durationLabel;
       user.upgradeRequest = null;
-      user.lastUpgradeNote = adminNote || `Ditambahkan paket: ${addedPackage}`;
+      user.lastUpgradeNote = adminNote || `Ditambahkan paket: ${addedPackage} (Durasi: ${durMeta.durationLabel})`;
 
       if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.upgradeAuthorizedEmailPackage === 'function') {
         try {
@@ -6620,11 +7083,17 @@ service cloud.firestore {
       const waTarget = user.upgradeRequest.waNumber || '';
       const adminNote = `Paket ${addedPackage} ditambahkan Admin`;
 
+      const baseStart = user.activatedAt && user.expiresAt && user.expiresAt > Date.now() ? user.activatedAt : Date.now();
+      const durMeta = window.computePackagesDurationSummary(updatedPackages, baseStart);
       user.packages = updatedPackages;
       user.batch = updatedPackages.join(' + ');
       user.status = 'active';
+      user.activatedAt = durMeta.activatedAt;
+      user.expiresAt = durMeta.expiresAt;
+      user.durationDays = durMeta.durationDays;
+      user.durationLabel = durMeta.durationLabel;
       user.upgradeRequest = null;
-      user.lastUpgradeNote = adminNote;
+      user.lastUpgradeNote = `${adminNote} • Durasi: ${durMeta.durationLabel}`;
 
       if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.upgradeAuthorizedEmailPackage === 'function') {
         try {
@@ -6671,9 +7140,13 @@ service cloud.firestore {
       if (currentPkgs.length <= 1) return;
 
       const updatedPackages = currentPkgs.filter(p => p.toLowerCase() !== (pkgToRemove || '').toLowerCase());
+      const durMeta = window.computePackagesDurationSummary(updatedPackages, user.activatedAt || Date.now());
       user.packages = updatedPackages;
       user.batch = updatedPackages.join(' + ');
-      user.lastUpgradeNote = `Paket ${pkgToRemove} dihapus oleh Admin`;
+      user.expiresAt = durMeta.expiresAt;
+      user.durationDays = durMeta.durationDays;
+      user.durationLabel = durMeta.durationLabel;
+      user.lastUpgradeNote = `Paket ${pkgToRemove} dihapus oleh Admin (Durasi kini: ${durMeta.durationLabel})`;
 
       if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.upgradeAuthorizedEmailPackage === 'function') {
         try {
@@ -6736,6 +7209,10 @@ service cloud.firestore {
         ? `Ditambahkan paket ${batch} oleh Admin`
         : (existingUser?.lastUpgradeNote || '');
 
+      const baseStart = existingUser?.activatedAt && existingUser?.expiresAt && existingUser.expiresAt > Date.now()
+        ? existingUser.activatedAt
+        : Date.now();
+      const durMeta = window.computePackagesDurationSummary(updatedPackages, baseStart);
       const newUser = {
         nama: finalNama,
         email,
@@ -6743,8 +7220,14 @@ service cloud.firestore {
         packages: updatedPackages,
         status: 'active',
         source: isAddedToExisting ? 'admin_upgrade' : 'admin_manual',
+        activatedAt: durMeta.activatedAt,
+        expiresAt: durMeta.expiresAt,
+        durationDays: durMeta.durationDays,
+        durationLabel: durMeta.durationLabel,
+        catPsikoUsed: existingUser ? (Number(existingUser.catPsikoUsed) || 0) : 0,
+        catAkademikUsed: existingUser ? (Number(existingUser.catAkademikUsed) || 0) : 0,
         upgradeRequest: null,
-        lastUpgradeNote: upgradeNote,
+        lastUpgradeNote: upgradeNote ? `${upgradeNote} (Durasi: ${durMeta.durationLabel})` : `Durasi Aktif: ${durMeta.durationLabel}`,
         synced: false
       };
 
@@ -6782,6 +7265,16 @@ service cloud.firestore {
       if (!user) return;
       const nextStatus = user.status === 'active' ? 'inactive' : 'active';
       user.status = nextStatus;
+      if (nextStatus === 'active') {
+        const pkgs = getUserPackagesList(user);
+        const durMeta = window.computePackagesDurationSummary(pkgs, Date.now());
+        user.activatedAt = durMeta.activatedAt;
+        user.expiresAt = durMeta.expiresAt;
+        user.durationDays = durMeta.durationDays;
+        user.durationLabel = durMeta.durationLabel;
+        user.catPsikoUsed = 0;
+        user.catAkademikUsed = 0;
+      }
       saveAuthorizedUsersCache();
       renderAdminAuthorizedUsersList();
 
@@ -7207,6 +7700,28 @@ service cloud.firestore {
       updateQuestionEditorPreview();
     }
 
+    function setQuestionOptionType(idx, mode) {
+      const validMode = ['text', 'image', 'both'].includes(mode) ? mode : 'text';
+      const typeInput = document.getElementById(`qedit-opt-type-${idx}`);
+      if (typeInput) typeInput.value = validMode;
+
+      ['text', 'image', 'both'].forEach(m => {
+        const btn = document.getElementById(`qedit-opt-mode-btn-${idx}-${m}`);
+        if (btn) {
+          btn.className = m === validMode
+            ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all'
+            : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all';
+        }
+      });
+
+      const textWrap = document.getElementById(`qedit-opt-text-wrap-${idx}`);
+      const imgWrap = document.getElementById(`qedit-opt-img-wrap-${idx}`);
+      if (textWrap) textWrap.classList.toggle('hidden', validMode === 'image');
+      if (imgWrap) imgWrap.classList.toggle('hidden', validMode === 'text');
+
+      updateQuestionEditorPreview();
+    }
+
     function updateQuestionEditorPreview() {
       const qPreview = document.getElementById('qedit-live-preview-text');
       const optsPreview = document.getElementById('qedit-live-preview-opts');
@@ -7222,24 +7737,46 @@ service cloud.firestore {
         const letters = ['A', 'B', 'C', 'D', 'E'];
         const correctIdx = Number(document.getElementById('qedit-correct')?.value) || 0;
         const optItems = letters.map((ltr, idx) => {
+          const mode = document.getElementById(`qedit-opt-type-${idx}`)?.value || 'text';
           const val = (document.getElementById(`qedit-opt-${idx}`)?.value || '').trim();
-          if (!val) return '';
+          const rawImg = (document.getElementById(`qedit-opt-img-${idx}`)?.value || '').trim();
+          const normImg = normalizeImageUrl(rawImg);
+
+          const thumbBox = document.getElementById(`qedit-opt-thumb-box-${idx}`);
+          const thumbImg = document.getElementById(`qedit-opt-thumb-${idx}`);
+          if (thumbBox && thumbImg) {
+            if (normImg && mode !== 'text') {
+              thumbImg.src = normImg;
+              thumbBox.classList.remove('hidden');
+            } else {
+              thumbImg.src = '';
+              thumbBox.classList.add('hidden');
+            }
+          }
+
+          const showText = mode !== 'image' && Boolean(val);
+          const showImg = mode !== 'text' && Boolean(normImg);
+          if (!showText && !showImg) return '';
+
           const isKey = idx === correctIdx;
           return `
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${
+            <div class="inline-flex flex-col gap-1.5 px-3 py-2 rounded-xl border ${
               isKey
                 ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200 font-bold'
                 : 'bg-navy-900 border-white/10 text-slate-300'
             }">
-              <strong class="text-gold-400">${ltr}.</strong>
-              <span>${formatMathExponents(val)}</span>
-            </span>
+              <div class="flex items-center gap-1.5">
+                <strong class="text-gold-400">${ltr}.</strong>
+                ${showText ? `<span>${formatMathExponents(val)}</span>` : '<span class="text-[10px] text-sky-300 font-semibold"><i class="fa-solid fa-image mr-1"></i>Pilihan Gambar</span>'}
+              </div>
+              ${showImg ? `<img src="${normImg}" alt="Preview Opsi ${ltr}" class="max-h-20 w-auto rounded-lg border border-white/10 object-contain bg-navy-950 p-1" />` : ''}
+            </div>
           `;
         }).filter(Boolean);
 
         optsPreview.innerHTML = optItems.length > 0
           ? optItems.join(' ')
-          : '<span class="text-[11px] text-slate-500 italic">Pratinjau pilihan jawaban A–E tampil otomatis saat diisi.</span>';
+          : '<span class="text-[11px] text-slate-500 italic">Pratinjau pilihan jawaban A–E (teks / gambar Google Drive) tampil otomatis saat diisi.</span>';
       }
     }
 
@@ -7256,39 +7793,64 @@ service cloud.firestore {
       if (!listEl) return;
       const letters = ['A', 'B', 'C', 'D', 'E'];
 
-      listEl.innerHTML = list.map((item, idx) => `
-        <div class="p-4 rounded-2xl bg-navy-950/85 border border-white/10 space-y-2.5">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 rounded-lg bg-gold-500 text-navy-950 text-xs font-extrabold">#${idx + 1}</span>
-              <span class="text-xs font-bold text-emerald-400">Kunci: ${letters[item.correct] || 'A'}</span>
-              ${item.imageUrl ? '<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-bold"><i class="fa-solid fa-image mr-1"></i>Bergambar</span>' : ''}
-            </div>
-            <div class="flex items-center gap-2">
-              <button type="button" onclick="openQuestionEditorModal(${idx})" class="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-bold">
-                <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
-              </button>
-              <button type="button" onclick="deleteQuestionFromBank(${idx})" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold">
-                <i class="fa-solid fa-trash mr-1"></i>Hapus
-              </button>
-            </div>
-          </div>
-          <p class="text-xs sm:text-sm font-semibold text-white leading-relaxed">${formatMathExponents(item.q)}</p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-slate-300">
-            ${(item.options || []).map((opt, oIdx) => `
-              <div class="px-2.5 py-1.5 rounded-lg ${oIdx === item.correct ? 'bg-emerald-500/15 border border-emerald-500/35 text-emerald-200 font-bold' : 'bg-navy-900/80'}">
-                ${letters[oIdx]}. ${formatMathExponents(opt)}
+      listEl.innerHTML = list.map((item, idx) => {
+        const hasOptionImages = Array.isArray(item.optionImages) && item.optionImages.some(u => (u || '').trim() !== '');
+        return `
+          <div class="p-4 rounded-2xl bg-navy-950/85 border border-white/10 space-y-2.5">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg bg-gold-500 text-navy-950 text-xs font-extrabold">#${idx + 1}</span>
+                <span class="text-xs font-bold text-emerald-400">Kunci: ${letters[item.correct] || 'A'}</span>
+                ${item.imageUrl ? '<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-bold"><i class="fa-solid fa-image mr-1"></i>Soal Bergambar</span>' : ''}
+                ${hasOptionImages ? '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold"><i class="fa-solid fa-images mr-1"></i>Opsi A–E Bergambar</span>' : ''}
               </div>
-            `).join('')}
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="openQuestionEditorModal(${idx})" class="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-bold">
+                  <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
+                </button>
+                <button type="button" onclick="deleteQuestionFromBank(${idx})" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold">
+                  <i class="fa-solid fa-trash mr-1"></i>Hapus
+                </button>
+              </div>
+            </div>
+            <p class="text-xs sm:text-sm font-semibold text-white leading-relaxed">${formatMathExponents(item.q)}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-300">
+              ${letters.map((ltr, oIdx) => {
+                const optText = (item.options && item.options[oIdx]) ? String(item.options[oIdx]).trim() : '';
+                const optImg = (item.optionImages && item.optionImages[oIdx]) ? normalizeImageUrl(item.optionImages[oIdx]) : '';
+                const optType = (item.optionTypes && item.optionTypes[oIdx]) ? item.optionTypes[oIdx] : (optImg && !optText ? 'image' : 'text');
+                const showText = optType !== 'image' && Boolean(optText);
+                const showImg = optType !== 'text' && Boolean(optImg);
+                return `
+                  <div class="p-2.5 rounded-xl ${oIdx === item.correct ? 'bg-emerald-500/15 border border-emerald-500/35 text-emerald-200 font-bold' : 'bg-navy-900/80 border border-white/5'} flex flex-col gap-1.5">
+                    <div>
+                      <strong class="text-gold-400 mr-1">${ltr}.</strong>
+                      ${showText ? formatMathExponents(optText) : (showImg ? '<span class="text-[10px] text-sky-300 font-semibold">[Pilihan Gambar Google Drive]</span>' : '-')}
+                    </div>
+                    ${showImg ? `<img src="${optImg}" alt="Opsi ${ltr}" class="max-h-24 w-auto rounded-lg object-contain bg-navy-950 p-1 border border-white/10" />` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function openQuestionEditorModal(editIndex = null) {
       const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
       const existing = (editIndex !== null && QUESTION_BANK[bankKey]) ? QUESTION_BANK[bankKey][editIndex] : null;
-      const opts = existing ? existing.options : ['', '', '', '', ''];
+      const opts = existing && Array.isArray(existing.options) ? existing.options : ['', '', '', '', ''];
+      const optImgs = existing && Array.isArray(existing.optionImages) ? existing.optionImages : ['', '', '', '', ''];
+      const optTypes = existing && Array.isArray(existing.optionTypes)
+        ? existing.optionTypes
+        : [0, 1, 2, 3, 4].map(i => {
+            const hasT = Boolean((opts[i] || '').trim());
+            const hasI = Boolean((optImgs[i] || '').trim());
+            if (hasI && hasT) return 'both';
+            if (hasI) return 'image';
+            return 'text';
+          });
       activeMathTargetId = 'qedit-text';
 
       openCustomModal({
@@ -7338,26 +7900,70 @@ service cloud.firestore {
             </div>
 
             <div>
-              <label for="qedit-img" class="block font-bold text-slate-300 mb-1">URL Gambar / Google Drive (Opsional)</label>
+              <label for="qedit-img" class="block font-bold text-slate-300 mb-1">URL Gambar Soal Utama / Google Drive (Opsional)</label>
               <input type="text" id="qedit-img" value="${existing?.imageUrl || ''}" placeholder="https://drive.google.com/file/d/..." class="w-full px-3.5 py-2.5 rounded-xl bg-navy-950 border border-white/15 text-white focus:border-gold-500 focus:outline-none" />
             </div>
 
-            <div class="grid grid-cols-1 gap-2">
-              <span class="font-bold text-slate-300">Pilihan Jawaban (Klik kolom pilihan jika ingin menyisipkan simbol matematika di opsi A–E):</span>
-              ${['A', 'B', 'C', 'D', 'E'].map((ltr, idx) => `
-                <div class="flex items-center gap-2">
-                  <span class="w-7 h-7 rounded-lg bg-gold-500 text-navy-950 font-extrabold flex items-center justify-center shrink-0">${ltr}</span>
-                  <input
-                    type="text"
-                    id="qedit-opt-${idx}"
-                    value="${opts[idx] || ''}"
-                    onfocus="setActiveMathTarget('qedit-opt-${idx}', 'Pilihan ${ltr}')"
-                    oninput="updateQuestionEditorPreview()"
-                    placeholder="Pilihan ${ltr} (bisa sisipkan √, ^, pecahan, dll)"
-                    class="w-full px-3 py-2 rounded-xl bg-navy-950 border border-white/15 text-white font-semibold focus:border-gold-500 focus:outline-none"
-                  />
-                </div>
-              `).join('')}
+            <div class="space-y-2.5">
+              <div class="flex flex-wrap items-center justify-between gap-1">
+                <span class="font-bold text-slate-300">Pilihan Jawaban A–E (Bisa Berupa Teks atau Gambar dari Google Drive):</span>
+                <span class="text-[10px] text-gold-400 font-semibold"><i class="fa-brands fa-google-drive mr-1"></i>Mendukung Link Share Google Drive</span>
+              </div>
+              ${['A', 'B', 'C', 'D', 'E'].map((ltr, idx) => {
+                const initMode = optTypes[idx] || 'text';
+                return `
+                  <div class="p-3 rounded-2xl bg-navy-900/90 border border-white/10 space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-lg bg-gold-500 text-navy-950 font-extrabold flex items-center justify-center shrink-0">${ltr}</span>
+                        <span class="font-extrabold text-white text-xs">Pilihan ${ltr}</span>
+                      </div>
+                      <input type="hidden" id="qedit-opt-type-${idx}" value="${initMode}" />
+                      <div class="flex items-center gap-1">
+                        <button type="button" id="qedit-opt-mode-btn-${idx}-text" onclick="setQuestionOptionType(${idx}, 'text')" class="${initMode === 'text' ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all' : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all'}">
+                          <i class="fa-solid fa-font mr-1"></i>Teks
+                        </button>
+                        <button type="button" id="qedit-opt-mode-btn-${idx}-image" onclick="setQuestionOptionType(${idx}, 'image')" class="${initMode === 'image' ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all' : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all'}">
+                          <i class="fa-brands fa-google-drive mr-1"></i>Gambar Drive
+                        </button>
+                        <button type="button" id="qedit-opt-mode-btn-${idx}-both" onclick="setQuestionOptionType(${idx}, 'both')" class="${initMode === 'both' ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all' : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all'}">
+                          <i class="fa-solid fa-layer-group mr-1"></i>Teks + Gambar
+                        </button>
+                      </div>
+                    </div>
+
+                    <div id="qedit-opt-text-wrap-${idx}" class="${initMode === 'image' ? 'hidden' : ''}">
+                      <input
+                        type="text"
+                        id="qedit-opt-${idx}"
+                        value="${opts[idx] || ''}"
+                        onfocus="setActiveMathTarget('qedit-opt-${idx}', 'Pilihan ${ltr}')"
+                        oninput="updateQuestionEditorPreview()"
+                        placeholder="Ketik teks Pilihan ${ltr} (bisa sisipkan simbol √, ^, pecahan, dll)"
+                        class="w-full px-3 py-2 rounded-xl bg-navy-950 border border-white/15 text-white font-semibold focus:border-gold-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div id="qedit-opt-img-wrap-${idx}" class="${initMode === 'text' ? 'hidden' : ''} space-y-2">
+                      <div class="relative">
+                        <input
+                          type="text"
+                          id="qedit-opt-img-${idx}"
+                          value="${optImgs[idx] || ''}"
+                          oninput="updateQuestionEditorPreview()"
+                          placeholder="Tempel link gambar Google Drive untuk Pilihan ${ltr} (https://drive.google.com/file/d/...)"
+                          class="w-full pl-9 pr-3 py-2 rounded-xl bg-navy-950 border border-sky-500/35 text-white font-semibold focus:border-gold-500 focus:outline-none"
+                        />
+                        <i class="fa-brands fa-google-drive text-sky-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                      </div>
+                      <div id="qedit-opt-thumb-box-${idx}" class="hidden p-2 rounded-xl bg-navy-950 border border-white/10 inline-flex items-center gap-2">
+                        <img id="qedit-opt-thumb-${idx}" src="" alt="Preview Pilihan ${ltr}" class="max-h-20 w-auto rounded-lg object-contain" />
+                        <span class="text-[10px] text-emerald-300 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>Gambar Pilihan ${ltr} Siap</span>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
             </div>
 
             <div>
@@ -7369,13 +7975,13 @@ service cloud.firestore {
               </select>
             </div>
 
-            <!-- PRATINJAU LANGSUNG HASIL RENDER MATEMATIKA -->
+            <!-- PRATINJAU LANGSUNG HASIL RENDER MATEMATIKA & GAMBAR OPSI -->
             <div class="p-3.5 rounded-2xl bg-navy-950/90 border border-sky-500/30 space-y-2">
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400 block">
-                <i class="fa-solid fa-eye mr-1"></i>Pratinjau Tampilan Soal &amp; Notasi Matematika
+                <i class="fa-solid fa-eye mr-1"></i>Pratinjau Tampilan Soal, Simbol Matematika &amp; Gambar Pilihan A–E
               </span>
               <div id="qedit-live-preview-text" class="text-xs sm:text-sm font-semibold text-white leading-relaxed whitespace-pre-line"></div>
-              <div id="qedit-live-preview-opts" class="flex flex-wrap gap-1.5 pt-1 text-[11px]"></div>
+              <div id="qedit-live-preview-opts" class="flex flex-wrap gap-2 pt-1 text-[11px]"></div>
             </div>
           </div>
         `,
@@ -7395,12 +8001,25 @@ service cloud.firestore {
       const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
       const qText = (document.getElementById('qedit-text')?.value || '').trim();
       const imageUrl = (document.getElementById('qedit-img')?.value || '').trim();
-      const options = [0, 1, 2, 3, 4].map(i => (document.getElementById(`qedit-opt-${i}`)?.value || '').trim() || `Opsi ${i + 1}`);
+
+      const optionTypes = [0, 1, 2, 3, 4].map(i => document.getElementById(`qedit-opt-type-${i}`)?.value || 'text');
+      const optionImages = [0, 1, 2, 3, 4].map(i => {
+        const mode = optionTypes[i];
+        const rawImg = (document.getElementById(`qedit-opt-img-${i}`)?.value || '').trim();
+        return mode === 'text' ? '' : rawImg;
+      });
+      const options = [0, 1, 2, 3, 4].map(i => {
+        const mode = optionTypes[i];
+        const rawText = (document.getElementById(`qedit-opt-${i}`)?.value || '').trim();
+        if (mode === 'image') return '';
+        if (!rawText && !optionImages[i]) return `Opsi ${i + 1}`;
+        return rawText;
+      });
       const correct = Number(document.getElementById('qedit-correct')?.value) || 0;
 
-      if (!qText) return;
+      if (!qText && !imageUrl) return;
 
-      const payload = { q: qText, options, correct, imageUrl };
+      const payload = { q: qText || 'Perhatikan gambar berikut:', options, optionImages, optionTypes, correct, imageUrl };
       if (!Array.isArray(QUESTION_BANK[bankKey])) QUESTION_BANK[bankKey] = [];
 
       if (editIndex !== null && editIndex >= 0 && editIndex < QUESTION_BANK[bankKey].length) {
