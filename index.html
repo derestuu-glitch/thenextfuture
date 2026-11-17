@@ -397,8 +397,6 @@
 
         attachCloudListeners();
 
-        window.HAS_EXPLICIT_PARTICIPANT_LOGIN = false;
-
         onAuthStateChanged(auth, async (user) => {
           if (typeof userWhitelistUnsubscribe === "function") {
             try { userWhitelistUnsubscribe(); } catch (e) {}
@@ -406,15 +404,6 @@
           }
 
           if (user && !user.isAnonymous && user.email) {
-            if (!window.HAS_EXPLICIT_PARTICIPANT_LOGIN) {
-              try {
-                await signOut(auth);
-              } catch (e) {}
-              if (typeof window.handleRevokedParticipantSession === "function") {
-                window.handleRevokedParticipantSession(null);
-              }
-              return;
-            }
             attachCloudListeners();
             const cleanEmail = user.email.toLowerCase();
 
@@ -1118,7 +1107,7 @@
             <i class="fa-solid fa-key text-gold-400"></i>
             <span>Ubah Kata Sandi</span>
           </button>
-          <button type="button" onclick="logoutLatihanParticipant()" class="px-4 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-extrabold border border-rose-500/35 transition-all flex items-center gap-2">
+          <button type="button" onclick="logoutParticipant()" class="px-4 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-extrabold border border-rose-500/35 transition-all flex items-center gap-2">
             <i class="fa-solid fa-right-from-bracket"></i>
             <span>Keluar</span>
           </button>
@@ -2539,14 +2528,10 @@
               Latihan mandiri ribuan variasi soal <strong>Numerik, Verbal, Logika, serta Ketelitian &amp; Tes Kraepelin Otomatis</strong> tanpa batasan timer. Setiap sesi menampilkan <strong>kunci jawaban dan pembahasan mendalam di akhir pengerjaan</strong>.
             </p>
           </div>
-          <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button type="button" id="latihan-psiko-access-pill" onclick="focusLatihanPsikoAuthCard()" class="px-3.5 py-2 rounded-2xl bg-rose-500/15 border border-rose-500/35 text-rose-300 text-xs font-extrabold flex items-center gap-1.5 hover:bg-rose-500/25 transition-all">
-              <i class="fa-solid fa-lock"></i> Terkunci (Login / Buat Akun Peserta)
-            </button>
-            <button type="button" id="lat-header-logout-btn" onclick="logoutLatihanParticipant()" class="hidden px-4 py-2 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold border border-rose-400/50 shadow-lg transition-all items-center gap-2">
-              <i class="fa-solid fa-right-from-bracket"></i>
-              <span>Log Out / Keluar Akun</span>
-            </button>
+          <div class="flex flex-col items-start lg:items-end gap-1.5 shrink-0">
+            <span id="latihan-psiko-access-pill" class="px-3.5 py-2 rounded-2xl bg-rose-500/15 border border-rose-500/35 text-rose-300 text-xs font-extrabold flex items-center gap-1.5">
+              <i class="fa-solid fa-lock"></i> Terkunci (Khusus Peserta Terdaftar)
+            </span>
           </div>
         </div>
 
@@ -2609,10 +2594,10 @@
           <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-navy-950 flex items-center justify-center text-2xl font-black mx-auto shadow-lg shadow-gold-500/25">
             <i class="fa-solid fa-shield-halved"></i>
           </div>
-          <span class="text-[11px] font-extrabold uppercase tracking-widest text-gold-400 block">Area Terproteksi Peserta • Khusus Latihan Soal Psiko</span>
-          <h2 class="text-2xl font-extrabold text-white">Portal Peserta Latihan Soal Psiko</h2>
+          <span class="text-[11px] font-extrabold uppercase tracking-widest text-gold-400 block">Area Terproteksi Peserta</span>
+          <h2 class="text-2xl font-extrabold text-white">Portal Peserta TNF CLASS</h2>
           <p class="text-xs text-slate-300 leading-relaxed">
-            Masuk atau buat kata sandi mandiri menggunakan alamat email khusus paket <strong>Latihan Soal Psikologi (Rp 99.000 • Akses Selamanya)</strong> yang telah diaktifkan setelah pembayaran.
+            Masuk atau buat kata sandi mandiri menggunakan alamat email yang telah diaktifkan setelah pembayaran (cukup 1x login terintegrasi untuk seluruh portal sesuai paket aktif akun Anda).
           </p>
         </div>
 
@@ -2710,10 +2695,6 @@
           <button type="button" onclick="openUpgradePackageModal('Paket Latihan Soal Psikologi (Akses Selamanya)')" class="btn-gold px-6 py-3 rounded-xl text-xs font-extrabold inline-flex items-center gap-2">
             <i class="fa-solid fa-circle-plus"></i>
             <span>Tambah Paket Latihan Soal Psiko (Rp 99.000 Selamanya)</span>
-          </button>
-          <button type="button" onclick="logoutParticipant()" class="px-5 py-3 rounded-xl bg-navy-950 hover:bg-navy-800 border border-white/15 text-slate-200 text-xs font-extrabold inline-flex items-center gap-2">
-            <i class="fa-solid fa-right-to-bracket text-gold-400"></i>
-            <span>Login dengan Akun Lain</span>
           </button>
         </div>
       </div>
@@ -2931,10 +2912,6 @@
               <i class="fa-solid fa-check-double"></i>
               <span>Selesai &amp; Lihat Pembahasan</span>
             </button>
-            <button type="button" onclick="logoutLatihanParticipant()" class="px-4 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/35 text-xs font-extrabold transition-all flex items-center gap-1.5">
-              <i class="fa-solid fa-right-from-bracket"></i>
-              <span>Keluar Akun</span>
-            </button>
           </div>
         </div>
 
@@ -3134,10 +3111,6 @@
               <button type="button" onclick="exitLatihanPsikoToLobby()" class="btn-gold px-5 py-3 rounded-2xl text-xs font-extrabold flex items-center gap-2">
                 <i class="fa-solid fa-layer-group"></i>
                 <span>Pilih Subtes Latihan Lain</span>
-              </button>
-              <button type="button" onclick="logoutLatihanParticipant()" class="px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold border border-rose-400/50 shadow-lg flex items-center gap-2 transition-all">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                <span>Log Out / Keluar Akun</span>
               </button>
             </div>
           </div>
@@ -5941,7 +5914,7 @@ service cloud.firestore {
       let canAccessEbook = false;
       let canAccessCatPsiko = false;
       let canAccessCatAkademik = false;
-      let canAccessLatihanPsiko = true;
+      let canAccessLatihanPsiko = false;
 
       effectiveList.forEach(pkg => {
         const pkgLower = pkg.toLowerCase();
@@ -6526,7 +6499,7 @@ service cloud.firestore {
         switchTniSubTab('ebook');
         return;
       }
-      if (!perms.canAccessEbook && (currentActiveTniSubTab === 'ebook' || pendingProtectedSubTab === 'ebook')) {
+      if (!perms.canAccessEbook && (perms.canAccessCatPsiko || perms.canAccessCatAkademik) && (currentActiveTniSubTab === 'ebook' || pendingProtectedSubTab === 'ebook')) {
         switchTniSubTab('cat');
         return;
       }
@@ -6564,12 +6537,8 @@ service cloud.firestore {
         document.getElementById('cpns-email-auth-gate')?.classList.remove('hidden');
       }
 
-      if (typeof isLatihanPsikoAccountLoggedIn === 'function' && !isLatihanPsikoAccountLoggedIn()) {
-        document.getElementById('latihan-psiko-lobby')?.classList.add('hidden');
-        document.getElementById('latihan-psiko-arena')?.classList.add('hidden');
-        document.getElementById('latihan-psiko-result')?.classList.add('hidden');
-        document.getElementById('latihan-psiko-restricted-notice')?.classList.add('hidden');
-        document.getElementById('latihan-psiko-auth-gate')?.classList.remove('hidden');
+      if (typeof updateLatihanPsikoAuthUI === 'function') {
+        updateLatihanPsikoAuthUI();
       }
 
       if (alertMessage) {
@@ -13011,6 +12980,7 @@ service cloud.firestore {
     };
 
     function updateLatihanPsikoAuthUI() {
+      const perms = getParticipantPermissions();
       const accountBar = document.getElementById('latihan-psiko-account-bar');
       const emailEl = document.getElementById('latihan-psiko-logged-in-email');
       const batchEl = document.getElementById('latihan-psiko-logged-in-batch');
@@ -13022,11 +12992,11 @@ service cloud.firestore {
       const arenaBox = document.getElementById('latihan-psiko-arena');
       const resultBox = document.getElementById('latihan-psiko-result');
 
-      if (isLatihanPsikoAccountLoggedIn() && currentLatihanPsikoUser) {
-        const durInfo = window.checkAccountDurationStatus(currentLatihanPsikoUser);
-        const activePackages = getUserPackagesList(currentLatihanPsikoUser);
+      if (perms.isAuthenticated && currentVerifiedUser) {
+        const durInfo = window.checkAccountDurationStatus(currentVerifiedUser);
+        const activePackages = getUserPackagesList(currentVerifiedUser);
         if (accountBar) accountBar.classList.remove('hidden');
-        if (emailEl) emailEl.textContent = `${currentLatihanPsikoUser.nama} (${currentLatihanPsikoUser.email})`;
+        if (emailEl) emailEl.textContent = `${currentVerifiedUser.nama} (${currentVerifiedUser.email})`;
         if (batchEl) {
           const badgesHtml = activePackages.map(pkg => `
             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gold-500/15 border border-gold-500/35 text-gold-300 text-[11px] font-extrabold">
@@ -13034,49 +13004,57 @@ service cloud.firestore {
             </span>
           `).join(' ');
           batchEl.innerHTML = `
-            <div class="flex flex-wrap items-center gap-1.5 mt-1"><span class="text-slate-300">Akun Khusus Latihan Psiko:</span> ${badgesHtml}</div>
+            <div class="flex flex-wrap items-center gap-1.5 mt-1"><span class="text-slate-300">Paket Aktif (${activePackages.length}):</span> ${badgesHtml}</div>
             <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
               <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-[11px] font-extrabold">
-                <i class="fa-solid fa-infinity text-[10px]"></i>
-                <span>Durasi Aktif: Aktif Selamanya (Lifetime Access)</span>
+                <i class="fa-regular fa-clock text-[10px]"></i>
+                <span>Durasi Aktif: ${durInfo.durationLabel}</span>
               </span>
               <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-navy-950 border border-white/15 text-slate-200 text-[10px] font-bold">
                 <i class="fa-regular fa-calendar-check text-gold-400"></i>
-                <span>${durInfo.isLifetime ? 'Berlaku Selamanya (Tanpa Batas Waktu)' : `Berlaku s/d ${durInfo.expiresAtFormatted}`}</span>
+                <span>${durInfo.isLifetime ? 'Berlaku Selamanya (Lifetime Access)' : `Berlaku s/d ${durInfo.expiresAtFormatted} (Sisa ${durInfo.remainingDays} Hari)`}</span>
               </span>
             </div>
           `;
         }
         if (upgradeStatusEl) {
-          upgradeStatusEl.classList.add('hidden');
-          upgradeStatusEl.innerHTML = '';
-        }
-        const headerLogoutBtn = document.getElementById('lat-header-logout-btn');
-        if (headerLogoutBtn) {
-          headerLogoutBtn.classList.remove('hidden');
-          headerLogoutBtn.classList.add('inline-flex');
+          if (currentVerifiedUser.upgradeRequest && currentVerifiedUser.upgradeRequest.targetBatch) {
+            const req = currentVerifiedUser.upgradeRequest;
+            const currentListText = activePackages.join(', ');
+            const waConfirm = `https://wa.me/6282339260231?text=${encodeURIComponent(`Halo Admin TNF CLASS Mataram, saya *${currentVerifiedUser.nama}* (${currentVerifiedUser.email}) ingin mengonfirmasi pembayaran *Penambahan / Upgrade Paket* (Paket aktif saat ini: *${currentListText}*) dengan menambahkan paket *${req.targetBatch}* (${req.targetPrice}). Berikut saya lampirkan bukti transfernya.`)}`;
+            upgradeStatusEl.classList.remove('hidden');
+            upgradeStatusEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left mr-1"></i>Pengajuan Penambahan Paket <strong>${req.targetBatch}</strong> menunggu konfirmasi Admin. <a href="${waConfirm}" target="_blank" rel="noopener noreferrer" class="underline text-emerald-300 ml-1">Kirim Bukti WA →</a>`;
+          } else {
+            upgradeStatusEl.classList.add('hidden');
+            upgradeStatusEl.innerHTML = '';
+          }
         }
         if (pill) {
-          pill.className = 'px-3.5 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-xs font-extrabold flex items-center gap-1.5';
-          pill.innerHTML = `<i class="fa-solid fa-unlock-keyhole"></i> Akun Aktif: ${currentLatihanPsikoUser.email}`;
+          if (perms.canAccessLatihanPsiko) {
+            pill.className = 'px-3.5 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-xs font-extrabold flex items-center gap-1.5';
+            pill.innerHTML = `<i class="fa-solid fa-unlock-keyhole"></i> Terbuka (${currentVerifiedUser.email})`;
+          } else {
+            pill.className = 'px-3.5 py-2 rounded-2xl bg-rose-500/15 border border-rose-500/35 text-rose-300 text-xs font-extrabold flex items-center gap-1.5';
+            pill.innerHTML = `<i class="fa-solid fa-lock"></i> Terkunci Paket (${currentVerifiedUser.email})`;
+          }
         }
         if (authGate) authGate.classList.add('hidden');
-        restrictedBox?.classList.add('hidden');
         if (!latihanRuntime.active && resultBox?.classList.contains('hidden')) {
-          lobbyBox?.classList.remove('hidden');
+          if (perms.canAccessLatihanPsiko) {
+            restrictedBox?.classList.add('hidden');
+            lobbyBox?.classList.remove('hidden');
+          } else {
+            lobbyBox?.classList.add('hidden');
+            restrictedBox?.classList.remove('hidden');
+          }
         }
       } else {
         latihanRuntime.active = false;
-        const headerLogoutBtn = document.getElementById('lat-header-logout-btn');
-        if (headerLogoutBtn) {
-          headerLogoutBtn.classList.add('hidden');
-          headerLogoutBtn.classList.remove('inline-flex');
-        }
         if (accountBar) accountBar.classList.add('hidden');
         if (upgradeStatusEl) upgradeStatusEl.classList.add('hidden');
         if (pill) {
-          pill.className = 'px-3.5 py-2 rounded-2xl bg-rose-500/15 border border-rose-500/35 text-rose-300 text-xs font-extrabold flex items-center gap-1.5 hover:bg-rose-500/25 transition-all';
-          pill.innerHTML = `<i class="fa-solid fa-lock"></i> Terkunci (Login / Buat Akun Peserta)`;
+          pill.className = 'px-3.5 py-2 rounded-2xl bg-rose-500/15 border border-rose-500/35 text-rose-300 text-xs font-extrabold flex items-center gap-1.5';
+          pill.innerHTML = `<i class="fa-solid fa-lock"></i> Terkunci (Khusus Peserta Terdaftar)`;
         }
         lobbyBox?.classList.add('hidden');
         restrictedBox?.classList.add('hidden');
@@ -13123,7 +13101,7 @@ service cloud.firestore {
         if (btnLogin) btnLogin.className = 'w-1/2 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all';
         confirmWrap?.classList.remove('hidden');
         forgotBtn?.classList.add('hidden');
-        if (submitBtn) submitBtn.textContent = 'Buat Kata Sandi & Buka Latihan Psiko';
+        if (submitBtn) submitBtn.textContent = 'Buat Kata Sandi & Buka Akses';
       } else {
         if (btnLogin) btnLogin.className = 'w-1/2 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 shadow transition-all';
         if (btnReg) btnReg.className = 'w-1/2 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all';
@@ -13143,7 +13121,7 @@ service cloud.firestore {
         : 'text-xs font-semibold text-center py-2.5 px-3.5 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30';
     }
 
-    // Fungsi Login & Buat Kata Sandi Mandiri Khusus untuk Halaman Latihan Soal Psiko Saja
+    // Sinkronkan secara terpadu: cukup 1x login di Latihan Soal Psiko akan langsung login juga di TNF TNI/POLRI & TNF CPNS (begitupun sebaliknya)
     async function submitLatihanParticipantAuth() {
       const email = (document.getElementById('lat-auth-email')?.value || '').trim().toLowerCase();
       const password = document.getElementById('lat-auth-password')?.value || '';
@@ -13163,127 +13141,35 @@ service cloud.firestore {
         return;
       }
 
+      const mainEmail = document.getElementById('auth-email');
+      const mainPass = document.getElementById('auth-password');
+      const mainConf = document.getElementById('auth-password-confirm');
+      if (mainEmail) mainEmail.value = email;
+      if (mainPass) mainPass.value = password;
+      if (mainConf) mainConf.value = confirmPass;
+      switchAuthTab(currentLatihanAuthTab);
+
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Memverifikasi Akun Latihan Psiko...';
+        submitBtn.textContent = 'Memverifikasi Akses...';
       }
 
       try {
-        let userRecord = null;
-        if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.checkEmailAuthorized === 'function') {
-          try {
-            userRecord = await window.TNF_FIREBASE.checkEmailAuthorized(email);
-          } catch (e) {}
-        }
-        if (!userRecord) {
-          userRecord = window.getLocalAuthorizedUser(email);
-        }
-
-        if (!userRecord) {
-          showLatihanAuthAlert('Email Anda belum terdaftar pada Paket Latihan Soal Psiko di sistem TNF CLASS. Silakan daftar paket Rp 99.000 terlebih dahulu atau hubungi Admin WA.');
-          return;
-        }
-
-        if (userRecord.status === 'pending') {
-          showLatihanAuthAlert(`Email Anda sudah terdaftar untuk ${userRecord.batch || 'Paket Latihan Soal Psikologi'}, namun statusnya masih MENUNGGU AKTIVASI ADMIN setelah konfirmasi bukti pembayaran melalui WhatsApp (0823-3926-0231).`);
-          return;
-        }
-
-        if (userRecord.status !== 'active') {
-          showLatihanAuthAlert('Status akses email Anda saat ini NONAKTIF. Silakan hubungi Admin TNF CLASS via WhatsApp (0823-3926-0231).');
-          return;
-        }
-
-        const authorizedRecord = ensureUserDurationFields(userRecord);
-        const resolvedPackages = getUserPackagesList(authorizedRecord);
-
-        // Pastikan sesi ini tercatat khusus untuk akun Latihan Soal Psiko
-        const latihanSessionProfile = ensureUserDurationFields({
-          email: email,
-          nama: authorizedRecord.nama || email,
-          batch: resolvedPackages.join(' + ') || authorizedRecord.batch || 'Paket Latihan Soal Psikologi (Akses Selamanya)',
-          packages: resolvedPackages.length > 0 ? resolvedPackages : ['Paket Latihan Soal Psikologi (Akses Selamanya)'],
-          activatedAt: authorizedRecord.activatedAt || Date.now(),
-          expiresAt: authorizedRecord.expiresAt,
-          durationDays: authorizedRecord.durationDays || 36500,
-          durationLabel: authorizedRecord.durationLabel || 'Aktif Selamanya (Lifetime Access)',
-          catPsikoUsed: Number(authorizedRecord.catPsikoUsed) || 0,
-          catAkademikUsed: Number(authorizedRecord.catAkademikUsed) || 0
-        });
-
-        // Tandai login eksplisit agar listener Firebase tidak me-reset sesi saat pindah subtes
-        window.HAS_EXPLICIT_PARTICIPANT_LOGIN = true;
-        currentLatihanPsikoUser = latihanSessionProfile;
-
-        if (currentLatihanAuthTab === 'register') {
-          if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.registerParticipantWithPassword === 'function') {
-            await window.TNF_FIREBASE.registerParticipantWithPassword(email, password);
-          }
+        await submitParticipantAuth();
+        const mainMsg = document.getElementById('auth-status-msg');
+        if (!isStudentAccessVerified() && mainMsg && !mainMsg.classList.contains('hidden')) {
+          showLatihanAuthAlert(mainMsg.textContent, false);
         } else {
-          if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.loginParticipantWithPassword === 'function') {
-            await window.TNF_FIREBASE.loginParticipantWithPassword(email, password);
-          }
-        }
-
-        // Sekali login langsung membuka seluruh 4 kelompok latihan soal psiko sekaligus
-        currentLatihanPsikoUser = latihanSessionProfile;
-        switchLatihanPsikoGroup('all');
-        updateLatihanPsikoAuthUI();
-        renderLatihanPsikoLobby();
-      } catch (err) {
-        const code = err?.code || '';
-        if (code === 'auth/email-already-in-use') {
-          showLatihanAuthAlert('Email ini sudah memiliki kata sandi. Silakan pindah ke tab "Masuk (Login)" atau klik "Lupa Kata Sandi?".');
-        } else if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-          showLatihanAuthAlert('Email atau kata sandi salah. Jika baru pertama kali masuk, silakan pilih tab "Buat Sandi Baru".');
-        } else {
-          showLatihanAuthAlert(err?.message || 'Gagal masuk ke akun Latihan Soal Psiko. Periksa koneksi internet Anda.');
+          updateLatihanPsikoAuthUI();
+          renderLatihanPsikoLobby();
         }
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.textContent = currentLatihanAuthTab === 'register'
-            ? 'Buat Kata Sandi & Buka Latihan Psiko'
+            ? 'Buat Kata Sandi & Buka Akses'
             : 'Masuk ke Materi & Latihan Soal Psiko';
         }
-      }
-    }
-
-    async function logoutLatihanParticipant() {
-      // 1. Bersihkan seluruh state sesi & hentikan semua tes secara instan (sinkron tanpa menunggu jaringan)
-      currentLatihanPsikoUser = null;
-      currentVerifiedUser = null;
-      window.HAS_EXPLICIT_PARTICIPANT_LOGIN = false;
-      latihanRuntime.active = false;
-      latihanRuntime.questions = [];
-      latihanRuntime.answers = [];
-      latihanRuntime.flags = [];
-      latihanRuntime.ketelitianItems = [];
-      latihanRuntime.kraepelinColumns = [];
-
-      const passInput = document.getElementById('lat-auth-password');
-      const confInput = document.getElementById('lat-auth-password-confirm');
-      if (passInput) passInput.value = '';
-      if (confInput) confInput.value = '';
-
-      // 2. Tutup seluruh tampilan tes/lobby & tampilkan kembali halaman Login Latihan Psiko seketika
-      document.getElementById('latihan-psiko-arena')?.classList.add('hidden');
-      document.getElementById('latihan-psiko-result')?.classList.add('hidden');
-      document.getElementById('latihan-psiko-lobby')?.classList.add('hidden');
-      document.getElementById('latihan-psiko-restricted-notice')?.classList.add('hidden');
-      document.getElementById('latihan-psiko-account-bar')?.classList.add('hidden');
-      document.getElementById('latihan-psiko-auth-gate')?.classList.remove('hidden');
-
-      updateLatihanPsikoAuthUI();
-      updateAccessStatusPills();
-      showLatihanAuthAlert('Anda telah berhasil Log Out (Keluar Akun). Seluruh sesi tes latihan soal psikologi telah ditutup dan dikunci kembali.', true);
-      focusLatihanPsikoAuthCard();
-
-      // 3. Putuskan sesi Firebase di latar belakang
-      if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.logoutParticipant === 'function') {
-        try {
-          await window.TNF_FIREBASE.logoutParticipant();
-        } catch (e) {}
       }
     }
 
@@ -13335,7 +13221,7 @@ service cloud.firestore {
       document.getElementById('latihan-psiko-result')?.classList.add('hidden');
 
       updateLatihanPsikoAuthUI();
-      if (isLatihanPsikoAccountLoggedIn()) {
+      if (isStudentAccessVerified()) {
         renderLatihanPsikoLobby();
       }
     }
@@ -13537,7 +13423,12 @@ service cloud.firestore {
 
     function startLatihanPsikoTopic(bankKey) {
       const perms = getParticipantPermissions();
-      if (!isLatihanPsikoAccountLoggedIn()) {
+      if (!perms.isAuthenticated) {
+        updateLatihanPsikoAuthUI();
+        showLatihanAuthAlert('Silakan masuk atau buat kata sandi terlebih dahulu.', false);
+        return;
+      }
+      if (!perms.canAccessLatihanPsiko) {
         updateLatihanPsikoAuthUI();
         showLatihanAuthAlert('Silakan login atau buat kata sandi terlebih dahulu untuk memulai latihan soal.', false);
         focusLatihanPsikoAuthCard();
@@ -13745,7 +13636,12 @@ service cloud.firestore {
 
     function startLatihanKetelitian(subMode) {
       const perms = getParticipantPermissions();
-      if (!isLatihanPsikoAccountLoggedIn()) {
+      if (!perms.isAuthenticated) {
+        updateLatihanPsikoAuthUI();
+        showLatihanAuthAlert('Silakan masuk atau buat kata sandi terlebih dahulu.', false);
+        return;
+      }
+      if (!perms.canAccessLatihanPsiko) {
         updateLatihanPsikoAuthUI();
         showLatihanAuthAlert('Silakan login atau buat kata sandi terlebih dahulu untuk memulai latihan ketelitian.', false);
         focusLatihanPsikoAuthCard();
