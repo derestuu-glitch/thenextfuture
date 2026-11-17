@@ -1333,14 +1333,14 @@
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <span class="font-extrabold text-rose-300 flex items-center gap-1.5">
                       <i class="fa-solid fa-lock"></i>
-                      <span>Terkunci untuk Peserta Jalur Batch Akademik</span>
+                      <span>CAT Psikologi TNI/POLRI Belum Termasuk di Paket Aktif Anda</span>
                     </span>
                     <button type="button" onclick="openUpgradePackageModal('Paket Batch Simulasi CAT Psiko (1x CAT)')" class="px-3 py-1.5 rounded-lg bg-gold-500 text-navy-950 text-[11px] font-extrabold hover:brightness-105">
                       <i class="fa-solid fa-circle-plus mr-1"></i>Tambah Paket Psiko
                     </button>
                   </div>
                   <p class="text-[11px] text-slate-300 leading-relaxed">
-                    Paket aktif Anda saat ini hanya mencakup <strong>Tes Kemampuan Akademik (TKA)</strong>. Ajukan penambahan paket <strong>Jalur Batch Psiko</strong> atau <strong>All In One</strong> (paket lama Anda tetap aktif) dan konfirmasi melalui WA agar Admin membuka akses CAT Psikologi.
+                    Paket aktif akun Anda saat ini belum mencakup <strong>Simulasi CAT Psikologi TNI/POLRI</strong>. Silakan ajukan penambahan <strong>Paket Batch Simulasi CAT Psiko (1x CAT)</strong> atau <strong>Paket All In One TNI/POLRI (Silver/Gold/Premium)</strong> dan tunggu konfirmasi Admin di Dashboard Admin.
                   </p>
                 </div>
 
@@ -1372,14 +1372,14 @@
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <span class="font-extrabold text-rose-300 flex items-center gap-1.5">
                       <i class="fa-solid fa-lock"></i>
-                      <span>Terkunci untuk Peserta Jalur Batch Psiko</span>
+                      <span>CAT Akademik (TKA) TNI/POLRI Belum Termasuk di Paket Aktif Anda</span>
                     </span>
                     <button type="button" onclick="openUpgradePackageModal('Paket Batch Simulasi CAT Akademik (1x CAT)')" class="px-3 py-1.5 rounded-lg bg-gold-500 text-navy-950 text-[11px] font-extrabold hover:brightness-105">
                       <i class="fa-solid fa-circle-plus mr-1"></i>Tambah Paket Akademik
                     </button>
                   </div>
                   <p class="text-[11px] text-slate-300 leading-relaxed">
-                    Paket aktif Anda saat ini hanya mencakup <strong>Tes Psikologi (Psiko I Terpadu)</strong>. Ajukan penambahan paket <strong>Jalur Batch Akademik</strong> atau <strong>All In One</strong> (paket lama Anda tetap aktif) dan konfirmasi melalui WA agar Admin membuka akses CAT Akademik.
+                    Paket aktif akun Anda saat ini belum mencakup <strong>Simulasi CAT Akademik (TKA) TNI/POLRI</strong>. Silakan ajukan penambahan <strong>Paket Batch Simulasi CAT Akademik (1x CAT)</strong> atau <strong>Paket All In One TNI/POLRI (Silver/Gold/Premium)</strong> dan tunggu konfirmasi Admin di Dashboard Admin.
                   </p>
                 </div>
 
@@ -2415,6 +2415,22 @@
             </div>
           </div>
 
+          <!-- Banner Pembatasan Jika Akun Belum Memiliki Paket Simulasi CAT CPNS / All In One CPNS -->
+          <div id="cpns-cat-restricted-banner" class="hidden p-5 rounded-2xl bg-rose-500/15 border border-rose-500/35 space-y-3 text-xs">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="font-extrabold text-rose-300 flex items-center gap-1.5 text-sm">
+                <i class="fa-solid fa-lock"></i>
+                <span id="cpns-cat-restricted-title">Simulasi CAT CPNS Tidak Tersedia pada Paket Aktif Anda</span>
+              </span>
+              <button type="button" onclick="openUpgradePackageModal('Paket Simulasi CAT SKD CPNS (1x CAT)')" class="px-4 py-2 rounded-xl bg-gold-500 text-navy-950 text-xs font-extrabold hover:brightness-105 shadow">
+                <i class="fa-solid fa-circle-plus mr-1"></i>Tambah Paket CAT CPNS / All In One CPNS
+              </button>
+            </div>
+            <p id="cpns-cat-restricted-desc" class="text-xs text-slate-300 leading-relaxed">
+              Akun Anda saat ini belum terdaftar pada <strong>Paket Simulasi CAT SKD CPNS</strong> maupun <strong>Paket Bimbel All In One CPNS (Silver/Gold/Premium)</strong>. Silakan ajukan penambahan paket dan tunggu konfirmasi Admin di Dashboard Admin untuk membuka akses Simulasi CAT CPNS.
+            </p>
+          </div>
+
           <div id="cpns-lobby-cat-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <button type="button" onclick="startCpnsFullCatSubtest('cpns_twk')" class="hidden">Mulai Simulasi CAT TWK</button>
             <button type="button" onclick="startCpnsFullCatSubtest('cpns_tiu')" class="hidden">Mulai Simulasi CAT TIU</button>
@@ -2468,16 +2484,16 @@
               <i class="fa-solid fa-lock"></i>
             </div>
             <div class="space-y-1.5">
-              <span class="text-[11px] font-extrabold uppercase tracking-widest text-rose-300 block">Akses Fitur Dibatasi</span>
-              <h3 class="text-xl font-extrabold text-white">Fitur E-Book &amp; Modul PDF Tidak Tersedia untuk Paket Khusus CAT</h3>
-              <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Akun Anda saat ini terdaftar pada paket <strong>Simulasi CAT Saja</strong>. Untuk membuka seluruh perpustakaan E-Book &amp; Modul PDF CPNS (TWK, TIU, TKP, dan SKB), silakan ajukan upgrade ke <strong>Paket Bimbel CPNS (Silver / Gold / Premium)</strong> atau <strong>Paket Akses E-Book</strong>.
+              <span class="text-[11px] font-extrabold uppercase tracking-widest text-rose-300 block">Akses Fitur Dibatasi Sesuai Paket Aktif</span>
+              <h3 id="cpns-ebook-restricted-title" class="text-xl font-extrabold text-white">Fitur E-Book &amp; Modul PDF CPNS Tidak Tersedia pada Paket Anda</h3>
+              <p id="cpns-ebook-restricted-desc" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Akun Anda saat ini belum terdaftar pada <strong>Paket Akses E-Book CPNS</strong> maupun <strong>Paket Bimbel All In One CPNS (Silver / Gold / Premium)</strong>. Silakan ajukan penambahan paket dan tunggu konfirmasi Admin di Dashboard Admin untuk membuka E-Book &amp; Modul PDF CPNS.
               </p>
             </div>
             <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <button type="button" onclick="switchCpnsSubTab('cat')" class="px-5 py-3 rounded-xl bg-navy-950 hover:bg-navy-800 border border-white/15 text-slate-200 text-xs font-extrabold flex items-center gap-2">
-                <i class="fa-solid fa-laptop-code text-gold-400"></i>
-                <span>Buka Simulasi CAT SKD CPNS</span>
+              <button type="button" onclick="openUpgradePackageModal('Paket Akses E-Book CPNS')" class="px-5 py-3 rounded-xl bg-navy-950 hover:bg-navy-800 border border-sky-500/40 text-sky-300 text-xs font-extrabold flex items-center gap-2">
+                <i class="fa-solid fa-book-bookmark"></i>
+                <span>Tambah Paket E-Book CPNS (Rp 100.000)</span></button><button type="button" onclick="switchCpnsSubTab('cat')" class="px-5 py-3 rounded-xl bg-navy-950 hover:bg-navy-800 border border-white/15 text-slate-200 text-xs font-extrabold flex items-center gap-2"><i class="fa-solid fa-laptop-code text-gold-400"></i><span>Buka Simulasi CAT SKD CPNS</span>
               </button>
               <button type="button" onclick="openUpgradePackageModal('Paket Bimbel CPNS Silver (1 Bulan)')" class="btn-gold px-5 py-3 rounded-xl text-xs font-extrabold inline-flex items-center gap-2">
                 <i class="fa-solid fa-circle-plus"></i>
@@ -3663,18 +3679,22 @@
           </button>
 
           <div id="pkg-group-body-ebook" class="hidden p-5 sm:p-6 pt-0 space-y-4 border-t border-white/10">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-4 items-center">
-              <div class="lg:col-span-5 glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-amber-500/35">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4">
+              <!-- Kartu 1: Paket Akses E-Book TNI/POLRI -->
+              <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-amber-500/35">
                 <div class="space-y-2">
                   <span class="inline-block px-2.5 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 text-[10px] font-extrabold uppercase">
-                    <i class="fa-solid fa-book-open mr-1"></i>Promo Diskon 80% • Aktif 30 Hari
+                    <i class="fa-solid fa-book-open mr-1"></i>Divisi TNI / POLRI • Aktif 30 Hari
                   </span>
-                  <h3 class="text-lg font-extrabold text-white leading-snug">Paket Akses E-Book Saja</h3>
+                  <h3 class="text-lg font-extrabold text-white leading-snug">Paket Akses E-Book TNI/POLRI</h3>
                   <div>
                     <span class="text-xs line-through text-slate-400 block">Harga Normal Rp 500.000</span>
                     <span class="text-3xl font-extrabold text-gold-400">Rp 100.000</span>
-                    <span class="text-xs text-slate-300 block mt-0.5">Full Modul PDF TNI/POLRI &amp; CPNS (30 Hari)</span>
+                    <span class="text-xs text-slate-300 block mt-0.5">Khusus E-Book &amp; Modul PDF TNI/POLRI (30 Hari)</span>
                   </div>
+                  <p class="text-xs text-slate-300 leading-relaxed pt-1">
+                    Membuka akses khusus perpustakaan <strong>E-Book &amp; Modul PDF TNI/POLRI</strong> (Psikologi, Akademik TKA PU/TWK/TBI/MTK &amp; Panduan Jasmani).
+                  </p>
                 </div>
 
                 <div class="space-y-2 pt-2 border-t border-white/10">
@@ -3682,21 +3702,38 @@
                     <span>Detail Paket E-Book</span>
                     <i class="fa-solid fa-chevron-down"></i>
                   </button>
-                  <button type="button" onclick="handlePackageActionClick('Paket Akses E-Book Saja', 'Rp 100.000')" class="w-full btn-gold py-3 rounded-xl text-xs font-extrabold text-center">
+                  <button type="button" onclick="handlePackageActionClick('Paket Akses E-Book TNI/POLRI', 'Rp 100.000')" class="w-full btn-gold py-3 rounded-xl text-xs font-extrabold text-center">
                     Daftar Akses E-Book
                   </button>
                 </div>
               </div>
 
-              <div class="lg:col-span-7 p-5 rounded-2xl bg-navy-950/85 border border-white/10 space-y-3 text-xs text-slate-300">
-                <h4 class="text-sm font-extrabold text-white flex items-center gap-2">
-                  <i class="fa-solid fa-file-pdf text-gold-400"></i> Materi E-Book &amp; Silabus yang Terbuka di Akun Anda
-                </h4>
-                <ul class="space-y-2">
-                  <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check text-gold-400 mt-0.5"></i><span><strong>Modul TNI/POLRI:</strong> Diktat Psikologi (Kecerdasan, Kepribadian, Kecermatan), Akademik TKA (PU, TWK, TBI, MTK), dan Panduan Periodisasi Jasmani.</span></li>
-                  <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check text-gold-400 mt-0.5"></i><span><strong>Modul CPNS &amp; Kedinasan:</strong> Modul HOTS SKD BKN (TWK, TIU Verbal/Numerik/Figural, TKP Poin 5) serta Panduan SKB &amp; Wawancara ASN.</span></li>
-                  <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check text-gold-400 mt-0.5"></i><span><strong>Fleksibel Upgrade:</strong> Dapat di-upgrade kapan saja ke Paket Simulasi CAT atau Paket Bimbel Terpadu tanpa kehilangan masa aktif.</span></li>
-                </ul>
+              <!-- Kartu 2: Paket Akses E-Book CPNS -->
+              <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-sky-500/35">
+                <div class="space-y-2">
+                  <span class="inline-block px-2.5 py-0.5 rounded-lg bg-sky-500/15 text-sky-300 text-[10px] font-extrabold uppercase">
+                    <i class="fa-solid fa-book-bookmark mr-1"></i>Divisi CPNS &amp; Kedinasan • Aktif 30 Hari
+                  </span>
+                  <h3 class="text-lg font-extrabold text-white leading-snug">Paket Akses E-Book CPNS</h3>
+                  <div>
+                    <span class="text-xs line-through text-slate-400 block">Harga Normal Rp 500.000</span>
+                    <span class="text-3xl font-extrabold text-sky-300">Rp 100.000</span>
+                    <span class="text-xs text-slate-300 block mt-0.5">Khusus E-Book &amp; Modul PDF CPNS BKN (30 Hari)</span>
+                  </div>
+                  <p class="text-xs text-slate-300 leading-relaxed pt-1">
+                    Membuka akses khusus perpustakaan <strong>E-Book &amp; Modul PDF CPNS</strong> (Modul HOTS SKD TWK, TIU, TKP Poin 5 &amp; Panduan SKB ASN).
+                  </p>
+                </div>
+
+                <div class="space-y-2 pt-2 border-t border-white/10">
+                  <button type="button" onclick="openPackageDropdownModal('ebook_cpns_only')" class="w-full py-2.5 px-4 rounded-xl bg-navy-950 hover:bg-navy-800 border border-sky-500/35 text-sky-300 text-xs font-extrabold flex items-center justify-between transition-all">
+                    <span>Detail Paket E-Book CPNS</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </button>
+                  <button type="button" onclick="handlePackageActionClick('Paket Akses E-Book CPNS', 'Rp 100.000')" class="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:brightness-105 text-navy-950 text-xs font-extrabold text-center shadow-lg">
+                    Daftar E-Book CPNS (100k)
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -4371,7 +4408,8 @@ service cloud.firestore {
                   <option value="Paket Bimbel CPNS Premium (3 Bulan)">Paket Bimbel CPNS Premium (3 Bulan) — Rp 1.850.000</option>
                   <option value="Paket Simulasi CAT SKD CPNS (1x CAT)">Paket Simulasi CAT SKD CPNS (1x CAT) — Rp 100.000</option>
                   <option value="Paket Latihan Soal Psikologi (Akses Selamanya)">Paket Latihan Soal Psikologi (Akses Selamanya) — Rp 99.000</option>
-                  <option value="Paket Akses E-Book Saja">Paket Akses E-Book Saja — Rp 100.000</option>
+                  <option value="Paket Akses E-Book TNI/POLRI">Paket Akses E-Book TNI/POLRI — Rp 100.000</option>
+                  <option value="Paket Akses E-Book CPNS">Paket Akses E-Book CPNS — Rp 100.000</option>
                   <option value="Batch 1 - 2026">Batch 1 - 2026</option>
                 </select>
               </div>
@@ -5157,7 +5195,7 @@ service cloud.firestore {
           akademikQuota: Infinity
         };
       }
-      if (lower.includes('e-book saja') || lower.includes('ebook saja')) {
+      if (lower.includes('e-book') || lower.includes('ebook')) {
         return {
           days: 30,
           months: 1,
@@ -5440,9 +5478,14 @@ service cloud.firestore {
         desc: 'Akses SELAMANYA ribuan soal latihan Psikologi (Numerik, Verbal, Logika, Ketelitian & Kraepelin) + Pembahasan Akhir Sesi'
       },
       {
-        name: 'Paket Akses E-Book Saja',
+        name: 'Paket Akses E-Book TNI/POLRI',
         price: 'Rp 100.000',
-        desc: 'Khusus akses penuh perpustakaan E-Book & Modul PDF Kurikulum TNF CLASS selama 30 hari'
+        desc: 'Khusus membuka perpustakaan E-Book & Modul PDF TNI/POLRI (Psikologi, Akademik TKA & Jasmani) selama 30 hari'
+      },
+      {
+        name: 'Paket Akses E-Book CPNS',
+        price: 'Rp 100.000',
+        desc: 'Khusus membuka perpustakaan E-Book & Modul PDF CPNS BKN (TWK, TIU, TKP & SKB) selama 30 hari'
       }
     ];
 
@@ -5673,21 +5716,38 @@ service cloud.firestore {
         packageName: 'Paket Latihan Soal Psikologi (Akses Selamanya)'
       },
       ebook_only: {
-        badge: 'Promo Spesial • Akses Digital PDF',
-        title: 'Paket Akses E-Book Saja',
+        badge: 'Divisi TNI / POLRI • Akses Digital PDF',
+        title: 'Paket Akses E-Book TNI/POLRI',
         price: 'Rp 100.000',
         normalPrice: 'Harga Normal Rp 500.000',
-        period: '/ akses E-Book',
-        tag: 'Diskon 80%',
+        period: '/ 30 Hari',
+        tag: 'Khusus E-Book TNI/POLRI',
         features: [
-          'Harga promo Rp 100.000 dari harga normal Rp 500.000.',
-          'Akses penuh ke seluruh koleksi E-Book & Modul PDF Kurikulum TNF CLASS.',
-          'Mencakup Modul Psikologi (Kecerdasan, Kepribadian & Kecermatan), Modul Akademik (PU, TWK, TBI, MTK, SKD) & Panduan Jasmani.',
-          'Dapat dibaca dan diunduh langsung melalui akun email peserta di Portal TNF CLASS.'
+          'Harga promo Rp 100.000 dari harga normal Rp 500.000 (Masa aktif 30 hari).',
+          'Membuka akses khusus seluruh E-Book & Modul PDF Divisi TNI/POLRI.',
+          'Mencakup Modul Psikologi (Kecerdasan, Kepribadian & Kecermatan), Akademik TKA (PU, TWK, TBI, MTK) & Panduan Jasmani.',
+          'Tidak termasuk akses E-Book CPNS maupun Simulasi CAT Online (dapat ditambah kapan saja melalui fitur Tambah Paket).'
         ],
-        note: 'Paket ini dikhususkan hanya untuk akses E-Book & Modul PDF saja (tidak termasuk sesi Simulasi CAT Online).',
+        note: 'Paket ini dikhususkan hanya untuk akses E-Book & Modul PDF TNI/POLRI saja.',
         actionType: 'checkout',
-        packageName: 'Paket Akses E-Book Saja'
+        packageName: 'Paket Akses E-Book TNI/POLRI'
+      },
+      ebook_cpns_only: {
+        badge: 'Divisi CPNS & Kedinasan • Akses Digital PDF',
+        title: 'Paket Akses E-Book CPNS',
+        price: 'Rp 100.000',
+        normalPrice: 'Harga Normal Rp 500.000',
+        period: '/ 30 Hari',
+        tag: 'Khusus E-Book CPNS',
+        features: [
+          'Harga promo Rp 100.000 dari harga normal Rp 500.000 (Masa aktif 30 hari).',
+          'Membuka akses khusus seluruh E-Book & Modul PDF Divisi CPNS & Sekolah Kedinasan.',
+          'Mencakup Modul HOTS SKD BKN (TWK, TIU Verbal/Numerik/Figural, TKP Poin 5) & Modul Strategi SKB ASN.',
+          'Tidak termasuk akses E-Book TNI/POLRI maupun Simulasi CAT Online (dapat ditambah kapan saja melalui fitur Tambah Paket).'
+        ],
+        note: 'Paket ini dikhususkan hanya untuk akses E-Book & Modul PDF CPNS saja.',
+        actionType: 'checkout',
+        packageName: 'Paket Akses E-Book CPNS'
       }
     };
 
@@ -5912,56 +5972,91 @@ service cloud.firestore {
           isEbookOnly: false,
           isComboCat: false,
           canAccessEbook: false,
+          canAccessEbookTni: false,
+          canAccessEbookCpns: false,
           canAccessCatPsiko: false,
-          canAccessCatAkademik: false
+          canAccessCatTniPsiko: false,
+          canAccessCatAkademik: false,
+          canAccessCatTniAkademik: false,
+          canAccessCatCpns: false,
+          canAccessLatihanPsiko: false
         };
       }
-      const userPackages = getUserPackagesList(currentVerifiedUser);
-      const effectiveList = userPackages.length > 0 ? userPackages : [currentVerifiedUser.batch || 'Peserta Aktif'];
 
-      let canAccessEbook = false;
-      let canAccessCatPsiko = false;
-      let canAccessCatAkademik = false;
+      const userPackages = getUserPackagesList(currentVerifiedUser);
+      const effectiveList = userPackages.length > 0 ? userPackages : [currentVerifiedUser.batch || ''];
+
+      let canAccessEbookTni = false;
+      let canAccessEbookCpns = false;
+      let canAccessCatTniPsiko = false;
+      let canAccessCatTniAkademik = false;
+      let canAccessCatCpns = false;
       let canAccessLatihanPsiko = false;
 
       effectiveList.forEach(pkg => {
-        const pkgLower = pkg.toLowerCase();
-        const isAllInOne = pkgLower.includes('all in one') || pkgLower.includes('silver') || pkgLower.includes('gold') || pkgLower.includes('premium');
-        const isLatihanPsikoPkg = pkgLower.includes('latihan soal psikologi') || pkgLower.includes('selamanya') || pkgLower.includes('99.000') || pkgLower.includes('99k');
-        const isEbookOnlyPkg = pkgLower.includes('e-book saja') || pkgLower.includes('ebook saja');
-        const isComboCat = pkgLower.includes('gabungan cat') || (pkgLower.includes('psiko') && pkgLower.includes('akademik'));
-        const isPsiko = pkgLower.includes('psiko') && !isAllInOne && !isComboCat && !isLatihanPsikoPkg;
-        const isAkademik = pkgLower.includes('akademik') && !isAllInOne && !isComboCat;
+        const pkgLower = (pkg || '').toLowerCase().trim();
+        if (!pkgLower) return;
 
-        if (isAllInOne) {
-          canAccessEbook = true;
-          canAccessCatPsiko = true;
-          canAccessCatAkademik = true;
-          canAccessLatihanPsiko = true;
+        const hasCpnsWord = pkgLower.includes('cpns');
+        const isAllInOneKeywords = pkgLower.includes('all in one') || pkgLower.includes('silver') || pkgLower.includes('gold') || pkgLower.includes('premium') || pkgLower === 'batch 1 - 2026';
+
+        // 1. Paket All In One TNI/POLRI (Silver / Gold / Premium tanpa kata CPNS)
+        //    -> Hanya membuka CAT TNI/POLRI (Psiko + Akademik) & E-Book TNI/POLRI. Tidak membuka CPNS maupun Latihan Soal Psiko.
+        const isAllInOneTniPolri = isAllInOneKeywords && !hasCpnsWord;
+
+        // 2. Paket All In One CPNS (Bimbel CPNS Silver / Gold / Premium)
+        //    -> Hanya membuka Simulasi CAT CPNS & E-Book CPNS. Tidak membuka TNI/POLRI maupun Latihan Soal Psiko.
+        const isAllInOneCpns = isAllInOneKeywords && hasCpnsWord;
+
+        // 3. Paket Latihan Soal Psikologi (Rp 99.000 Selamanya)
+        //    -> Hanya membuka halaman Latihan Soal Psiko.
+        const isLatihanPsikoPkg = pkgLower.includes('latihan soal psikologi') || pkgLower.includes('selamanya') || pkgLower.includes('99.000') || pkgLower.includes('99k');
+
+        // 4. Paket E-Book TNI/POLRI vs Paket E-Book CPNS
+        const isEbookCpnsPkg = (pkgLower.includes('e-book') || pkgLower.includes('ebook')) && hasCpnsWord;
+        const isEbookTniPkg = (pkgLower.includes('e-book') || pkgLower.includes('ebook')) && !hasCpnsWord;
+
+        // 5. Paket Simulasi CAT CPNS (1x CAT / 3x CAT SKD CPNS)
+        const isCatCpnsPkg = !isAllInOneCpns && !isEbookCpnsPkg && hasCpnsWord && (pkgLower.includes('cat') || pkgLower.includes('skd'));
+
+        // 6. Paket Gabungan CAT Psiko + Akademik (Polri)
+        const isComboCatTni = !isAllInOneTniPolri && !hasCpnsWord && (pkgLower.includes('gabungan cat') || (pkgLower.includes('psiko') && pkgLower.includes('akademik')));
+
+        // 7. Paket CAT TNI/POLRI Psiko Saja
+        const isCatTniPsikoOnly = !isAllInOneTniPolri && !isComboCatTni && !isLatihanPsikoPkg && !hasCpnsWord && pkgLower.includes('psiko');
+
+        // 8. Paket CAT TNI/POLRI Akademik Saja
+        const isCatTniAkademikOnly = !isAllInOneTniPolri && !isComboCatTni && !hasCpnsWord && pkgLower.includes('akademik');
+
+        if (isAllInOneTniPolri) {
+          canAccessEbookTni = true;
+          canAccessCatTniPsiko = true;
+          canAccessCatTniAkademik = true;
+        } else if (isAllInOneCpns) {
+          canAccessEbookCpns = true;
+          canAccessCatCpns = true;
         } else if (isLatihanPsikoPkg) {
           canAccessLatihanPsiko = true;
-        } else if (isEbookOnlyPkg) {
-          canAccessEbook = true;
-        } else if (isComboCat) {
-          canAccessCatPsiko = true;
-          canAccessCatAkademik = true;
-        } else if (isPsiko) {
-          canAccessCatPsiko = true;
-        } else if (isAkademik) {
-          canAccessCatAkademik = true;
-        } else {
-          // Paket umum / batch reguler membuka seluruh akses
-          canAccessEbook = true;
-          canAccessCatPsiko = true;
-          canAccessCatAkademik = true;
-          canAccessLatihanPsiko = true;
+        } else if (isEbookCpnsPkg) {
+          canAccessEbookCpns = true;
+        } else if (isEbookTniPkg) {
+          canAccessEbookTni = true;
+        } else if (isCatCpnsPkg) {
+          canAccessCatCpns = true;
+        } else if (isComboCatTni) {
+          canAccessCatTniPsiko = true;
+          canAccessCatTniAkademik = true;
+        } else if (isCatTniPsikoOnly) {
+          canAccessCatTniPsiko = true;
+        } else if (isCatTniAkademikOnly) {
+          canAccessCatTniAkademik = true;
         }
       });
 
-      const isBatchPsikoOnly = canAccessCatPsiko && !canAccessCatAkademik && !canAccessEbook;
-      const isBatchAkademikOnly = canAccessCatAkademik && !canAccessCatPsiko && !canAccessEbook;
-      const isEbookOnly = canAccessEbook && !canAccessCatPsiko && !canAccessCatAkademik;
-      const isComboCat = canAccessCatPsiko && canAccessCatAkademik && !canAccessEbook;
+      const isBatchPsikoOnly = canAccessCatTniPsiko && !canAccessCatTniAkademik && !canAccessEbookTni;
+      const isBatchAkademikOnly = canAccessCatTniAkademik && !canAccessCatTniPsiko && !canAccessEbookTni;
+      const isEbookOnly = (canAccessEbookTni || canAccessEbookCpns) && !canAccessCatTniPsiko && !canAccessCatTniAkademik && !canAccessCatCpns;
+      const isComboCat = canAccessCatTniPsiko && canAccessCatTniAkademik && !canAccessEbookTni;
 
       return {
         isAuthenticated: true,
@@ -5970,9 +6065,14 @@ service cloud.firestore {
         isBatchAkademikOnly,
         isEbookOnly,
         isComboCat,
-        canAccessEbook,
-        canAccessCatPsiko,
-        canAccessCatAkademik,
+        canAccessEbook: canAccessEbookTni,
+        canAccessEbookTni,
+        canAccessEbookCpns,
+        canAccessCatPsiko: canAccessCatTniPsiko,
+        canAccessCatTniPsiko,
+        canAccessCatAkademik: canAccessCatTniAkademik,
+        canAccessCatTniAkademik,
+        canAccessCatCpns,
         canAccessLatihanPsiko
       };
     }
@@ -6008,18 +6108,20 @@ service cloud.firestore {
             : `<i class="fa-solid fa-lock text-rose-400"></i><span>E-Book & Modul PDF</span>`;
         }
         if (catPill) {
-          catPill.className = 'px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-xs font-extrabold text-emerald-300 flex items-center gap-1.5';
-          if (perms.isEbookOnly) {
+          if (!perms.canAccessCatTniPsiko && !perms.canAccessCatTniAkademik) {
             catPill.className = 'px-3 py-2 rounded-xl bg-rose-500/15 border border-rose-500/35 text-xs font-extrabold text-rose-300 flex items-center gap-1.5';
-            catPill.innerHTML = `<i class="fa-solid fa-lock"></i> ${currentVerifiedUser.email} (Khusus E-Book)`;
-          } else if (perms.isBatchPsikoOnly) {
-            catPill.innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentVerifiedUser.email} (CAT Psiko)`;
-          } else if (perms.isBatchAkademikOnly) {
-            catPill.innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentVerifiedUser.email} (CAT Akademik)`;
-          } else if (perms.isComboCat) {
-            catPill.innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentVerifiedUser.email} (CAT Psiko + Akademik)`;
+            catPill.innerHTML = `<i class="fa-solid fa-lock"></i> Terkunci Paket (${currentVerifiedUser.email})`;
           } else {
-            catPill.innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentVerifiedUser.email}`;
+            catPill.className = 'px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-xs font-extrabold text-emerald-300 flex items-center gap-1.5';
+            if (perms.isBatchPsikoOnly) {
+              catPill.innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentVerifiedUser.email} (CAT Psiko TNI/Polri)`;
+            } else if (perms.isBatchAkademikOnly) {
+              catPill.innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentVerifiedUser.email} (CAT Akademik TNI/Polri)`;
+            } else if (perms.isComboCat) {
+              catPill.innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentVerifiedUser.email} (CAT Psiko + Akademik)`;
+            } else {
+              catPill.innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentVerifiedUser.email} (Full TNI/Polri)`;
+            }
           }
         }
         if (accountBar) {
@@ -6130,16 +6232,20 @@ service cloud.firestore {
         if (cpnsNamaInput && !cpnsNamaInput.value.trim()) cpnsNamaInput.value = currentVerifiedUser.nama;
         if (cpnsKelasInput) cpnsKelasInput.value = activePackages.join(' + ');
         if (cpnsCatPill) {
-          cpnsCatPill.className = 'px-3.5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-xs font-extrabold text-emerald-300 flex items-center gap-1.5';
-          cpnsCatPill.innerHTML = `<i class="fa-solid fa-user-check"></i> Akun Aktif: ${currentVerifiedUser.email}`;
+          cpnsCatPill.className = perms.canAccessCatCpns
+            ? 'px-3.5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-xs font-extrabold text-emerald-300 flex items-center gap-1.5'
+            : 'px-3.5 py-2 rounded-xl bg-rose-500/15 border border-rose-500/35 text-xs font-extrabold text-rose-300 flex items-center gap-1.5';
+          cpnsCatPill.innerHTML = perms.canAccessCatCpns
+            ? `<i class="fa-solid fa-unlock-keyhole"></i> Terbuka (${currentVerifiedUser.email})`
+            : `<i class="fa-solid fa-lock"></i> Terkunci Paket (${currentVerifiedUser.email})`;
         }
         if (cpnsEbookPill) {
-          cpnsEbookPill.className = perms.canAccessEbook
+          cpnsEbookPill.className = perms.canAccessEbookCpns
             ? 'px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/35 text-emerald-300 text-xs font-extrabold flex items-center gap-1.5'
             : 'px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/35 text-rose-300 text-xs font-extrabold flex items-center gap-1.5';
-          cpnsEbookPill.innerHTML = perms.canAccessEbook
+          cpnsEbookPill.innerHTML = perms.canAccessEbookCpns
             ? `<i class="fa-solid fa-unlock-keyhole"></i> Terbuka (${currentVerifiedUser.email})`
-            : `<i class="fa-solid fa-lock"></i> Khusus Paket Bimbel / E-Book`;
+            : `<i class="fa-solid fa-lock"></i> Terkunci Paket (${currentVerifiedUser.email})`;
         }
       } else {
         if (ebookPill) {
@@ -6490,26 +6596,8 @@ service cloud.firestore {
 
       const perms = getParticipantPermissions();
 
-      // Perbarui sub-tab di halaman TNF CPNS jika sedang di tab terproteksi (cat / ebook)
-      if (typeof currentActiveCpnsSubTab !== 'undefined') {
-        if (currentActiveCpnsSubTab === 'cat' || currentActiveCpnsSubTab === 'ebook') {
-          if (perms.isEbookOnly && currentActiveCpnsSubTab === 'cat') {
-            switchCpnsSubTab('ebook');
-          } else if (!perms.canAccessEbook && currentActiveCpnsSubTab === 'ebook') {
-            switchCpnsSubTab('cat');
-          } else {
-            switchCpnsSubTab(currentActiveCpnsSubTab);
-          }
-        }
-      }
-
-      if (perms.isEbookOnly && (currentActiveTniSubTab === 'cat' || pendingProtectedSubTab === 'cat')) {
-        switchTniSubTab('ebook');
-        return;
-      }
-      if (!perms.canAccessEbook && (perms.canAccessCatPsiko || perms.canAccessCatAkademik) && (currentActiveTniSubTab === 'ebook' || pendingProtectedSubTab === 'ebook')) {
-        switchTniSubTab('cat');
-        return;
+      if (typeof currentActiveCpnsSubTab !== 'undefined' && (currentActiveCpnsSubTab === 'cat' || currentActiveCpnsSubTab === 'ebook')) {
+        switchCpnsSubTab(currentActiveCpnsSubTab);
       }
 
       if (currentActiveTniSubTab === 'ebook' || currentActiveTniSubTab === 'cat') {
@@ -6838,29 +6926,15 @@ service cloud.firestore {
       const perms = getParticipantPermissions();
 
       if (unlockedWrapper && restrictedNotice) {
-        if (perms.isAuthenticated && !perms.canAccessEbook) {
+        if (perms.isAuthenticated && !perms.canAccessEbookTni) {
           unlockedWrapper.classList.add('hidden');
           restrictedNotice.classList.remove('hidden');
-          const batchName = currentVerifiedUser?.batch || (perms.isBatchAkademikOnly ? 'Paket Khusus CAT - Jalur Batch Akademik' : 'Paket Khusus CAT - Jalur Batch Psiko');
-          if (perms.isBatchAkademikOnly) {
-            if (restrictedTitleEl) restrictedTitleEl.textContent = 'Fitur E-Book & Modul PDF Tidak Tersedia untuk Batch Akademik';
-            if (restrictedDescEl) {
-              restrictedDescEl.innerHTML = `Akun Anda terdaftar pada program <strong class="text-sky-300">${batchName}</strong>. Sesuai ketentuan paket, akses Anda dikhususkan hanya untuk <strong>Simulasi CAT Akademik (TKA)</strong>. Ajukan upgrade paket dan konfirmasi pembayaran melalui WA agar Admin membuka akses E-Book &amp; CAT Psikologi.`;
-            }
-            if (restrictedCtaTextEl) restrictedCtaTextEl.textContent = 'Buka Simulasi CAT Akademik';
-          } else if (perms.isComboCat) {
-            if (restrictedTitleEl) restrictedTitleEl.textContent = 'Fitur E-Book & Modul PDF Tidak Tersedia untuk Paket Gabungan CAT';
-            if (restrictedDescEl) {
-              restrictedDescEl.innerHTML = `Akun Anda terdaftar pada program <strong class="text-gold-400">${batchName}</strong> yang mencakup akses penuh CAT Psikologi &amp; CAT Akademik. Untuk membuka perpustakaan E-Book &amp; Modul PDF, silakan ajukan upgrade ke <strong>Paket All In One</strong>.`;
-            }
-            if (restrictedCtaTextEl) restrictedCtaTextEl.textContent = 'Buka Simulasi CAT';
-          } else {
-            if (restrictedTitleEl) restrictedTitleEl.textContent = 'Fitur E-Book & Modul PDF Tidak Tersedia untuk Batch Psiko';
-            if (restrictedDescEl) {
-              restrictedDescEl.innerHTML = `Akun Anda terdaftar pada program <strong class="text-gold-400">${batchName}</strong>. Sesuai ketentuan paket, akses Anda dikhususkan hanya untuk <strong>Simulasi CAT Psikologi</strong>. Ajukan upgrade paket dan konfirmasi pembayaran melalui WA agar Admin membuka akses E-Book &amp; CAT Akademik.`;
-            }
-            if (restrictedCtaTextEl) restrictedCtaTextEl.textContent = 'Buka Simulasi CAT Psikologi';
+          const batchName = currentVerifiedUser?.batch || 'Paket Aktif Anda';
+          if (restrictedTitleEl) restrictedTitleEl.textContent = 'Fitur E-Book & Modul PDF TNI/POLRI Tidak Tersedia pada Paket Anda';
+          if (restrictedDescEl) {
+            restrictedDescEl.innerHTML = `Akun Anda saat ini terdaftar pada paket <strong class="text-gold-400">${batchName}</strong>. Paket tersebut tidak mencakup akses <strong>E-Book &amp; Modul PDF TNI/POLRI</strong>. Silakan klik tombol <strong>Tambah / Upgrade Paket</strong> di bawah ini untuk menambahkan <strong>Paket Akses E-Book TNI/POLRI</strong> atau <strong>Paket All In One TNI/POLRI</strong> (aktif setelah dikonfirmasi Admin di Dashboard Admin).`;
           }
+          if (restrictedCtaTextEl) restrictedCtaTextEl.textContent = 'Kembali ke Sub-Tab CAT';
           grid.innerHTML = '';
           return;
         } else {
@@ -8115,7 +8189,7 @@ service cloud.firestore {
         psikoRestrictedBanner.classList.toggle('hidden', !psikoBlockedByPackage);
       }
       if (lockBadge) {
-        lockBadge.textContent = psikoBlockedByPackage ? (perms.isEbookOnly ? 'KHUSUS E-BOOK' : 'KHUSUS BATCH PSIKO') : (psikoAdminLocked ? 'TERKUNCI' : 'TERBUKA');
+        lockBadge.textContent = psikoBlockedByPackage ? 'TERKUNCI PAKET' : (psikoAdminLocked ? 'TERKUNCI' : 'TERBUKA');
         lockBadge.className = psikoLocked
           ? 'px-2.5 py-1 rounded-lg text-[11px] font-extrabold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/35 shrink-0'
           : 'px-2.5 py-1 rounded-lg text-[11px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 shrink-0';
@@ -8123,7 +8197,7 @@ service cloud.firestore {
       if (startPsikoBtn) {
         startPsikoBtn.disabled = psikoLocked;
         startPsikoBtn.innerHTML = psikoBlockedByPackage
-          ? `<i class="fa-solid fa-lock"></i><span>${perms.isEbookOnly ? 'Terkunci (Paket E-Book Saja)' : 'Terkunci (Jalur Batch Akademik)'}</span>`
+          ? `<i class="fa-solid fa-lock"></i><span>Terkunci (Belum Termasuk di Paket Anda)</span>`
           : (psikoAdminLocked
             ? `<i class="fa-solid fa-lock"></i><span>Dikunci Admin</span>`
             : `<i class="fa-solid fa-play"></i><span>Mulai Tes Psikologi Terpadu</span>`);
@@ -8167,10 +8241,10 @@ service cloud.firestore {
           const isAdminLocked = Boolean(CAT_CONFIG.locks[k]);
           const isLocked = isAdminLocked || tkaBlockedByPackage;
           const lockLabel = tkaBlockedByPackage
-            ? '<i class="fa-solid fa-lock mr-1"></i>KHUSUS BATCH AKADEMIK'
+            ? '<i class="fa-solid fa-lock mr-1"></i>TERKUNCI PAKET'
             : (isAdminLocked ? '<i class="fa-solid fa-lock mr-1"></i>TERKUNCI' : '<i class="fa-solid fa-lock-open mr-1"></i>TERBUKA');
           const btnLabel = tkaBlockedByPackage
-            ? 'Terkunci (Jalur Batch Psiko)'
+            ? 'Terkunci Paket'
             : (isAdminLocked ? 'Dikunci Admin' : 'Mulai ' + cfg.short);
 
           return `
@@ -8279,45 +8353,47 @@ service cloud.firestore {
       }
 
       const perms = getParticipantPermissions();
-      if (examType === 'psiko_terpadu' && !perms.canAccessCatPsiko) {
+      const isCpnsExam = Boolean(examType && examType.startsWith('cpns_'));
+
+      if (examType === 'psiko_terpadu' && !perms.canAccessCatTniPsiko) {
         openCustomModal({
-          badge: 'Akses Dibatasi • Jalur Batch Akademik',
-          title: 'CAT Psikologi Tidak Tersedia',
-          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Akun Anda terdaftar pada program <strong class="text-sky-300">${currentVerifiedUser?.batch || 'Paket Khusus CAT - Jalur Batch Akademik'}</strong>. Paket ini hanya dapat mengakses <strong>Simulasi CAT Akademik (TKA)</strong>. Ajukan upgrade paket dan konfirmasi pembayaran via WA agar Admin membuka CAT Psikologi untuk akun Anda.</p>`,
+          badge: 'Akses Dibatasi Sesuai Paket Aktif',
+          title: 'Simulasi CAT Psikologi TNI/POLRI Terkunci',
+          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Akun Anda saat ini terdaftar pada paket <strong class="text-gold-400">${currentVerifiedUser?.batch || '-'}</strong> yang tidak mencakup <strong>Simulasi CAT Psikologi TNI/POLRI</strong>. Silakan ajukan penambahan <strong>Paket Batch Simulasi CAT Psiko (1x CAT)</strong> atau <strong>Paket All In One TNI/POLRI</strong> dan tunggu konfirmasi Admin di Dashboard Admin.</p>`,
           actionsHtml: `
             <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
-            <button type="button" onclick="closeCustomModal(); openUpgradePackageModal('Paket Silver (1 Bulan)');" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5">
-              <i class="fa-solid fa-circle-up"></i> Ajukan Upgrade Paket
+            <button type="button" onclick="closeCustomModal(); openUpgradePackageModal('Paket Batch Simulasi CAT Psiko (1x CAT)');" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-plus"></i> Tambah Paket CAT Psiko
             </button>
           `
         });
         return;
       }
 
-      if (examType !== 'psiko_terpadu' && !perms.canAccessCatAkademik) {
+      if (!isCpnsExam && examType !== 'psiko_terpadu' && !perms.canAccessCatTniAkademik) {
         openCustomModal({
-          badge: 'Akses Dibatasi • Jalur Batch Psiko',
-          title: 'CAT Akademik (TKA) Tidak Tersedia',
-          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Akun Anda terdaftar pada program <strong class="text-gold-400">${currentVerifiedUser?.batch || 'Paket Khusus CAT - Jalur Batch Psiko'}</strong>. Paket ini hanya dapat mengakses <strong>Simulasi CAT Psikologi (Psiko I Terpadu)</strong>. Ajukan upgrade paket dan konfirmasi pembayaran via WA agar Admin membuka CAT Akademik untuk akun Anda.</p>`,
+          badge: 'Akses Dibatasi Sesuai Paket Aktif',
+          title: 'Simulasi CAT Akademik (TKA) TNI/POLRI Terkunci',
+          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Akun Anda saat ini terdaftar pada paket <strong class="text-gold-400">${currentVerifiedUser?.batch || '-'}</strong> yang tidak mencakup <strong>Simulasi CAT Akademik (TKA) TNI/POLRI</strong>. Silakan ajukan penambahan <strong>Paket Batch Simulasi CAT Akademik (1x CAT)</strong> atau <strong>Paket All In One TNI/POLRI</strong> dan tunggu konfirmasi Admin di Dashboard Admin.</p>`,
           actionsHtml: `
             <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
-            <button type="button" onclick="closeCustomModal(); openUpgradePackageModal('Paket Silver (1 Bulan)');" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5">
-              <i class="fa-solid fa-circle-up"></i> Ajukan Upgrade Paket
+            <button type="button" onclick="closeCustomModal(); openUpgradePackageModal('Paket Batch Simulasi CAT Akademik (1x CAT)');" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-plus"></i> Tambah Paket CAT Akademik
             </button>
           `
         });
         return;
       }
 
-      if (examType !== 'psiko_terpadu' && !perms.canAccessCatAkademik) {
+      if (isCpnsExam && !perms.canAccessCatCpns) {
         openCustomModal({
-          badge: 'Akses Dibatasi • Jalur Batch Psiko',
-          title: 'CAT Akademik (TKA) Tidak Tersedia',
-          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Akun Anda terdaftar pada program <strong class="text-gold-400">${currentVerifiedUser?.batch || 'Paket Khusus CAT - Jalur Batch Psiko'}</strong>. Paket ini hanya dapat mengakses <strong>Simulasi CAT Psikologi (Psiko I Terpadu)</strong>. Ajukan upgrade paket dan konfirmasi pembayaran via WA agar Admin membuka CAT Akademik untuk akun Anda.</p>`,
+          badge: 'Akses Dibatasi Sesuai Paket Aktif',
+          title: 'Simulasi CAT CPNS Terkunci',
+          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Akun Anda saat ini terdaftar pada paket <strong class="text-gold-400">${currentVerifiedUser?.batch || '-'}</strong> yang tidak mencakup <strong>Simulasi CAT CPNS</strong>. Silakan ajukan penambahan <strong>Paket Simulasi CAT SKD CPNS (1x CAT)</strong> atau <strong>Paket Bimbel CPNS (Silver/Gold/Premium)</strong> dan tunggu konfirmasi Admin di Dashboard Admin.</p>`,
           actionsHtml: `
             <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
-            <button type="button" onclick="closeCustomModal(); openUpgradePackageModal('All In One - Silver (1 Bulan)');" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5">
-              <i class="fa-solid fa-circle-up"></i> Ajukan Upgrade Paket
+            <button type="button" onclick="closeCustomModal(); openUpgradePackageModal('Paket Simulasi CAT SKD CPNS (1x CAT)');" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-plus"></i> Tambah Paket CAT CPNS
             </button>
           `
         });
@@ -12563,7 +12639,15 @@ service cloud.firestore {
       ];
 
       const perms = getParticipantPermissions();
-      const blockedByPackage = perms.isAuthenticated && !perms.canAccessCatAkademik;
+      const blockedByPackage = perms.isAuthenticated && !perms.canAccessCatCpns;
+      const cpnsRestrictedBanner = document.getElementById('cpns-cat-restricted-banner');
+      const cpnsRestrictedDesc = document.getElementById('cpns-cat-restricted-desc');
+      if (cpnsRestrictedBanner) {
+        cpnsRestrictedBanner.classList.toggle('hidden', !blockedByPackage);
+      }
+      if (blockedByPackage && cpnsRestrictedDesc && currentVerifiedUser) {
+        cpnsRestrictedDesc.innerHTML = `Akun Anda saat ini terdaftar pada paket <strong class="text-gold-400">${currentVerifiedUser.batch}</strong> yang tidak mencakup <strong>Simulasi CAT CPNS</strong>. Silakan ajukan penambahan <strong>Paket Simulasi CAT SKD CPNS (1x CAT)</strong> atau <strong>Paket Bimbel CPNS (Silver/Gold/Premium)</strong> dan tunggu konfirmasi Admin di Dashboard Admin.`;
+      }
 
       container.innerHTML = cpnsExams.map(ex => {
         const cfg = CAT_CONFIG.tka[ex.key] || { label: ex.key, short: ex.key, count: 30, durationMin: 30 };
@@ -12607,6 +12691,21 @@ service cloud.firestore {
         showCpnsAuthAlert('Silakan masuk atau buat kata sandi peserta terlebih dahulu untuk memulai Simulasi CAT CPNS.', false);
         return;
       }
+      const perms = getParticipantPermissions();
+      if (!perms.canAccessCatCpns) {
+        openCustomModal({
+          badge: 'Akses Dibatasi Sesuai Paket Aktif',
+          title: 'Simulasi CAT CPNS Tidak Tersedia pada Paket Anda',
+          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Akun Anda terdaftar pada paket <strong class="text-gold-400">${currentVerifiedUser?.batch || '-'}</strong>. Paket tersebut hanya dapat mengakses fitur sesuai paketnya dan tidak mencakup <strong>Simulasi CAT CPNS</strong>. Silakan tambah <strong>Paket Simulasi CAT SKD CPNS (1x CAT)</strong> atau <strong>Paket Bimbel CPNS</strong> terlebih dahulu (menunggu konfirmasi Admin di Dashboard Admin).</p>`,
+          actionsHtml: `
+            <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
+            <button type="button" onclick="closeCustomModal(); openUpgradePackageModal('Paket Simulasi CAT SKD CPNS (1x CAT)');" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-plus"></i> Tambah Paket CAT CPNS
+            </button>
+          `
+        });
+        return;
+      }
 
       // Sinkronkan identitas peserta dari form CPNS ke form utama CAT
       const cpnsNama = (document.getElementById('cpns-peserta-nama')?.value || '').trim();
@@ -12635,9 +12734,13 @@ service cloud.firestore {
 
       const perms = getParticipantPermissions();
       if (unlockedWrapper && restrictedNotice) {
-        if (perms.isAuthenticated && !perms.canAccessEbook) {
+        if (perms.isAuthenticated && !perms.canAccessEbookCpns) {
           unlockedWrapper.classList.add('hidden');
           restrictedNotice.classList.remove('hidden');
+          const descEl = document.getElementById('cpns-ebook-restricted-desc');
+          if (descEl && currentVerifiedUser) {
+            descEl.innerHTML = `Akun Anda saat ini terdaftar pada paket <strong class="text-gold-400">${currentVerifiedUser.batch}</strong> yang tidak mencakup akses <strong>E-Book &amp; Modul PDF CPNS</strong>. Silakan ajukan penambahan <strong>Paket Akses E-Book CPNS</strong> atau <strong>Paket Bimbel CPNS (Silver / Gold / Premium)</strong> dan tunggu konfirmasi Admin di Dashboard Admin.`;
+          }
           grid.innerHTML = '';
           return;
         } else {
