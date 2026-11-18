@@ -97,23 +97,48 @@
             unsubSystemConfig = null;
           }
 
-          // 1. Listener Real-Time Hasil Ujian CAT (`tnf_cat_results`)
+          // 1. Listener Real-Time Hasil Ujian CAT & Bank Soal Terpadu (`tnf_cat_results`)
           unsubResults = onSnapshot(
             resultsColRef,
             (snapshot) => {
               window.TNF_FIREBASE.connected = true;
               window.TNF_FIREBASE.lastError = "";
               const cloudRecords = [];
+              const embeddedCloudBanks = {};
+              let hasEmbeddedBanks = false;
+
               snapshot.forEach((docSnap) => {
+                const data = docSnap.data() || {};
+                const docId = docSnap.id || "";
+                // Pisahkan dokumen Bank Soal (`QBANK_DOC_*`) & Konfigurasi (`SYS_CONFIG_CAT`) dari hasil ujian peserta
+                if (docId.startsWith("QBANK_DOC_") || data.recordType === "question_bank") {
+                  const bKey = data.bankKey || docId.replace(/^QBANK_DOC_/, "");
+                  if (bKey && Array.isArray(data.questions)) {
+                    embeddedCloudBanks[bKey] = data.questions.map(q => ({ ...q, synced: true }));
+                    hasEmbeddedBanks = true;
+                  }
+                  return;
+                }
+                if (docId === "SYS_CONFIG_CAT" || data.recordType === "cat_config") {
+                  if (data.config && typeof window.syncCatConfigFromFirebase === "function") {
+                    window.syncCatConfigFromFirebase(data.config);
+                  }
+                  return;
+                }
                 cloudRecords.push({
-                  id: docSnap.id,
-                  ...docSnap.data(),
+                  id: docId,
+                  ...data,
                   synced: true
                 });
               });
 
               if (typeof window.syncResultsFromFirebase === "function") {
                 window.syncResultsFromFirebase(cloudRecords, true);
+              }
+              if (hasEmbeddedBanks && typeof window.syncQuestionBankFromFirebase === "function") {
+                window.syncQuestionBankFromFirebase(embeddedCloudBanks, false);
+              } else if (!hasEmbeddedBanks && typeof window.seedQuestionBankToCloudIfNeeded === "function") {
+                window.seedQuestionBankToCloudIfNeeded();
               }
             },
             (error) => {
@@ -239,16 +264,20 @@
           async saveQuestionBankCategory(bankKey, questionsList) {
             if (!bankKey || !Array.isArray(questionsList)) return;
             await ensureWriteSession();
-            await setDoc(
-              doc(db, "tnf_question_bank", bankKey),
-              {
-                bankKey,
-                questions: JSON.parse(JSON.stringify(questionsList)),
-                count: questionsList.length,
-                updatedAt: serverTimestamp()
-              },
-              { merge: true }
-            );
+            const normalizedList = JSON.parse(JSON.stringify(questionsList)).map(q => ({ ...q, synced: true }));
+            const payload = {
+              recordType: "question_bank",
+              bankKey,
+              questions: normalizedList,
+              count: normalizedList.length,
+              updatedAt: serverTimestamp()
+            };
+            // Simpan ke koleksi utama yang sama dengan Rekap & Ranking (`tnf_cat_results/QBANK_DOC_<bankKey>`) agar dijamin tembus Firestore Rules aktif
+            await setDoc(doc(db, "tnf_cat_results", `QBANK_DOC_${bankKey}`), payload, { merge: true });
+            // Juga simpan ke koleksi `tnf_question_bank/<bankKey>`
+            try {
+              await setDoc(doc(db, "tnf_question_bank", bankKey), payload, { merge: true });
+            } catch (e) {}
             this.connected = true;
             this.lastError = "";
           },
@@ -259,16 +288,18 @@
             const keys = Object.keys(fullBankObj);
             for (const bKey of keys) {
               if (Array.isArray(fullBankObj[bKey])) {
-                await setDoc(
-                  doc(db, "tnf_question_bank", bKey),
-                  {
-                    bankKey: bKey,
-                    questions: JSON.parse(JSON.stringify(fullBankObj[bKey])),
-                    count: fullBankObj[bKey].length,
-                    updatedAt: serverTimestamp()
-                  },
-                  { merge: true }
-                );
+                const normalizedList = JSON.parse(JSON.stringify(fullBankObj[bKey])).map(q => ({ ...q, synced: true }));
+                const payload = {
+                  recordType: "question_bank",
+                  bankKey: bKey,
+                  questions: normalizedList,
+                  count: normalizedList.length,
+                  updatedAt: serverTimestamp()
+                };
+                await setDoc(doc(db, "tnf_cat_results", `QBANK_DOC_${bKey}`), payload, { merge: true });
+                try {
+                  await setDoc(doc(db, "tnf_question_bank", bKey), payload, { merge: true });
+                } catch (e) {}
               }
             }
             this.connected = true;
@@ -278,14 +309,15 @@
           async saveCatConfig(cfgObj) {
             if (!cfgObj || typeof cfgObj !== "object") return;
             await ensureWriteSession();
-            await setDoc(
-              doc(db, "tnf_system_config", "cat_config"),
-              {
-                config: JSON.parse(JSON.stringify(cfgObj)),
-                updatedAt: serverTimestamp()
-              },
-              { merge: true }
-            );
+            const payload = {
+              recordType: "cat_config",
+              config: JSON.parse(JSON.stringify(cfgObj)),
+              updatedAt: serverTimestamp()
+            };
+            await setDoc(doc(db, "tnf_cat_results", "SYS_CONFIG_CAT"), payload, { merge: true });
+            try {
+              await setDoc(doc(db, "tnf_system_config", "cat_config"), payload, { merge: true });
+            } catch (e) {}
             this.connected = true;
             this.lastError = "";
           },
@@ -4825,6 +4857,10 @@ service cloud.firestore {
                   <i class="fa-solid fa-plus"></i>
                   <span>Tambah Soal Baru</span>
                 </button>
+                <button type="button" onclick="syncQuestionBankToCloudNow()" class="px-3.5 py-2.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 text-xs font-extrabold flex items-center gap-2 transition" title="Sinkronkan seluruh bank soal ke Cloud Firestore seperti Rekap Ranking & Akses Email">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>Sinkronkan Cloud</span>
+                </button>
                 <button type="button" onclick="exportActiveQuestionBankCsv()" class="px-3.5 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold flex items-center gap-2 transition">
                   <i class="fa-solid fa-file-export"></i>
                   <span>Ekspor Soal (CSV/Excel)</span>
@@ -8344,33 +8380,77 @@ service cloud.firestore {
       }
       const targetKey = specificBankKey || document.getElementById('admin-qbank-select')?.value || null;
       if (window.TNF_FIREBASE) {
-        updateQuestionBankCloudBadge('Menyinkronkan ke Cloud...', false);
+        updateQuestionBankCloudBadge('Menyinkronkan ke Cloud Firestore...', false);
         if (targetKey && Array.isArray(QUESTION_BANK[targetKey]) && typeof window.TNF_FIREBASE.saveQuestionBankCategory === 'function') {
           window.TNF_FIREBASE.saveQuestionBankCategory(targetKey, QUESTION_BANK[targetKey])
-            .then(() => updateQuestionBankCloudBadge('Tersimpan Online & Realtime', true))
+            .then(() => {
+              QUESTION_BANK[targetKey] = QUESTION_BANK[targetKey].map(q => ({ ...q, synced: true }));
+              try { localStorage.setItem(CAT_QBANK_STORAGE_KEY, JSON.stringify(QUESTION_BANK)); } catch (e) {}
+              updateQuestionBankCloudBadge('Cloud Firestore Terhubung (Realtime)', true);
+              if (isAdminAuthenticated && typeof renderAdminQuestionList === 'function') renderAdminQuestionList();
+            })
             .catch(() => updateQuestionBankCloudBadge('Tersimpan Lokal (Menunggu Cloud)', false));
         } else if (typeof window.TNF_FIREBASE.saveAllQuestionBanks === 'function') {
           window.TNF_FIREBASE.saveAllQuestionBanks(QUESTION_BANK)
-            .then(() => updateQuestionBankCloudBadge('Seluruh Bank Soal Online & Realtime', true))
+            .then(() => {
+              Object.keys(QUESTION_BANK).forEach(k => {
+                if (Array.isArray(QUESTION_BANK[k])) {
+                  QUESTION_BANK[k] = QUESTION_BANK[k].map(q => ({ ...q, synced: true }));
+                }
+              });
+              try { localStorage.setItem(CAT_QBANK_STORAGE_KEY, JSON.stringify(QUESTION_BANK)); } catch (e) {}
+              updateQuestionBankCloudBadge('Seluruh Bank Soal Tersimpan di Cloud Firestore', true);
+              if (isAdminAuthenticated && typeof renderAdminQuestionList === 'function') renderAdminQuestionList();
+            })
             .catch(() => updateQuestionBankCloudBadge('Tersimpan Lokal (Menunggu Cloud)', false));
         }
       }
     }
 
+    async function syncQuestionBankToCloudNow() {
+      if (!window.TNF_FIREBASE || typeof window.TNF_FIREBASE.saveAllQuestionBanks !== 'function') return;
+      updateQuestionBankCloudBadge('Menyinkronkan Seluruh Bank Soal...', false);
+      try {
+        await window.TNF_FIREBASE.saveAllQuestionBanks(QUESTION_BANK);
+        Object.keys(QUESTION_BANK).forEach(k => {
+          if (Array.isArray(QUESTION_BANK[k])) {
+            QUESTION_BANK[k] = QUESTION_BANK[k].map(q => ({ ...q, synced: true }));
+          }
+        });
+        try { localStorage.setItem(CAT_QBANK_STORAGE_KEY, JSON.stringify(QUESTION_BANK)); } catch (e) {}
+        updateQuestionBankCloudBadge('Cloud Firestore Terhubung (Realtime)', true);
+        if (typeof renderAdminQuestionList === 'function') renderAdminQuestionList();
+        const totalCategories = Object.keys(QUESTION_BANK).length;
+        const totalQuestions = Object.values(QUESTION_BANK).reduce((acc, arr) => acc + (Array.isArray(arr) ? arr.length : 0), 0);
+        openCustomModal({
+          badge: 'Sinkronisasi Cloud Firestore Berhasil',
+          title: 'Seluruh Bank Soal Tersimpan Online',
+          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Sebanyak <strong class="text-emerald-400">${totalQuestions} butir soal</strong> pada <strong class="text-gold-400">${totalCategories} kategori subtes</strong> (TNI/POLRI, CPNS &amp; Latihan Soal Psikologi) telah berhasil disinkronkan secara online dan real-time ke <strong>Cloud Firestore</strong>.</p>`
+        });
+      } catch (e) {
+        updateQuestionBankCloudBadge('Gagal Sinkron Cloud', false);
+      }
+    }
+
     let hasSeededInitialCloudQuestionBank = false;
+    window.seedQuestionBankToCloudIfNeeded = function () {
+      if (hasSeededInitialCloudQuestionBank) return;
+      hasSeededInitialCloudQuestionBank = true;
+      if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.saveAllQuestionBanks === 'function') {
+        window.TNF_FIREBASE.saveAllQuestionBanks(QUESTION_BANK).catch(() => {});
+      }
+    };
+
     window.syncQuestionBankFromFirebase = function (cloudBanks, isCollectionEmpty = false) {
       if (isCollectionEmpty && !hasSeededInitialCloudQuestionBank) {
-        hasSeededInitialCloudQuestionBank = true;
-        if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.saveAllQuestionBanks === 'function') {
-          window.TNF_FIREBASE.saveAllQuestionBanks(QUESTION_BANK).catch(() => {});
-        }
+        window.seedQuestionBankToCloudIfNeeded();
         return;
       }
       if (!cloudBanks || typeof cloudBanks !== 'object') return;
       let changed = false;
       Object.keys(cloudBanks).forEach(bKey => {
         if (Array.isArray(cloudBanks[bKey])) {
-          QUESTION_BANK[bKey] = cloudBanks[bKey];
+          QUESTION_BANK[bKey] = cloudBanks[bKey].map(q => ({ ...q, synced: true }));
           changed = true;
         }
       });
@@ -8500,10 +8580,14 @@ service cloud.firestore {
       if (!Array.isArray(cloudRecords)) return;
       const mergedMap = new Map();
       CAT_RESULTS_STORE.forEach(r => {
-        if (r && r.id) mergedMap.set(r.id, r);
+        if (r && r.id && !String(r.id).startsWith('QBANK_DOC_') && r.id !== 'SYS_CONFIG_CAT' && r.recordType !== 'question_bank' && r.recordType !== 'cat_config') {
+          mergedMap.set(r.id, r);
+        }
       });
       cloudRecords.forEach(r => {
-        if (r && r.id) mergedMap.set(r.id, { ...r, synced: true });
+        if (r && r.id && !String(r.id).startsWith('QBANK_DOC_') && r.id !== 'SYS_CONFIG_CAT' && r.recordType !== 'question_bank' && r.recordType !== 'cat_config') {
+          mergedMap.set(r.id, { ...r, synced: true });
+        }
       });
       CAT_RESULTS_STORE = Array.from(mergedMap.values());
       saveLocalBackupResults();
@@ -11444,15 +11528,92 @@ service cloud.firestore {
       updateQuestionEditorPreview();
     }
 
+    function setQuestionMainType(mode) {
+      const validMode = ['text', 'image', 'both'].includes(mode) ? mode : 'both';
+      const typeInput = document.getElementById('qedit-question-type');
+      if (typeInput) typeInput.value = validMode;
+
+      ['text', 'image', 'both'].forEach(m => {
+        const btn = document.getElementById(`qedit-q-mode-btn-${m}`);
+        if (btn) {
+          btn.className = m === validMode
+            ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all'
+            : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all';
+        }
+      });
+
+      const textWrap = document.getElementById('qedit-question-text-wrap');
+      const imgWrap = document.getElementById('qedit-question-img-wrap');
+      if (textWrap) textWrap.classList.toggle('hidden', validMode === 'image');
+      if (imgWrap) imgWrap.classList.toggle('hidden', validMode === 'text');
+
+      updateQuestionEditorPreview();
+    }
+
+    function setQuestionExplanationType(mode) {
+      const validMode = ['text', 'image', 'both'].includes(mode) ? mode : 'both';
+      const typeInput = document.getElementById('qedit-explanation-type');
+      if (typeInput) typeInput.value = validMode;
+
+      ['text', 'image', 'both'].forEach(m => {
+        const btn = document.getElementById(`qedit-exp-mode-btn-${m}`);
+        if (btn) {
+          btn.className = m === validMode
+            ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all'
+            : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all';
+        }
+      });
+
+      const textWrap = document.getElementById('qedit-explanation-text-wrap');
+      const imgWrap = document.getElementById('qedit-explanation-img-wrap');
+      if (textWrap) textWrap.classList.toggle('hidden', validMode === 'image');
+      if (imgWrap) imgWrap.classList.toggle('hidden', validMode === 'text');
+
+      updateQuestionEditorPreview();
+    }
+
     function updateQuestionEditorPreview() {
       const qPreview = document.getElementById('qedit-live-preview-text');
+      const qImgPreview = document.getElementById('qedit-live-preview-question-img');
       const optsPreview = document.getElementById('qedit-live-preview-opts');
+      const expPreview = document.getElementById('qedit-live-preview-explanation');
+      const qMode = document.getElementById('qedit-question-type')?.value || 'both';
       const qRaw = document.getElementById('qedit-text')?.value || '';
+      const qRawImg = (document.getElementById('qedit-img')?.value || '').trim();
+      const qNormImg = normalizeImageUrl(qRawImg);
+
+      const qThumbBox = document.getElementById('qedit-question-thumb-box');
+      const qThumbImg = document.getElementById('qedit-question-thumb');
+      if (qThumbBox && qThumbImg) {
+        if (qNormImg && qMode !== 'text') {
+          qThumbImg.src = qNormImg;
+          qThumbBox.classList.remove('hidden');
+        } else {
+          qThumbImg.src = '';
+          qThumbBox.classList.add('hidden');
+        }
+      }
 
       if (qPreview) {
-        qPreview.innerHTML = qRaw.trim()
-          ? formatMathExponents(qRaw)
-          : '<span class="text-slate-500 italic">Pratinjau teks pertanyaan & simbol matematika akan tampil di sini...</span>';
+        const showQText = qMode !== 'image' && Boolean(qRaw.trim());
+        const showQImg = qMode !== 'text' && Boolean(qNormImg);
+        if (showQText) {
+          qPreview.innerHTML = formatMathExponents(qRaw);
+        } else if (showQImg) {
+          qPreview.innerHTML = '<span class="text-sky-300 font-semibold text-xs"><i class="fa-solid fa-image mr-1"></i>Perhatikan gambar soal berikut:</span>';
+        } else {
+          qPreview.innerHTML = '<span class="text-slate-500 italic">Pratinjau teks pertanyaan &amp; gambar soal Google Drive akan tampil di sini...</span>';
+        }
+      }
+
+      if (qImgPreview) {
+        if (qNormImg && qMode !== 'text') {
+          qImgPreview.classList.remove('hidden');
+          qImgPreview.innerHTML = `<img src="${qNormImg}" alt="Preview Gambar Soal Utama" class="max-h-44 w-auto rounded-xl border border-white/15 object-contain bg-navy-950 p-1.5" />`;
+        } else {
+          qImgPreview.classList.add('hidden');
+          qImgPreview.innerHTML = '';
+        }
       }
 
       if (optsPreview) {
@@ -11499,6 +11660,44 @@ service cloud.firestore {
         optsPreview.innerHTML = optItems.length > 0
           ? optItems.join(' ')
           : '<span class="text-[11px] text-slate-500 italic">Pratinjau pilihan jawaban A–E (teks / gambar Google Drive) tampil otomatis saat diisi.</span>';
+      }
+
+      // Pratinjau Pembahasan (Teks & Gambar Google Drive)
+      const expMode = document.getElementById('qedit-explanation-type')?.value || 'both';
+      const expText = (document.getElementById('qedit-explanation')?.value || '').trim();
+      const expRawImg = (document.getElementById('qedit-explanation-img')?.value || '').trim();
+      const expNormImg = normalizeImageUrl(expRawImg);
+
+      const expThumbBox = document.getElementById('qedit-explanation-thumb-box');
+      const expThumbImg = document.getElementById('qedit-explanation-thumb');
+      if (expThumbBox && expThumbImg) {
+        if (expNormImg && expMode !== 'text') {
+          expThumbImg.src = expNormImg;
+          expThumbBox.classList.remove('hidden');
+        } else {
+          expThumbImg.src = '';
+          expThumbBox.classList.add('hidden');
+        }
+      }
+
+      if (expPreview) {
+        const showExpText = expMode !== 'image' && Boolean(expText);
+        const showExpImg = expMode !== 'text' && Boolean(expNormImg);
+        if (showExpText || showExpImg) {
+          expPreview.classList.remove('hidden');
+          expPreview.innerHTML = `
+            <div class="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/30 space-y-2 text-xs text-sky-200">
+              <div class="font-extrabold text-gold-400 text-[11px] uppercase tracking-wider">
+                <i class="fa-solid fa-lightbulb mr-1"></i>Pratinjau Pembahasan Kunci Jawaban:
+              </div>
+              ${showExpText ? `<div class="leading-relaxed whitespace-pre-line">${formatMathExponents(expText)}</div>` : ''}
+              ${showExpImg ? `<img src="${expNormImg}" alt="Preview Gambar Pembahasan" class="max-h-40 w-auto rounded-xl border border-white/15 object-contain bg-navy-950 p-1.5" />` : ''}
+            </div>
+          `;
+        } else {
+          expPreview.classList.add('hidden');
+          expPreview.innerHTML = '';
+        }
       }
     }
 
@@ -11662,8 +11861,12 @@ service cloud.firestore {
                 <span class="text-xs font-bold text-emerald-400">Kunci: ${letters[item.correct] || 'A'}</span>
                 ${item.imageUrl ? '<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-bold"><i class="fa-solid fa-image mr-1"></i>Soal Bergambar</span>' : ''}
                 ${hasOptionImages ? '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold"><i class="fa-solid fa-images mr-1"></i>Opsi A–E Bergambar</span>' : ''}
+                ${item.explanationImageUrl ? '<span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-bold"><i class="fa-brands fa-google-drive mr-1"></i>Pembahasan Bergambar</span>' : ''}
               </div>
               <div class="flex flex-wrap items-center gap-1.5">
+                <span class="px-2 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-extrabold">
+                  <i class="fa-solid fa-cloud-check mr-1"></i>Cloud Sync
+                </span>
                 <button type="button" onclick="openQuestionEditorModal(${idx})" class="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-bold">
                   <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
                 </button>
@@ -11675,7 +11878,15 @@ service cloud.firestore {
                 </button>
               </div>
             </div>
-            <p class="text-xs sm:text-sm font-semibold text-white leading-relaxed">${formatMathExponents(item.q)}</p>
+            <div class="space-y-2">
+              <p class="text-xs sm:text-sm font-semibold text-white leading-relaxed">${formatMathExponents(item.q)}</p>
+              ${item.imageUrl ? `
+                <div class="p-2 rounded-xl bg-navy-900/90 border border-sky-500/30 inline-block">
+                  <span class="text-[10px] font-bold text-sky-300 block mb-1"><i class="fa-brands fa-google-drive mr-1"></i>Gambar Soal (Google Drive):</span>
+                  <img src="${normalizeImageUrl(item.imageUrl)}" alt="Gambar Soal #${idx + 1}" class="max-h-44 w-auto rounded-lg object-contain bg-navy-950 p-1 border border-white/10" />
+                </div>
+              ` : ''}
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-300">
               ${letters.map((ltr, oIdx) => {
                 const optText = (item.options && item.options[oIdx]) ? String(item.options[oIdx]).trim() : '';
@@ -11694,7 +11905,12 @@ service cloud.firestore {
                 `;
               }).join('')}
             </div>
-            ${item.explanation ? `<div class="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/25 text-[11px] text-sky-200"><strong>Pembahasan:</strong> ${formatMathExponents(item.explanation)}</div>` : ''}
+            ${(item.explanation || item.explanationImageUrl) ? `
+              <div class="p-3 rounded-xl bg-sky-500/10 border border-sky-500/25 text-[11px] text-sky-200 space-y-2">
+                ${item.explanation ? `<div><strong><i class="fa-solid fa-lightbulb text-gold-400 mr-1"></i>Pembahasan:</strong> ${formatMathExponents(item.explanation)}</div>` : `<div><strong><i class="fa-solid fa-lightbulb text-gold-400 mr-1"></i>Gambar Pembahasan Google Drive:</strong></div>`}
+                ${item.explanationImageUrl ? `<img src="${normalizeImageUrl(item.explanationImageUrl)}" alt="Gambar Pembahasan" class="max-h-40 w-auto rounded-xl object-contain bg-navy-950 p-1.5 border border-white/10" />` : ''}
+              </div>
+            ` : ''}
           </div>
         `;
       }).join('');
@@ -11721,19 +11937,60 @@ service cloud.firestore {
         title: `Bank Soal: ${QUESTION_BANK_LABELS[bankKey] || bankKey.toUpperCase()}`,
         bodyHtml: `
           <div class="space-y-3.5 text-xs">
-            <div>
-              <div class="flex items-center justify-between gap-2 mb-1">
-                <label for="qedit-text" class="font-bold text-slate-300">Teks Pertanyaan</label>
-                <span class="text-[10px] text-gold-400 font-bold">Klik tombol simbol matematika di bawah untuk menyisipkan notasi</span>
+            <!-- 1. BAGIAN SOAL UTAMA (TEKS PERTANYAAN & GAMBAR GOOGLE DRIVE) -->
+            <div class="p-3.5 rounded-2xl bg-navy-900/90 border border-gold-500/35 space-y-2.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <label for="qedit-text" class="block font-extrabold text-white text-xs">
+                    <i class="fa-solid fa-file-circle-question text-gold-400 mr-1.5"></i>1. Soal Utama (Teks Pertanyaan &amp; Gambar Google Drive)
+                  </label>
+                  <span class="text-[10px] text-slate-400">Bisa berupa teks soal, gambar dari Google Drive, atau gabungan Teks + Gambar Drive</span>
+                </div>
+                <input type="hidden" id="qedit-question-type" value="${existing?.questionType || 'both'}" />
+                <div class="flex items-center gap-1">
+                  <button type="button" id="qedit-q-mode-btn-text" onclick="setQuestionMainType('text')" class="${(existing?.questionType || 'both') === 'text' ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all' : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all'}">
+                    <i class="fa-solid fa-font mr-1"></i>Teks
+                  </button>
+                  <button type="button" id="qedit-q-mode-btn-image" onclick="setQuestionMainType('image')" class="${(existing?.questionType || 'both') === 'image' ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all' : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all'}">
+                    <i class="fa-brands fa-google-drive mr-1"></i>Gambar Drive
+                  </button>
+                  <button type="button" id="qedit-q-mode-btn-both" onclick="setQuestionMainType('both')" class="${(existing?.questionType || 'both') === 'both' ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all' : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all'}">
+                    <i class="fa-solid fa-layer-group mr-1"></i>Teks + Gambar
+                  </button>
+                </div>
               </div>
-              <textarea
-                id="qedit-text"
-                rows="3"
-                onfocus="setActiveMathTarget('qedit-text', 'Teks Pertanyaan')"
-                oninput="updateQuestionEditorPreview()"
-                placeholder="Ketik pertanyaan soal di sini, atau klik simbol √x, x², a/b, ∠, ∑, dll di panel bawah..."
-                class="w-full p-3 rounded-xl bg-navy-950 border border-white/15 text-white font-semibold focus:border-gold-500 focus:outline-none"
-              >${existing ? existing.q : ''}</textarea>
+
+              <div id="qedit-question-text-wrap" class="${existing?.questionType === 'image' ? 'hidden' : ''}">
+                <textarea
+                  id="qedit-text"
+                  rows="3"
+                  onfocus="setActiveMathTarget('qedit-text', 'Teks Pertanyaan')"
+                  oninput="updateQuestionEditorPreview()"
+                  placeholder="Ketik pertanyaan soal di sini, atau klik simbol √x, x², a/b, ∠, ∑, dll di panel bawah..."
+                  class="w-full p-3 rounded-xl bg-navy-950 border border-white/15 text-white font-semibold focus:border-gold-500 focus:outline-none"
+                >${existing ? existing.q : ''}</textarea>
+              </div>
+
+              <div id="qedit-question-img-wrap" class="${existing?.questionType === 'text' ? 'hidden' : ''} space-y-2">
+                <label for="qedit-img" class="block text-[11px] font-bold text-sky-300">
+                  <i class="fa-brands fa-google-drive mr-1"></i>Tautan Gambar Soal dari Google Drive (Opsional)
+                </label>
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="qedit-img"
+                    value="${existing?.imageUrl || ''}"
+                    oninput="updateQuestionEditorPreview()"
+                    placeholder="Tempel link gambar Google Drive untuk Soal (https://drive.google.com/file/d/.../view)"
+                    class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-navy-950 border border-sky-500/35 text-white font-semibold focus:border-gold-500 focus:outline-none"
+                  />
+                  <i class="fa-brands fa-google-drive text-sky-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                </div>
+                <div id="qedit-question-thumb-box" class="hidden p-2.5 rounded-xl bg-navy-950 border border-sky-500/30 inline-flex items-center gap-2.5">
+                  <img id="qedit-question-thumb" src="" alt="Preview Gambar Soal Utama" class="max-h-24 w-auto rounded-lg object-contain" />
+                  <span class="text-[10px] text-emerald-300 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>Gambar Soal Google Drive Siap Ditampilkan</span>
+                </div>
+              </div>
             </div>
 
             <!-- PANEL TOOLBAR SIMBOL & LOGO MATEMATIKA LENGKAP -->
@@ -11760,11 +12017,6 @@ service cloud.firestore {
               </div>
 
               <div id="qedit-math-symbol-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-40 overflow-y-auto pr-0.5"></div>
-            </div>
-
-            <div>
-              <label for="qedit-img" class="block font-bold text-slate-300 mb-1">URL Gambar Soal Utama / Google Drive (Opsional)</label>
-              <input type="text" id="qedit-img" value="${existing?.imageUrl || ''}" placeholder="https://drive.google.com/file/d/..." class="w-full px-3.5 py-2.5 rounded-xl bg-navy-950 border border-white/15 text-white focus:border-gold-500 focus:outline-none" />
             </div>
 
             <div class="space-y-2.5">
@@ -11838,18 +12090,70 @@ service cloud.firestore {
               </select>
             </div>
 
-            <div>
-              <label for="qedit-explanation" class="block font-bold text-slate-300 mb-1">Pembahasan / Penjelasan Kunci Jawaban (Opsional • Ditampilkan pada Evaluasi/Mini Tryout)</label>
-              <textarea id="qedit-explanation" rows="2" placeholder="Tuliskan pembahasan singkat mengapa jawaban tersebut benar..." class="w-full p-3 rounded-xl bg-navy-950 border border-white/15 text-white font-semibold focus:border-gold-500 focus:outline-none">${existing?.explanation || ''}</textarea>
+            <div class="p-3.5 rounded-2xl bg-navy-900/90 border border-sky-500/30 space-y-2.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <label for="qedit-explanation" class="block font-extrabold text-white text-xs">
+                    <i class="fa-solid fa-lightbulb text-gold-400 mr-1.5"></i>Pembahasan / Penjelasan Kunci Jawaban (Teks &amp; Gambar Google Drive)
+                  </label>
+                  <span class="text-[10px] text-slate-400">Dapat diisi teks pembahasan, gambar dari Google Drive, atau gabungan Teks + Gambar Drive</span>
+                </div>
+                <input type="hidden" id="qedit-explanation-type" value="${existing?.explanationType || 'both'}" />
+                <div class="flex items-center gap-1">
+                  <button type="button" id="qedit-exp-mode-btn-text" onclick="setQuestionExplanationType('text')" class="${(existing?.explanationType || 'both') === 'text' ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all' : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all'}">
+                    <i class="fa-solid fa-font mr-1"></i>Teks
+                  </button>
+                  <button type="button" id="qedit-exp-mode-btn-image" onclick="setQuestionExplanationType('image')" class="${(existing?.explanationType || 'both') === 'image' ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all' : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all'}">
+                    <i class="fa-brands fa-google-drive mr-1"></i>Gambar Drive
+                  </button>
+                  <button type="button" id="qedit-exp-mode-btn-both" onclick="setQuestionExplanationType('both')" class="${(existing?.explanationType || 'both') === 'both' ? 'px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-gold-500 text-navy-950 transition-all' : 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-navy-950 text-slate-400 hover:text-white border border-white/10 transition-all'}">
+                    <i class="fa-solid fa-layer-group mr-1"></i>Teks + Gambar
+                  </button>
+                </div>
+              </div>
+
+              <div id="qedit-explanation-text-wrap" class="${existing?.explanationType === 'image' ? 'hidden' : ''}">
+                <textarea
+                  id="qedit-explanation"
+                  rows="2"
+                  onfocus="setActiveMathTarget('qedit-explanation', 'Teks Pembahasan')"
+                  oninput="updateQuestionEditorPreview()"
+                  placeholder="Tuliskan langkah-langkah pembahasan mengapa jawaban tersebut benar (bisa sisipkan simbol matematika dari toolbar)..."
+                  class="w-full p-3 rounded-xl bg-navy-950 border border-white/15 text-white font-semibold focus:border-gold-500 focus:outline-none"
+                >${existing?.explanation || ''}</textarea>
+              </div>
+
+              <div id="qedit-explanation-img-wrap" class="${existing?.explanationType === 'text' ? 'hidden' : ''} space-y-2">
+                <label for="qedit-explanation-img" class="block text-[11px] font-bold text-sky-300">
+                  <i class="fa-brands fa-google-drive mr-1"></i>Tautan Gambar Pembahasan dari Google Drive (Opsional)
+                </label>
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="qedit-explanation-img"
+                    value="${existing?.explanationImageUrl || ''}"
+                    oninput="updateQuestionEditorPreview()"
+                    placeholder="Tempel link gambar Google Drive untuk Pembahasan (https://drive.google.com/file/d/.../view)"
+                    class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-navy-950 border border-sky-500/35 text-white font-semibold focus:border-gold-500 focus:outline-none"
+                  />
+                  <i class="fa-brands fa-google-drive text-sky-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                </div>
+                <div id="qedit-explanation-thumb-box" class="hidden p-2.5 rounded-xl bg-navy-950 border border-sky-500/30 inline-flex items-center gap-2.5">
+                  <img id="qedit-explanation-thumb" src="" alt="Preview Gambar Pembahasan" class="max-h-24 w-auto rounded-lg object-contain" />
+                  <span class="text-[10px] text-emerald-300 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>Gambar Pembahasan Google Drive Siap Ditampilkan</span>
+                </div>
+              </div>
             </div>
 
-            <!-- PRATINJAU LANGSUNG HASIL RENDER MATEMATIKA & GAMBAR OPSI -->
-            <div class="p-3.5 rounded-2xl bg-navy-950/90 border border-sky-500/30 space-y-2">
+            <!-- PRATINJAU LANGSUNG HASIL RENDER MATEMATIKA, GAMBAR OPSI & PEMBAHASAN -->
+            <div class="p-3.5 rounded-2xl bg-navy-950/90 border border-sky-500/30 space-y-2.5">
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400 block">
-                <i class="fa-solid fa-eye mr-1"></i>Pratinjau Tampilan Soal, Simbol Matematika &amp; Gambar Pilihan A–E
+                <i class="fa-solid fa-eye mr-1"></i>Pratinjau Tampilan Soal, Simbol Matematika, Pilihan A–E &amp; Pembahasan
               </span>
               <div id="qedit-live-preview-text" class="text-xs sm:text-sm font-semibold text-white leading-relaxed whitespace-pre-line"></div>
+              <div id="qedit-live-preview-question-img" class="hidden pt-1"></div>
               <div id="qedit-live-preview-opts" class="flex flex-wrap gap-2 pt-1 text-[11px]"></div>
+              <div id="qedit-live-preview-explanation" class="hidden pt-1"></div>
             </div>
           </div>
         `,
@@ -11867,8 +12171,12 @@ service cloud.firestore {
 
     function saveQuestionFromModal(editIndex) {
       const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
-      const qText = (document.getElementById('qedit-text')?.value || '').trim();
-      const imageUrl = (document.getElementById('qedit-img')?.value || '').trim();
+      const qMode = document.getElementById('qedit-question-type')?.value || 'both';
+      const rawQText = (document.getElementById('qedit-text')?.value || '').trim();
+      const rawQImg = (document.getElementById('qedit-img')?.value || '').trim();
+      const qText = qMode === 'image' ? '' : rawQText;
+      const imageUrl = qMode === 'text' ? '' : rawQImg;
+      const questionType = (qText && imageUrl) ? 'both' : (imageUrl ? 'image' : 'text');
 
       const optionTypes = [0, 1, 2, 3, 4].map(i => document.getElementById(`qedit-opt-type-${i}`)?.value || 'text');
       const optionImages = [0, 1, 2, 3, 4].map(i => {
@@ -11884,11 +12192,30 @@ service cloud.firestore {
         return rawText;
       });
       const correct = Number(document.getElementById('qedit-correct')?.value) || 0;
-      const explanation = (document.getElementById('qedit-explanation')?.value || '').trim();
+      const expMode = document.getElementById('qedit-explanation-type')?.value || 'both';
+      const rawExpText = (document.getElementById('qedit-explanation')?.value || '').trim();
+      const rawExpImg = (document.getElementById('qedit-explanation-img')?.value || '').trim();
+      const explanation = expMode === 'image' ? '' : rawExpText;
+      const explanationImageUrl = expMode === 'text' ? '' : rawExpImg;
+      const explanationType = (explanation && explanationImageUrl)
+        ? 'both'
+        : (explanationImageUrl ? 'image' : 'text');
 
       if (!qText && !imageUrl) return;
 
-      const payload = { q: qText || 'Perhatikan gambar berikut:', options, optionImages, optionTypes, correct, explanation, imageUrl };
+      const payload = {
+        q: qText || 'Perhatikan gambar berikut:',
+        questionType,
+        options,
+        optionImages,
+        optionTypes,
+        correct,
+        explanation,
+        explanationImageUrl,
+        explanationType,
+        imageUrl,
+        synced: true
+      };
       if (!Array.isArray(QUESTION_BANK[bankKey])) QUESTION_BANK[bankKey] = [];
 
       if (editIndex !== null && editIndex >= 0 && editIndex < QUESTION_BANK[bankKey].length) {
@@ -12047,10 +12374,13 @@ service cloud.firestore {
       let correct = 0;
       let explanation = '';
 
+      let explanationImageUrl = '';
+      let explanationType = 'text';
+
       if (cols.length >= 13) {
-        // Format Lengkap 13-14 Kolom:
+        // Format Lengkap 13-15 Kolom:
         // 0: Pertanyaan | 1: Gambar_Soal_Drive | 2: Teks_A | 3: Gambar_A_Drive | 4: Teks_B | 5: Gambar_B_Drive |
-        // 6: Teks_C | 7: Gambar_C_Drive | 8: Teks_D | 9: Gambar_D_Drive | 10: Teks_E | 11: Gambar_E_Drive | 12: Kunci | 13: Pembahasan
+        // 6: Teks_C | 7: Gambar_C_Drive | 8: Teks_D | 9: Gambar_D_Drive | 10: Teks_E | 11: Gambar_E_Drive | 12: Kunci | 13: Pembahasan | 14: Gambar_Pembahasan_Drive
         qText = cols[0] || '';
         qImageUrl = cols[1] || '';
         for (let i = 0; i < 5; i++) {
@@ -12059,20 +12389,26 @@ service cloud.firestore {
           optDetections.push(detectOptionModeAndValues(tCol, gCol));
         }
         correct = parseCorrectKeyIndex(cols[12]);
-        explanation = cols.slice(13).join(' ').trim();
+        const expDetect = detectOptionModeAndValues(cols[13] || '', cols[14] || '');
+        explanation = expDetect.text;
+        explanationImageUrl = expDetect.image;
+        explanationType = expDetect.mode;
       } else if (cols.length >= 8 && isLikelyGoogleDriveOrImageUrl(cols[1]) && cols.length >= 9) {
-        // Format 9 Kolom (dengan Gambar_Soal_Drive di kolom ke-2):
-        // 0: Pertanyaan | 1: Gambar_Soal_Drive | 2..6: Opsi A..E | 7: Kunci | 8: Pembahasan
+        // Format 9-10 Kolom (dengan Gambar_Soal_Drive di kolom ke-2):
+        // 0: Pertanyaan | 1: Gambar_Soal_Drive | 2..6: Opsi A..E | 7: Kunci | 8: Pembahasan | 9: Gambar_Pembahasan_Drive
         qText = cols[0] || '';
         qImageUrl = cols[1] || '';
         for (let i = 0; i < 5; i++) {
           optDetections.push(detectOptionModeAndValues(cols[2 + i] || '', ''));
         }
         correct = parseCorrectKeyIndex(cols[7]);
-        explanation = cols.slice(8).join(' ').trim();
+        const expDetect = detectOptionModeAndValues(cols[8] || '', cols[9] || '');
+        explanation = expDetect.text;
+        explanationImageUrl = expDetect.image;
+        explanationType = expDetect.mode;
       } else {
-        // Format Ringkas 7-8 Kolom:
-        // 0: Pertanyaan (bisa "Teks Soal || https://drive.google.com/...") | 1..5: Opsi A..E | 6: Kunci | 7: Pembahasan
+        // Format Ringkas 7-9 Kolom:
+        // 0: Pertanyaan (bisa "Teks Soal || https://drive.google.com/...") | 1..5: Opsi A..E | 6: Kunci | 7: Pembahasan (bisa "Teks || https://drive.google.com/...") | 8: Gambar_Pembahasan_Drive
         const qSplit = detectOptionModeAndValues(cols[0] || '', '');
         qText = qSplit.text || (qSplit.image ? 'Perhatikan gambar berikut:' : (cols[0] || ''));
         qImageUrl = qSplit.image || '';
@@ -12080,7 +12416,10 @@ service cloud.firestore {
           optDetections.push(detectOptionModeAndValues(cols[1 + i] || '', ''));
         }
         correct = parseCorrectKeyIndex(cols[6]);
-        explanation = cols.slice(7).join(' ').trim();
+        const expDetect = detectOptionModeAndValues(cols[7] || '', cols[8] || '');
+        explanation = expDetect.text;
+        explanationImageUrl = expDetect.image;
+        explanationType = expDetect.mode;
       }
 
       const optionTypes = optDetections.map(d => d.mode);
@@ -12100,7 +12439,9 @@ service cloud.firestore {
         optionImages,
         optionTypes,
         correct,
-        explanation
+        explanation,
+        explanationImageUrl,
+        explanationType
       };
     }
 
@@ -12299,7 +12640,10 @@ service cloud.firestore {
                 ${letters[item.correct] || 'A'}
               </span>
             </td>
-            <td class="py-3 px-3 text-slate-300 text-[11px] leading-relaxed">${item.explanation || '<span class="text-slate-500 italic">-</span>'}</td>
+            <td class="py-3 px-3 text-slate-300 text-[11px] leading-relaxed space-y-1">
+              <div>${item.explanation || (item.explanationImageUrl ? '' : '<span class="text-slate-500 italic">-</span>')}</div>
+              ${item.explanationImageUrl ? `<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-mono"><i class="fa-brands fa-google-drive"></i><span>Gambar Pembahasan Drive</span></div>` : ''}
+            </td>
             <td class="py-3 px-3 text-center">
               <button type="button" onclick="removePreviewQuestionAt(${idx})" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold" title="Hapus baris ini dari pratinjau">
                 <i class="fa-solid fa-xmark"></i>
@@ -12388,7 +12732,8 @@ service cloud.firestore {
         'Teks_E',
         'Gambar_E_Drive',
         'Kunci_Jawaban',
-        'Pembahasan'
+        'Pembahasan',
+        'Gambar_Pembahasan_Drive'
       ];
 
       const rows = [headers.join(',')];
@@ -12412,6 +12757,7 @@ service cloud.firestore {
 
         rowCells.push(escapeCsvCell(letters[item.correct] || 'A'));
         rowCells.push(escapeCsvCell(item.explanation || ''));
+        rowCells.push(escapeCsvCell(item.explanationImageUrl || ''));
         rows.push(rowCells.join(','));
       });
 
@@ -12523,6 +12869,7 @@ service cloud.firestore {
       }
       cells.push(letters[item.correct] || 'A');
       cells.push(item.explanation || '');
+      cells.push(item.explanationImageUrl || '');
 
       const tsvLine = cells.join('\t');
       const panel = document.getElementById('admin-qbank-bulk-panel');
@@ -13130,7 +13477,8 @@ service cloud.firestore {
             optionImages: Array.isArray(item.optionImages) ? item.optionImages : [],
             optionTypes: Array.isArray(item.optionTypes) ? item.optionTypes : [],
             scores,
-            explanation: item.explanation || `Jawaban terbaik adalah Pilihan ${['A', 'B', 'C', 'D', 'E'][correctIdx] || 'A'} (5 Poin).`
+            explanation: item.explanation || `Jawaban terbaik adalah Pilihan ${['A', 'B', 'C', 'D', 'E'][correctIdx] || 'A'} (5 Poin).`,
+            explanationImageUrl: item.explanationImageUrl || ''
           });
         });
       });
@@ -13191,8 +13539,9 @@ service cloud.firestore {
             ${mainImgUrl ? `<img src="${mainImgUrl}" alt="Gambar Soal" class="max-h-44 w-auto rounded-xl border border-white/10 object-contain bg-navy-950 p-1.5" />` : ''}
             <div class="space-y-2">${optionsHtml}</div>
             ${miniSkdGraded ? `
-              <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] text-emerald-200 leading-relaxed">
-                <strong>Pembahasan:</strong> ${formatMathExponents(item.explanation)}
+              <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] text-emerald-200 leading-relaxed space-y-2">
+                <div><strong>Pembahasan:</strong> ${formatMathExponents(item.explanation)}</div>
+                ${item.explanationImageUrl ? `<img src="${normalizeImageUrl(item.explanationImageUrl)}" alt="Gambar Pembahasan" class="max-h-44 w-auto rounded-xl object-contain bg-navy-950 p-1.5 border border-white/10" />` : ''}
               </div>
             ` : ''}
           </div>
@@ -14598,6 +14947,7 @@ service cloud.firestore {
             optionTypes: [...(item.optionTypes || ['text', 'text', 'text', 'text', 'text'])],
             correct: Number(item.correct) || 0,
             explanation: item.explanation || `Jawaban yang tepat adalah Pilihan ${['A', 'B', 'C', 'D', 'E'][Number(item.correct) || 0]}.`,
+            explanationImageUrl: item.explanationImageUrl || '',
             imageUrl: item.imageUrl || '',
             visualHtml,
             reviewVisualHtml: reviewVisualHtml || visualHtml
@@ -14726,6 +15076,7 @@ service cloud.firestore {
               optionTypes: [...(base.optionTypes || ['text', 'text', 'text', 'text', 'text'])],
               correct: Number(base.correct) || 0,
               explanation: base.explanation || `Jawaban yang tepat adalah Pilihan ${['A', 'B', 'C', 'D', 'E'][Number(base.correct) || 0]}.`,
+              explanationImageUrl: base.explanationImageUrl || '',
               imageUrl: base.imageUrl || ''
             });
           }
@@ -15438,9 +15789,10 @@ service cloud.firestore {
               ${visualReview ? `<div class="p-3.5 rounded-2xl bg-navy-900/90 border border-gold-500/30">${visualReview}</div>` : ''}
               ${mainImg ? `<img src="${mainImg}" alt="Gambar Soal" class="max-h-48 w-auto rounded-xl object-contain bg-navy-900 p-2 border border-white/10" />` : ''}
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${optsHtml}</div>
-              <div class="p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/35 text-xs text-sky-200 leading-relaxed">
+              <div class="p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/35 text-xs text-sky-200 leading-relaxed space-y-2">
                 <strong class="text-gold-400 block mb-0.5"><i class="fa-solid fa-lightbulb mr-1"></i>Pembahasan Langkah demi Langkah Soal #${idx + 1} (Kunci: ${letters[q.correct]}):</strong>
-                ${formatMathExponents(q.explanation || `Jawaban yang benar adalah Pilihan ${letters[q.correct]}.`)}
+                <div>${formatMathExponents(q.explanation || (q.explanationImageUrl ? '' : `Jawaban yang benar adalah Pilihan ${letters[q.correct]}.`))}</div>
+                ${q.explanationImageUrl ? `<img src="${normalizeImageUrl(q.explanationImageUrl)}" alt="Gambar Pembahasan Soal #${idx + 1}" class="max-h-56 w-auto rounded-xl object-contain bg-navy-950 p-2 border border-white/15" />` : ''}
               </div>
             </div>
           `;
