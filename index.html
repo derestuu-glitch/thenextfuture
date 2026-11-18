@@ -698,10 +698,19 @@
   <header class="glass-nav sticky top-0 z-40 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-20">
-        <!-- Brand Logo -->
+        <!-- Brand Logo (Lingkaran dari Google Drive) -->
         <button type="button" onclick="navigateTo('home')" class="flex items-center gap-3 text-left group focus:outline-none">
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center text-navy-950 font-extrabold text-lg shadow-lg shadow-gold-500/20 group-hover:scale-105 transition-transform">
-            <i class="fa-solid fa-shield-halved"></i>
+          <div class="w-12 h-12 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 overflow-hidden bg-transparent">
+            <img
+              src="https://lh3.googleusercontent.com/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n"
+              data-drive-link="https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link"
+              alt="Logo TNF CLASS Mataram NTB"
+              class="w-full h-full rounded-full object-cover"
+              onerror="this.style.display='none'; document.getElementById('header-logo-fallback').classList.remove('hidden');"
+            />
+            <span id="header-logo-fallback" class="hidden w-full h-full rounded-full flex items-center justify-center bg-navy-950 text-gold-500 font-extrabold text-lg">
+              <i class="fa-solid fa-shield-halved"></i>
+            </span>
           </div>
           <div>
             <div class="flex items-center gap-1.5">
@@ -3667,7 +3676,7 @@
                   <span class="text-[11px] font-bold text-gold-400">Promo Diskon 80% — Rp 100.000</span>
                 </div>
                 <h2 class="text-base sm:text-xl font-extrabold text-white">Paket Khusus Akses E-Book &amp; Modul PDF</h2>
-                <p class="text-xs text-slate-300">Akses mandiri seluruh modul materi PDF dan bank latihan soal kurikulum TNI/POLRI serta CPNS selama 30 hari.</p>
+                <p class="text-xs text-slate-300">Akses mandiri seluruh modul materi PDF dan bank latihan soal kurikulum TNI/POLRI serta CPNS untuk selamanya (Lifetime Access).</p>
               </div>
             </div>
             <div class="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10 shrink-0">
@@ -3684,13 +3693,13 @@
               <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-amber-500/35">
                 <div class="space-y-2">
                   <span class="inline-block px-2.5 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 text-[10px] font-extrabold uppercase">
-                    <i class="fa-solid fa-book-open mr-1"></i>Divisi TNI / POLRI • Aktif 30 Hari
+                    <i class="fa-solid fa-infinity mr-1"></i>Divisi TNI / POLRI • Aktif Selamanya
                   </span>
                   <h3 class="text-lg font-extrabold text-white leading-snug">Paket Akses E-Book TNI/POLRI</h3>
                   <div>
                     <span class="text-xs line-through text-slate-400 block">Harga Normal Rp 500.000</span>
                     <span class="text-3xl font-extrabold text-gold-400">Rp 100.000</span>
-                    <span class="text-xs text-slate-300 block mt-0.5">Khusus E-Book &amp; Modul PDF TNI/POLRI (30 Hari)</span>
+                    <span class="text-xs text-slate-300 block mt-0.5">Khusus E-Book &amp; Modul PDF TNI/POLRI (Akses Selamanya)</span>
                   </div>
                   <p class="text-xs text-slate-300 leading-relaxed pt-1">
                     Membuka akses khusus perpustakaan <strong>E-Book &amp; Modul PDF TNI/POLRI</strong> (Psikologi, Akademik TKA PU/TWK/TBI/MTK &amp; Panduan Jasmani).
@@ -3712,13 +3721,13 @@
               <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-sky-500/35">
                 <div class="space-y-2">
                   <span class="inline-block px-2.5 py-0.5 rounded-lg bg-sky-500/15 text-sky-300 text-[10px] font-extrabold uppercase">
-                    <i class="fa-solid fa-book-bookmark mr-1"></i>Divisi CPNS &amp; Kedinasan • Aktif 30 Hari
+                    <i class="fa-solid fa-infinity mr-1"></i>Divisi CPNS &amp; Kedinasan • Aktif Selamanya
                   </span>
                   <h3 class="text-lg font-extrabold text-white leading-snug">Paket Akses E-Book CPNS</h3>
                   <div>
                     <span class="text-xs line-through text-slate-400 block">Harga Normal Rp 500.000</span>
                     <span class="text-3xl font-extrabold text-sky-300">Rp 100.000</span>
-                    <span class="text-xs text-slate-300 block mt-0.5">Khusus E-Book &amp; Modul PDF CPNS BKN (30 Hari)</span>
+                    <span class="text-xs text-slate-300 block mt-0.5">Khusus E-Book &amp; Modul PDF CPNS BKN (Akses Selamanya)</span>
                   </div>
                   <p class="text-xs text-slate-300 leading-relaxed pt-1">
                     Membuka akses khusus perpustakaan <strong>E-Book &amp; Modul PDF CPNS</strong> (Modul HOTS SKD TWK, TIU, TKP Poin 5 &amp; Panduan SKB ASN).
@@ -4688,6 +4697,133 @@ service cloud.firestore {
                   <i class="fa-solid fa-plus"></i>
                   <span>Tambah Soal Baru</span>
                 </button>
+                <button type="button" onclick="exportActiveQuestionBankCsv()" class="px-3.5 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold flex items-center gap-2 transition">
+                  <i class="fa-solid fa-file-export"></i>
+                  <span>Ekspor Soal (CSV/Excel)</span>
+                </button>
+                <button type="button" onclick="openBulkQuestionImportPanel('file')" class="px-3.5 py-2.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-xs font-extrabold flex items-center gap-2 transition">
+                  <i class="fa-solid fa-file-import"></i>
+                  <span>Impor Soal (CSV/Excel)</span>
+                </button>
+                <button type="button" onclick="openBulkQuestionImportPanel('paste')" class="px-3.5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-extrabold flex items-center gap-2 transition">
+                  <i class="fa-solid fa-paste"></i>
+                  <span>Copy-Paste Cepat</span>
+                </button>
+                <input type="file" id="qbank-csv-file-input" accept=".csv,.tsv,.txt" class="hidden" onchange="handleQuestionBankFileUpload(event)" />
+              </div>
+            </div>
+
+            <!-- Panel Terpadu: Impor Soal (CSV/Excel) & Copy-Paste Cepat + Tabel Pratinjau & Simpan Semua -->
+            <div id="admin-qbank-bulk-panel" class="hidden p-5 sm:p-6 rounded-2xl bg-navy-950/95 border-2 border-gold-500/40 space-y-5 shadow-xl">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-gold-500/20 border border-gold-500/40 text-gold-300 text-[10px] font-extrabold uppercase tracking-wider">Bulk Loader Otomatis</span>
+                    <span id="qbank-bulk-target-label" class="text-xs font-bold text-sky-300">Target Kategori Aktif</span>
+                  </div>
+                  <h3 class="text-base sm:text-lg font-extrabold text-white mt-1">Impor Soal (CSV/Excel) &amp; Copy-Paste Cepat dengan Deteksi Otomatis Opsi A–E</h3>
+                  <p class="text-xs text-slate-300 mt-0.5">
+                    Sistem otomatis mendeteksi setiap opsi A–E menjadi mode <strong class="text-emerald-300">Teks</strong>, <strong class="text-sky-300">Gambar Drive</strong>, atau <strong class="text-amber-300">Teks + Gambar</strong> berdasarkan terisi tidaknya kolom teks dan tautan Google Drive.
+                  </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button type="button" onclick="downloadQuestionBankTemplateCsv()" class="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 text-xs font-bold flex items-center gap-1.5">
+                    <i class="fa-solid fa-download text-gold-400"></i>
+                    <span>Unduh Template CSV/Excel</span>
+                  </button>
+                  <button type="button" onclick="loadSampleBulkQuestions()" class="px-3 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-xs font-bold flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Contoh Data Otomatis</span>
+                  </button>
+                  <button type="button" onclick="closeBulkQuestionImportPanel()" class="px-3 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-bold flex items-center gap-1.5">
+                    <i class="fa-solid fa-xmark"></i>
+                    <span>Tutup Panel</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 2 Metode Input: Unggah File CSV/Excel atau Copy-Paste Cepat -->
+              <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div class="lg:col-span-5 p-4 rounded-2xl bg-slate-900/90 border border-sky-500/30 space-y-3 flex flex-col justify-between">
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-extrabold text-sky-300 uppercase tracking-wider"><i class="fa-solid fa-file-csv mr-1.5"></i>1. Unggah File Soal (CSV / TSV / Excel)</span>
+                      <span class="text-[10px] text-slate-400"> Pembaca File Browser</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                      Pilih file <strong>.csv</strong> atau <strong>.tsv / .txt</strong> dari Microsoft Excel / Google Sheets. Mendukung format lengkap <strong>14 kolom</strong> (Teks &amp; Link Drive terpisah per opsi A–E) maupun format ringkas <strong>7–9 kolom</strong> (gabungan <code class="text-gold-300">Teks || https://drive.google.com/...</code>).
+                    </p>
+                  </div>
+                  <div class="pt-2 flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="document.getElementById('qbank-csv-file-input').click()" class="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-navy-950 font-extrabold text-xs flex items-center gap-2 shadow-lg">
+                      <i class="fa-solid fa-folder-open"></i>
+                      <span>Pilih File CSV / Excel (.csv/.tsv)</span>
+                    </button>
+                    <span id="qbank-uploaded-filename" class="text-[11px] text-slate-400 font-medium truncate max-w-[220px]">Belum ada file dipilih</span>
+                  </div>
+                </div>
+
+                <div class="lg:col-span-7 p-4 rounded-2xl bg-slate-900/90 border border-amber-500/30 space-y-2.5">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-xs font-extrabold text-amber-300 uppercase tracking-wider"><i class="fa-solid fa-paste mr-1.5"></i>2. Copy-Paste Cepat Baris Soal (Excel / Spreadsheet / Teks)</span>
+                    <span class="text-[10px] text-slate-400">Pemisah otomatis: Tab (Excel), Titik Koma (;), Pipa (|), atau Koma (,)</span>
+                  </div>
+                  <textarea
+                    id="qbank-bulk-paste-input"
+                    rows="4"
+                    oninput="parseQuestionBankBulkText(this.value)"
+                    placeholder="Paste langsung blok tabel dari Excel / Google Sheets di sini...&#10;Format 14 Kolom: Pertanyaan | Gambar_Soal_Drive | Teks_A | Gambar_A_Drive | Teks_B | Gambar_B_Drive | Teks_C | Gambar_C_Drive | Teks_D | Gambar_D_Drive | Teks_E | Gambar_E_Drive | Kunci (A-E) | Pembahasan&#10;Format Ringkas: Pertanyaan | Opsi_A | Opsi_B | Opsi_C | Opsi_D | Opsi_E | Kunci (A-E) | Pembahasan (Gunakan 'Teks || https://drive.google.com/...' untuk opsi Teks + Gambar)"
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-navy-950 border border-white/15 text-white text-xs font-mono leading-relaxed focus:outline-none focus:border-gold-500"
+                  ></textarea>
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-400">
+                      Tips: Jika kolom opsi hanya berisi link Google Drive &rarr; otomatis jadi <strong class="text-sky-300">Gambar Drive</strong>. Jika berisi teks &amp; link Drive &rarr; otomatis jadi <strong class="text-amber-300">Teks + Gambar</strong>.
+                    </span>
+                    <button type="button" onclick="parseQuestionBankBulkText(document.getElementById('qbank-bulk-paste-input').value)" class="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-extrabold">
+                      <i class="fa-solid fa-rotate mr-1"></i>Baca &amp; Tampilkan Pratinjau
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tabel Pratinjau Hasil Bacaan & Tombol Simpan Semua -->
+              <div id="qbank-bulk-preview-container" class="space-y-3 pt-2">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-900/95 border border-white/10">
+                  <div id="qbank-bulk-preview-summary" class="text-xs text-slate-300">
+                    Belum ada data soal yang dipratinjau. Unggah file CSV/Excel atau tempelkan baris soal pada kotak Copy-Paste Cepat di atas.
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="clearBulkQuestionPreview()" class="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-xs font-bold">
+                      <i class="fa-solid fa-trash-can mr-1"></i>Bersihkan
+                    </button>
+                    <button type="button" id="btn-save-all-imported-questions" onclick="saveAllImportedQuestions('append')" class="btn-gold px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-lg">
+                      <i class="fa-solid fa-floppy-disk"></i>
+                      <span>Simpan Semua</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-white/10 bg-navy-950/90 max-h-[420px] overflow-y-auto">
+                  <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-900/95 text-slate-300 uppercase text-[10px] font-extrabold tracking-wider sticky top-0 z-10 border-b border-white/10">
+                      <tr>
+                        <th class="py-3 px-3 w-10 text-center">#</th>
+                        <th class="py-3 px-3 min-w-[220px]">Pertanyaan &amp; Gambar Soal</th>
+                        <th class="py-3 px-3 min-w-[340px]">Deteksi Otomatis Mode Opsi A–E (Teks / Gambar Drive / Teks + Gambar)</th>
+                        <th class="py-3 px-3 w-20 text-center">Kunci</th>
+                        <th class="py-3 px-3 min-w-[180px]">Pembahasan</th>
+                        <th class="py-3 px-3 w-16 text-center">Hapus</th>
+                      </tr>
+                    </thead>
+                    <tbody id="qbank-bulk-preview-tbody" class="divide-y divide-white/10 text-slate-200">
+                      <tr>
+                        <td colspan="6" class="py-8 px-4 text-center text-slate-400 text-xs">
+                          Tabel pratinjau masih kosong. Silakan unggah file CSV/Excel atau gunakan fitur Copy-Paste Cepat untuk melihat hasil deteksi otomatis soal.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
@@ -4740,8 +4876,17 @@ service cloud.firestore {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div class="flex flex-col md:flex-row items-center justify-between gap-6">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center text-navy-950 font-extrabold">
-            <i class="fa-solid fa-shield-halved"></i>
+          <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden bg-transparent">
+            <img
+              src="https://lh3.googleusercontent.com/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n"
+              data-drive-link="https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link"
+              alt="Logo TNF CLASS Mataram NTB"
+              class="w-full h-full rounded-full object-cover"
+              onerror="this.style.display='none'; document.getElementById('footer-logo-fallback').classList.remove('hidden');"
+            />
+            <span id="footer-logo-fallback" class="hidden w-full h-full rounded-full flex items-center justify-center bg-navy-950 text-gold-500 font-extrabold text-base">
+              <i class="fa-solid fa-shield-halved"></i>
+            </span>
           </div>
           <div>
             <span class="font-extrabold text-white">TNF <span class="text-gold-500">CLASS</span></span>
@@ -5197,10 +5342,11 @@ service cloud.firestore {
       }
       if (lower.includes('e-book') || lower.includes('ebook')) {
         return {
-          days: 30,
-          months: 1,
-          label: '1 Bulan (30 Hari • Akses E-Book)',
-          type: 'time',
+          days: 36500,
+          months: 1200,
+          label: 'Aktif Selamanya (Lifetime • Akses E-Book)',
+          type: 'lifetime',
+          isLifetime: true,
           psikoQuota: 0,
           akademikQuota: 0
         };
@@ -5480,12 +5626,12 @@ service cloud.firestore {
       {
         name: 'Paket Akses E-Book TNI/POLRI',
         price: 'Rp 100.000',
-        desc: 'Khusus membuka perpustakaan E-Book & Modul PDF TNI/POLRI (Psikologi, Akademik TKA & Jasmani) selama 30 hari'
+        desc: 'Khusus membuka perpustakaan E-Book & Modul PDF TNI/POLRI (Psikologi, Akademik TKA & Jasmani) — Aktif Selamanya (Lifetime)'
       },
       {
         name: 'Paket Akses E-Book CPNS',
         price: 'Rp 100.000',
-        desc: 'Khusus membuka perpustakaan E-Book & Modul PDF CPNS BKN (TWK, TIU, TKP & SKB) selama 30 hari'
+        desc: 'Khusus membuka perpustakaan E-Book & Modul PDF CPNS BKN (TWK, TIU, TKP & SKB) — Aktif Selamanya (Lifetime)'
       }
     ];
 
@@ -5716,14 +5862,14 @@ service cloud.firestore {
         packageName: 'Paket Latihan Soal Psikologi (Akses Selamanya)'
       },
       ebook_only: {
-        badge: 'Divisi TNI / POLRI • Akses Digital PDF',
+        badge: 'Divisi TNI / POLRI • Akses Selamanya (Lifetime)',
         title: 'Paket Akses E-Book TNI/POLRI',
         price: 'Rp 100.000',
         normalPrice: 'Harga Normal Rp 500.000',
-        period: '/ 30 Hari',
-        tag: 'Khusus E-Book TNI/POLRI',
+        period: '/ selamanya',
+        tag: 'Aktif Selamanya',
         features: [
-          'Harga promo Rp 100.000 dari harga normal Rp 500.000 (Masa aktif 30 hari).',
+          'Harga promo Rp 100.000 dari harga normal Rp 500.000 (Akses Selamanya / Lifetime Access).',
           'Membuka akses khusus seluruh E-Book & Modul PDF Divisi TNI/POLRI.',
           'Mencakup Modul Psikologi (Kecerdasan, Kepribadian & Kecermatan), Akademik TKA (PU, TWK, TBI, MTK) & Panduan Jasmani.',
           'Tidak termasuk akses E-Book CPNS maupun Simulasi CAT Online (dapat ditambah kapan saja melalui fitur Tambah Paket).'
@@ -5733,14 +5879,14 @@ service cloud.firestore {
         packageName: 'Paket Akses E-Book TNI/POLRI'
       },
       ebook_cpns_only: {
-        badge: 'Divisi CPNS & Kedinasan • Akses Digital PDF',
+        badge: 'Divisi CPNS & Kedinasan • Akses Selamanya (Lifetime)',
         title: 'Paket Akses E-Book CPNS',
         price: 'Rp 100.000',
         normalPrice: 'Harga Normal Rp 500.000',
-        period: '/ 30 Hari',
-        tag: 'Khusus E-Book CPNS',
+        period: '/ selamanya',
+        tag: 'Aktif Selamanya',
         features: [
-          'Harga promo Rp 100.000 dari harga normal Rp 500.000 (Masa aktif 30 hari).',
+          'Harga promo Rp 100.000 dari harga normal Rp 500.000 (Akses Selamanya / Lifetime Access).',
           'Membuka akses khusus seluruh E-Book & Modul PDF Divisi CPNS & Sekolah Kedinasan.',
           'Mencakup Modul HOTS SKD BKN (TWK, TIU Verbal/Numerik/Figural, TKP Poin 5) & Modul Strategi SKB ASN.',
           'Tidak termasuk akses E-Book TNI/POLRI maupun Simulasi CAT Online (dapat ditambah kapan saja melalui fitur Tambah Paket).'
@@ -11129,6 +11275,7 @@ service cloud.firestore {
       const listEl = document.getElementById('admin-qbank-list');
 
       renderAdminQuestionQuickNav(bankKey);
+      if (typeof updateBulkTargetBankLabel === 'function') updateBulkTargetBankLabel();
 
       const bankLabel = QUESTION_BANK_LABELS[bankKey] || bankKey.toUpperCase();
       const isCpnsBank = bankKey.startsWith('cpns_');
@@ -11155,9 +11302,12 @@ service cloud.firestore {
                 ${item.imageUrl ? '<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-bold"><i class="fa-solid fa-image mr-1"></i>Soal Bergambar</span>' : ''}
                 ${hasOptionImages ? '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold"><i class="fa-solid fa-images mr-1"></i>Opsi A–E Bergambar</span>' : ''}
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-1.5">
                 <button type="button" onclick="openQuestionEditorModal(${idx})" class="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-bold">
                   <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
+                </button>
+                <button type="button" onclick="copySingleQuestionRow(${idx})" title="Salin baris soal ini ke clipboard (Format Copy-Paste Cepat)" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold">
+                  <i class="fa-solid fa-copy mr-1"></i>Copy Baris
                 </button>
                 <button type="button" onclick="deleteQuestionFromBank(${idx})" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold">
                   <i class="fa-solid fa-trash mr-1"></i>Hapus
@@ -11392,6 +11542,638 @@ service cloud.firestore {
       if (typeof renderMiniSkd === 'function') renderMiniSkd();
       if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
       if (typeof renderLatihanPsikoLobby === 'function') renderLatihanPsikoLobby();
+    }
+
+    
+    // ============================================================================
+    // FITUR EKSPOR SOAL, IMPOR SOAL (CSV/EXCEL), COPY-PASTE CEPAT & DETEKSI OPSI A-E
+    // ============================================================================
+    let PENDING_IMPORT_QUESTIONS = [];
+
+    function isLikelyGoogleDriveOrImageUrl(str) {
+      const v = String(str || '').trim();
+      if (!v) return false;
+      if (/^https?:\/\/(drive\.google\.com|lh3\.googleusercontent\.com|docs\.google\.com)/i.test(v)) return true;
+      if (/^https?:\/\/.+\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(v)) return true;
+      if (/^gdrive:/i.test(v)) return true;
+      return false;
+    }
+
+    function detectOptionModeAndValues(rawTextCol, rawDriveCol) {
+      let textVal = String(rawTextCol ?? '').trim();
+      let imgVal = String(rawDriveCol ?? '').trim();
+
+      // Apabila menggunakan format kolom tunggal per opsi:
+      // 1) Cek apakah ada pemisah eksplisit "Teks || https://drive.google.com/..." atau "Teks :: https://..."
+      if (!imgVal && textVal) {
+        const splitMatch = textVal.match(/^(.*?)\s*(?:\|\||::)\s*(https?:\/\/\S+)\s*$/i);
+        if (splitMatch) {
+          textVal = splitMatch[1].trim();
+          imgVal = splitMatch[2].trim();
+        } else if (isLikelyGoogleDriveOrImageUrl(textVal)) {
+          // Seluruh isi kolom adalah tautan Google Drive / URL gambar
+          imgVal = textVal;
+          textVal = '';
+        } else {
+          // Cek apakah terdapat tautan Google Drive yang menempel di akhir kalimat opsi
+          const trailingDrive = textVal.match(/^(.*?)\s+(https?:\/\/(?:drive\.google\.com|lh3\.googleusercontent\.com)\/\S+)\s*$/i);
+          if (trailingDrive && trailingDrive[1].trim()) {
+            textVal = trailingDrive[1].trim();
+            imgVal = trailingDrive[2].trim();
+          }
+        }
+      }
+
+      const hasText = Boolean(textVal);
+      const hasImg = Boolean(imgVal);
+
+      let mode = 'text';
+      if (hasText && hasImg) {
+        mode = 'both';
+      } else if (!hasText && hasImg) {
+        mode = 'image';
+      } else {
+        mode = 'text';
+      }
+
+      return {
+        mode,
+        text: mode === 'image' ? '' : textVal,
+        image: mode === 'text' ? '' : imgVal
+      };
+    }
+
+    function parseDelimitedLine(line, delimiter) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (ch === delimiter && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += ch;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    function detectBestDelimiter(sampleLine) {
+      if (sampleLine.includes('\t')) return '\t';
+      const countOutsideQuotes = (char) => {
+        let count = 0;
+        let inQ = false;
+        for (let i = 0; i < sampleLine.length; i++) {
+          if (sampleLine[i] === '"') inQ = !inQ;
+          else if (!inQ && sampleLine[i] === char) count++;
+        }
+        return count;
+      };
+      const semi = countOutsideQuotes(';');
+      const pipe = countOutsideQuotes('|');
+      const comma = countOutsideQuotes(',');
+      if (semi >= 6 && semi >= comma && semi >= pipe) return ';';
+      if (pipe >= 6 && pipe >= comma) return '|';
+      return ',';
+    }
+
+    function parseCorrectKeyIndex(rawKey) {
+      const clean = String(rawKey ?? '').trim().toUpperCase();
+      if (!clean) return 0;
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+      const letterIdx = letters.indexOf(clean.charAt(0));
+      if (letterIdx !== -1) return letterIdx;
+      const num = parseInt(clean, 10);
+      if (!isNaN(num)) {
+        if (num >= 1 && num <= 5) return num - 1;
+        if (num >= 0 && num <= 4) return num;
+      }
+      return 0;
+    }
+
+    function isHeaderRow(cols) {
+      if (!cols || !cols.length) return false;
+      const first = String(cols[0] || '').trim().toLowerCase();
+      const second = String(cols[1] || '').trim().toLowerCase();
+      return (
+        first === 'pertanyaan' ||
+        first === 'soal' ||
+        first === 'butir soal' ||
+        first === 'question' ||
+        (first === 'no' && (second.includes('pertanyaan') || second.includes('soal')))
+      );
+    }
+
+    function convertColumnsToQuestionObject(rawCols) {
+      let cols = rawCols.map(c => String(c ?? '').trim());
+      // Jika kolom pertama adalah nomor urut (misal "1", "2") dan total kolom >= 8, geser 1 kolom
+      if (cols.length >= 8 && /^\d+$/.test(cols[0]) && cols[1].length > 2) {
+        cols = cols.slice(1);
+      }
+
+      let qText = '';
+      let qImageUrl = '';
+      let optDetections = [];
+      let correct = 0;
+      let explanation = '';
+
+      if (cols.length >= 13) {
+        // Format Lengkap 13-14 Kolom:
+        // 0: Pertanyaan | 1: Gambar_Soal_Drive | 2: Teks_A | 3: Gambar_A_Drive | 4: Teks_B | 5: Gambar_B_Drive |
+        // 6: Teks_C | 7: Gambar_C_Drive | 8: Teks_D | 9: Gambar_D_Drive | 10: Teks_E | 11: Gambar_E_Drive | 12: Kunci | 13: Pembahasan
+        qText = cols[0] || '';
+        qImageUrl = cols[1] || '';
+        for (let i = 0; i < 5; i++) {
+          const tCol = cols[2 + i * 2] || '';
+          const gCol = cols[3 + i * 2] || '';
+          optDetections.push(detectOptionModeAndValues(tCol, gCol));
+        }
+        correct = parseCorrectKeyIndex(cols[12]);
+        explanation = cols.slice(13).join(' ').trim();
+      } else if (cols.length >= 8 && isLikelyGoogleDriveOrImageUrl(cols[1]) && cols.length >= 9) {
+        // Format 9 Kolom (dengan Gambar_Soal_Drive di kolom ke-2):
+        // 0: Pertanyaan | 1: Gambar_Soal_Drive | 2..6: Opsi A..E | 7: Kunci | 8: Pembahasan
+        qText = cols[0] || '';
+        qImageUrl = cols[1] || '';
+        for (let i = 0; i < 5; i++) {
+          optDetections.push(detectOptionModeAndValues(cols[2 + i] || '', ''));
+        }
+        correct = parseCorrectKeyIndex(cols[7]);
+        explanation = cols.slice(8).join(' ').trim();
+      } else {
+        // Format Ringkas 7-8 Kolom:
+        // 0: Pertanyaan (bisa "Teks Soal || https://drive.google.com/...") | 1..5: Opsi A..E | 6: Kunci | 7: Pembahasan
+        const qSplit = detectOptionModeAndValues(cols[0] || '', '');
+        qText = qSplit.text || (qSplit.image ? 'Perhatikan gambar berikut:' : (cols[0] || ''));
+        qImageUrl = qSplit.image || '';
+        for (let i = 0; i < 5; i++) {
+          optDetections.push(detectOptionModeAndValues(cols[1 + i] || '', ''));
+        }
+        correct = parseCorrectKeyIndex(cols[6]);
+        explanation = cols.slice(7).join(' ').trim();
+      }
+
+      const optionTypes = optDetections.map(d => d.mode);
+      const optionImages = optDetections.map(d => d.image);
+      const options = optDetections.map((d, idx) => {
+        if (d.mode === 'image') return '';
+        if (!d.text && !d.image) return `Opsi ${String.fromCharCode(65 + idx)}`;
+        return d.text;
+      });
+
+      if (!qText && !qImageUrl) return null;
+
+      return {
+        q: qText || 'Perhatikan gambar berikut:',
+        imageUrl: qImageUrl,
+        options,
+        optionImages,
+        optionTypes,
+        correct,
+        explanation
+      };
+    }
+
+    function parseQuestionBankBulkText(rawText) {
+      const text = String(rawText || '').replace(/^\uFEFF/, '').trim();
+      if (!text) {
+        PENDING_IMPORT_QUESTIONS = [];
+        renderBulkQuestionPreviewTable();
+        return;
+      }
+
+      const rawLines = text
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(l => l.length > 0);
+
+      if (!rawLines.length) {
+        PENDING_IMPORT_QUESTIONS = [];
+        renderBulkQuestionPreviewTable();
+        return;
+      }
+
+      const delimiter = detectBestDelimiter(rawLines[0]);
+      const parsedList = [];
+
+      rawLines.forEach((line, idx) => {
+        const cols = parseDelimitedLine(line, delimiter);
+        if (idx === 0 && isHeaderRow(cols)) return;
+        if (cols.length < 2) return;
+        const qObj = convertColumnsToQuestionObject(cols);
+        if (qObj) parsedList.push(qObj);
+      });
+
+      PENDING_IMPORT_QUESTIONS = parsedList;
+      renderBulkQuestionPreviewTable();
+    }
+
+    function handleQuestionBankFileUpload(event) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+
+      const panel = document.getElementById('admin-qbank-bulk-panel');
+      if (panel && panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+      }
+      updateBulkTargetBankLabel();
+
+      const fileNameEl = document.getElementById('qbank-uploaded-filename');
+      if (fileNameEl) {
+        fileNameEl.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const content = String(e.target?.result || '');
+        const pasteInput = document.getElementById('qbank-bulk-paste-input');
+        if (pasteInput) pasteInput.value = content;
+        parseQuestionBankBulkText(content);
+      };
+      reader.readAsText(file, 'UTF-8');
+      event.target.value = '';
+    }
+
+    function updateBulkTargetBankLabel() {
+      const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
+      const bankLabel = QUESTION_BANK_LABELS[bankKey] || bankKey.toUpperCase();
+      const targetEl = document.getElementById('qbank-bulk-target-label');
+      if (targetEl) {
+        targetEl.textContent = `Target Subtes: ${bankLabel}`;
+      }
+    }
+
+    function openBulkQuestionImportPanel(mode) {
+      const panel = document.getElementById('admin-qbank-bulk-panel');
+      if (panel) {
+        panel.classList.remove('hidden');
+        updateBulkTargetBankLabel();
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      if (mode === 'file') {
+        const fileInput = document.getElementById('qbank-csv-file-input');
+        if (fileInput) fileInput.click();
+      } else if (mode === 'paste') {
+        const pasteArea = document.getElementById('qbank-bulk-paste-input');
+        if (pasteArea) pasteArea.focus();
+      }
+    }
+
+    function closeBulkQuestionImportPanel() {
+      const panel = document.getElementById('admin-qbank-bulk-panel');
+      if (panel) panel.classList.add('hidden');
+    }
+
+    function clearBulkQuestionPreview() {
+      PENDING_IMPORT_QUESTIONS = [];
+      const pasteInput = document.getElementById('qbank-bulk-paste-input');
+      if (pasteInput) pasteInput.value = '';
+      const fileNameEl = document.getElementById('qbank-uploaded-filename');
+      if (fileNameEl) fileNameEl.textContent = 'Belum ada file dipilih';
+      renderBulkQuestionPreviewTable();
+    }
+
+    function removePreviewQuestionAt(idx) {
+      if (idx >= 0 && idx < PENDING_IMPORT_QUESTIONS.length) {
+        PENDING_IMPORT_QUESTIONS.splice(idx, 1);
+        renderBulkQuestionPreviewTable();
+      }
+    }
+
+    function renderBulkQuestionPreviewTable() {
+      updateBulkTargetBankLabel();
+      const tbody = document.getElementById('qbank-bulk-preview-tbody');
+      const summaryEl = document.getElementById('qbank-bulk-preview-summary');
+      const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
+      const bankLabel = QUESTION_BANK_LABELS[bankKey] || bankKey.toUpperCase();
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+
+      if (!tbody) return;
+
+      if (!PENDING_IMPORT_QUESTIONS.length) {
+        if (summaryEl) {
+          summaryEl.innerHTML = 'Belum ada data soal yang dipratinjau. Unggah file CSV/Excel atau tempelkan baris soal pada kotak Copy-Paste Cepat di atas.';
+        }
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-8 px-4 text-center text-slate-400 text-xs">
+              Tabel pratinjau masih kosong. Silakan unggah file CSV/Excel atau gunakan fitur Copy-Paste Cepat untuk melihat hasil deteksi otomatis soal.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      let countTextMode = 0;
+      let countImageMode = 0;
+      let countBothMode = 0;
+      PENDING_IMPORT_QUESTIONS.forEach(item => {
+        (item.optionTypes || []).forEach(m => {
+          if (m === 'both') countBothMode++;
+          else if (m === 'image') countImageMode++;
+          else countTextMode++;
+        });
+      });
+
+      if (summaryEl) {
+        summaryEl.innerHTML = `
+          Siap menyimpan <strong class="text-gold-400">${PENDING_IMPORT_QUESTIONS.length} soal baru</strong> ke subtes <strong class="text-sky-300">${bankLabel}</strong>
+          <span class="mx-1.5 text-slate-600">•</span>
+          Deteksi Opsi A–E:
+          <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold ml-1">${countTextMode} Teks</span>
+          <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold ml-1">${countImageMode} Gambar Drive</span>
+          <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold ml-1">${countBothMode} Teks + Gambar</span>
+        `;
+      }
+
+      tbody.innerHTML = PENDING_IMPORT_QUESTIONS.map((item, idx) => {
+        const modeBadges = letters.map((ltr, oIdx) => {
+          const mode = (item.optionTypes && item.optionTypes[oIdx]) || 'text';
+          const tVal = (item.options && item.options[oIdx]) || '';
+          const iVal = (item.optionImages && item.optionImages[oIdx]) || '';
+
+          let badgeClass = 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300';
+          let modeLabel = 'Teks';
+          if (mode === 'image') {
+            badgeClass = 'bg-sky-500/15 border-sky-500/35 text-sky-300';
+            modeLabel = 'Gambar Drive';
+          } else if (mode === 'both') {
+            badgeClass = 'bg-amber-500/15 border-amber-500/35 text-amber-300';
+            modeLabel = 'Teks + Gambar';
+          }
+
+          return `
+            <div class="p-1.5 rounded-lg bg-slate-900/90 border border-white/10 flex flex-col gap-1">
+              <div class="flex items-center justify-between gap-1">
+                <span class="font-extrabold text-[11px] ${oIdx === item.correct ? 'text-emerald-400' : 'text-slate-300'}">Opsi ${ltr}</span>
+                <span class="px-1.5 py-0.2 rounded border text-[9px] font-extrabold uppercase ${badgeClass}">${modeLabel}</span>
+              </div>
+              ${tVal ? `<div class="text-[11px] text-slate-200 truncate" title="${tVal.replace(/"/g, '&quot;')}">${tVal}</div>` : ''}
+              ${iVal ? `<div class="text-[10px] text-sky-300 truncate font-mono" title="${iVal.replace(/"/g, '&quot;')}"><i class="fa-brands fa-google-drive mr-1"></i>${iVal}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <tr class="hover:bg-white/5 transition align-top">
+            <td class="py-3 px-3 text-center font-extrabold text-gold-400">#${idx + 1}</td>
+            <td class="py-3 px-3 space-y-1">
+              <div class="font-semibold text-white leading-relaxed">${item.q}</div>
+              ${item.imageUrl ? `<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-mono"><i class="fa-solid fa-image"></i><span>Gambar Soal Drive Terdeteksi</span></div>` : ''}
+            </td>
+            <td class="py-3 px-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${modeBadges}</div>
+            </td>
+            <td class="py-3 px-3 text-center">
+              <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs">
+                ${letters[item.correct] || 'A'}
+              </span>
+            </td>
+            <td class="py-3 px-3 text-slate-300 text-[11px] leading-relaxed">${item.explanation || '<span class="text-slate-500 italic">-</span>'}</td>
+            <td class="py-3 px-3 text-center">
+              <button type="button" onclick="removePreviewQuestionAt(${idx})" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold" title="Hapus baris ini dari pratinjau">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function saveAllImportedQuestions(mode = 'append') {
+      const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
+      const bankLabel = QUESTION_BANK_LABELS[bankKey] || bankKey.toUpperCase();
+
+      if (!PENDING_IMPORT_QUESTIONS.length) {
+        const pasteVal = document.getElementById('qbank-bulk-paste-input')?.value || '';
+        if (pasteVal.trim()) {
+          parseQuestionBankBulkText(pasteVal);
+        }
+      }
+
+      if (!PENDING_IMPORT_QUESTIONS.length) {
+        openCustomModal(
+          'Pratinjau Soal Masih Kosong',
+          '<p class="text-xs text-slate-300">Silakan unggah file CSV/Excel atau tempelkan daftar soal pada kolom <strong>Copy-Paste Cepat</strong> terlebih dahulu sebelum menekan <strong>Simpan Semua</strong>.</p>',
+          `<button type="button" onclick="closeCustomModal()" class="btn-gold px-5 py-2 rounded-xl text-xs font-extrabold">Mengerti</button>`
+        );
+        return;
+      }
+
+      if (!Array.isArray(QUESTION_BANK[bankKey])) {
+        QUESTION_BANK[bankKey] = [];
+      }
+
+      const importedCount = PENDING_IMPORT_QUESTIONS.length;
+      const clonedItems = JSON.parse(JSON.stringify(PENDING_IMPORT_QUESTIONS));
+
+      if (mode === 'replace') {
+        QUESTION_BANK[bankKey] = clonedItems;
+      } else {
+        QUESTION_BANK[bankKey].push(...clonedItems);
+      }
+
+      saveQuestionBankToStorage();
+      clearBulkQuestionPreview();
+      renderAdminQuestionList();
+      if (typeof renderMiniSkd === 'function') renderMiniSkd();
+      if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
+      if (typeof renderLatihanPsikoLobby === 'function') renderLatihanPsikoLobby();
+
+      openCustomModal(
+        'Berhasil Menyimpan Semua Soal',
+        `<div class="space-y-2 text-xs text-slate-200">
+          <p>Sebanyak <strong class="text-emerald-400">${importedCount} butir soal baru</strong> berhasil dimasukkan sekaligus ke bank soal <strong class="text-gold-400">${bankLabel}</strong>.</p>
+          <p class="text-slate-400">Total soal pada subtes ini sekarang: <strong class="text-white">${QUESTION_BANK[bankKey].length} soal</strong>.</p>
+        </div>`,
+        `<button type="button" onclick="closeCustomModal()" class="btn-gold px-5 py-2 rounded-xl text-xs font-extrabold">Selesai</button>`
+      );
+    }
+
+    function escapeCsvCell(val) {
+      const str = String(val ?? '');
+      if (str.includes('"') || str.includes(',') || str.includes(';') || str.includes('\n') || str.includes('\r')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    }
+
+    function exportActiveQuestionBankCsv() {
+      const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
+      const bankLabel = QUESTION_BANK_LABELS[bankKey] || bankKey;
+      const list = Array.isArray(QUESTION_BANK[bankKey]) ? QUESTION_BANK[bankKey] : [];
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+
+      const headers = [
+        'Pertanyaan',
+        'Gambar_Soal_Drive',
+        'Teks_A',
+        'Gambar_A_Drive',
+        'Teks_B',
+        'Gambar_B_Drive',
+        'Teks_C',
+        'Gambar_C_Drive',
+        'Teks_D',
+        'Gambar_D_Drive',
+        'Teks_E',
+        'Gambar_E_Drive',
+        'Kunci_Jawaban',
+        'Pembahasan'
+      ];
+
+      const rows = [headers.join(',')];
+      list.forEach(item => {
+        const opts = Array.isArray(item.options) ? item.options : ['', '', '', '', ''];
+        const imgs = Array.isArray(item.optionImages) ? item.optionImages : ['', '', '', '', ''];
+        const types = Array.isArray(item.optionTypes) ? item.optionTypes : ['text', 'text', 'text', 'text', 'text'];
+
+        const rowCells = [
+          escapeCsvCell(item.q || ''),
+          escapeCsvCell(item.imageUrl || '')
+        ];
+
+        for (let i = 0; i < 5; i++) {
+          const mode = types[i] || 'text';
+          const tVal = mode === 'image' ? '' : (opts[i] || '');
+          const gVal = mode === 'text' ? '' : (imgs[i] || '');
+          rowCells.push(escapeCsvCell(tVal));
+          rowCells.push(escapeCsvCell(gVal));
+        }
+
+        rowCells.push(escapeCsvCell(letters[item.correct] || 'A'));
+        rowCells.push(escapeCsvCell(item.explanation || ''));
+        rows.push(rowCells.join(','));
+      });
+
+      const csvContent = '\uFEFF' + rows.join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Bank_Soal_${bankKey}_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadQuestionBankTemplateCsv() {
+      const headers = [
+        'Pertanyaan',
+        'Gambar_Soal_Drive',
+        'Teks_A',
+        'Gambar_A_Drive',
+        'Teks_B',
+        'Gambar_B_Drive',
+        'Teks_C',
+        'Gambar_C_Drive',
+        'Teks_D',
+        'Gambar_D_Drive',
+        'Teks_E',
+        'Gambar_E_Drive',
+        'Kunci_Jawaban',
+        'Pembahasan'
+      ];
+      const sampleRows = [
+        headers.join(','),
+        [
+          escapeCsvCell('Contoh Soal Mode Teks: Sinonim dari kata INTEGRITAS adalah...'),
+          escapeCsvCell(''),
+          escapeCsvCell('Kejujuran dan konsistensi moral'),
+          escapeCsvCell(''),
+          escapeCsvCell('Keraguan bertindak'),
+          escapeCsvCell(''),
+          escapeCsvCell('Kepentingan pribadi'),
+          escapeCsvCell(''),
+          escapeCsvCell('Kompromi sepihak'),
+          escapeCsvCell(''),
+          escapeCsvCell('Kepatuhan pasif'),
+          escapeCsvCell(''),
+          'A',
+          escapeCsvCell('Integritas berarti mutu, sifat, atau keadaan yang menunjukkan kesatuan yang utuh dan kejujuran.')
+        ].join(','),
+        [
+          escapeCsvCell('Contoh Soal Mode Gambar Drive & Teks+Gambar: Manakah kelanjutan rotasi bangun berikut?'),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
+          escapeCsvCell(''),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
+          escapeCsvCell('Rotasi 90 Derajat Searah Jarum Jam'),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
+          escapeCsvCell('Rotasi 180 Derajat'),
+          escapeCsvCell(''),
+          escapeCsvCell('Refleksi Horizontal'),
+          escapeCsvCell(''),
+          escapeCsvCell('Refleksi Vertikal'),
+          escapeCsvCell(''),
+          'B',
+          escapeCsvCell('Opsi A otomatis terdeteksi sebagai Gambar Drive, sedangkan Opsi B terdeteksi sebagai Teks + Gambar.')
+        ].join(',')
+      ];
+
+      const csvContent = '\uFEFF' + sampleRows.join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Template_Impor_Bank_Soal_TNF_CLASS.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function loadSampleBulkQuestions() {
+      const sampleText = [
+        'Pertanyaan\tGambar_Soal_Drive\tTeks_A\tGambar_A_Drive\tTeks_B\tGambar_B_Drive\tTeks_C\tGambar_C_Drive\tTeks_D\tGambar_D_Drive\tTeks_E\tGambar_E_Drive\tKunci_Jawaban\tPembahasan',
+        'Deret angka: 4, 9, 16, 25, 36, ... Berapakah suku berikutnya?\t\t42\t\t45\t\t49\t\t56\t\t64\t\tC\tPola bilangan kuadrat berturut-turut: 2^2, 3^2, 4^2, 5^2, 6^2, maka suku berikutnya 7^2 = 49.',
+        'Perhatikan gambar simbol berikut, pilihlah opsi dengan rotasi yang tepat!\thttps://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link\t\thttps://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link\tRotasi 90° Searah Jarum Jam\thttps://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link\tRotasi 180°\t\tPencerminan Vertikal\t\tPencerminan Horizontal\t\tB\tOpsi A otomatis menjadi mode Gambar Drive, Opsi B menjadi Teks + Gambar, dan Opsi C-E menjadi mode Teks.'
+      ].join('\n');
+
+      const pasteInput = document.getElementById('qbank-bulk-paste-input');
+      if (pasteInput) pasteInput.value = sampleText;
+      parseQuestionBankBulkText(sampleText);
+    }
+
+    function copySingleQuestionRow(index) {
+      const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
+      const list = Array.isArray(QUESTION_BANK[bankKey]) ? QUESTION_BANK[bankKey] : [];
+      const item = list[index];
+      if (!item) return;
+
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+      const opts = Array.isArray(item.options) ? item.options : ['', '', '', '', ''];
+      const imgs = Array.isArray(item.optionImages) ? item.optionImages : ['', '', '', '', ''];
+      const types = Array.isArray(item.optionTypes) ? item.optionTypes : ['text', 'text', 'text', 'text', 'text'];
+
+      const cells = [item.q || '', item.imageUrl || ''];
+      for (let i = 0; i < 5; i++) {
+        const mode = types[i] || 'text';
+        cells.push(mode === 'image' ? '' : (opts[i] || ''));
+        cells.push(mode === 'text' ? '' : (imgs[i] || ''));
+      }
+      cells.push(letters[item.correct] || 'A');
+      cells.push(item.explanation || '');
+
+      const tsvLine = cells.join('\t');
+      const panel = document.getElementById('admin-qbank-bulk-panel');
+      if (panel) panel.classList.remove('hidden');
+      const pasteInput = document.getElementById('qbank-bulk-paste-input');
+      if (pasteInput) {
+        pasteInput.value = pasteInput.value ? (pasteInput.value.trim() + '\n' + tsvLine) : tsvLine;
+        parseQuestionBankBulkText(pasteInput.value);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tsvLine).catch(() => {});
+      }
     }
 
     function deleteQuestionFromBank(index) {
