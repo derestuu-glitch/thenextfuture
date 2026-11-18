@@ -4913,9 +4913,9 @@ service cloud.firestore {
                     <span class="px-2.5 py-0.5 rounded-full bg-gold-500/20 border border-gold-500/40 text-gold-300 text-[10px] font-extrabold uppercase tracking-wider">Bulk Loader Otomatis</span>
                     <span id="qbank-bulk-target-label" class="text-xs font-bold text-sky-300">Target Kategori Aktif</span>
                   </div>
-                  <h3 class="text-base sm:text-lg font-extrabold text-white mt-1">Impor Soal (CSV/Excel) &amp; Copy-Paste Cepat dengan Deteksi Otomatis Opsi A–E</h3>
+                  <h3 class="text-base sm:text-lg font-extrabold text-white mt-1">Impor Soal (CSV/Excel) &amp; Copy-Paste Cepat Format Terbaru (15 Kolom Terpadu)</h3>
                   <p class="text-xs text-slate-300 mt-0.5">
-                    Sistem otomatis mendeteksi setiap opsi A–E menjadi mode <strong class="text-emerald-300">Teks</strong>, <strong class="text-sky-300">Gambar Drive</strong>, atau <strong class="text-amber-300">Teks + Gambar</strong> berdasarkan terisi tidaknya kolom teks dan tautan Google Drive.
+                    Sistem otomatis mendeteksi mode <strong class="text-emerald-300">Teks</strong>, <strong class="text-sky-300">Gambar Drive</strong>, atau <strong class="text-amber-300">Teks + Gambar</strong> baik pada <strong>Soal Utama</strong>, <strong>Pilihan Ganda A–E</strong>, maupun <strong>Pembahasan</strong> berdasarkan terisi tidaknya kolom teks dan link Google Drive.
                   </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
@@ -4943,8 +4943,14 @@ service cloud.firestore {
                       <span class="text-[10px] text-slate-400"> Pembaca File Browser</span>
                     </div>
                     <p class="text-[11px] text-slate-300 leading-relaxed">
-                      Pilih file <strong>.csv</strong> atau <strong>.tsv / .txt</strong> dari Microsoft Excel / Google Sheets. Mendukung format lengkap <strong>14 kolom</strong> (Teks &amp; Link Drive terpisah per opsi A–E) maupun format ringkas <strong>7–9 kolom</strong> (gabungan <code class="text-gold-300">Teks || https://drive.google.com/...</code>).
+                      Pilih file <strong>.csv</strong> atau <strong>.tsv / .txt</strong> dari Microsoft Excel / Google Sheets. Mendukung <strong>Format Terbaru 15 Kolom</strong> (Teks &amp; Link Google Drive untuk <strong>Soal Utama</strong>, <strong>Opsi A–E</strong>, dan <strong>Pembahasan</strong>) maupun format ringkas <strong>7–9 kolom</strong> (<code class="text-gold-300">Teks || https://drive.google.com/...</code>).
                     </p>
+                    <div class="p-2.5 rounded-xl bg-navy-950/90 border border-white/10 text-[10px] text-slate-300 space-y-1">
+                      <span class="font-extrabold text-gold-400 uppercase block">Struktur 15 Kolom Template CSV/Excel Terbaru:</span>
+                      <div class="font-mono text-[10px] text-sky-200 leading-relaxed">
+                        1. Pertanyaan &bull; 2. Gambar_Soal_Drive &bull; 3. Teks_A &bull; 4. Gambar_A_Drive &bull; 5. Teks_B &bull; 6. Gambar_B_Drive &bull; 7. Teks_C &bull; 8. Gambar_C_Drive &bull; 9. Teks_D &bull; 10. Gambar_D_Drive &bull; 11. Teks_E &bull; 12. Gambar_E_Drive &bull; 13. Kunci_Jawaban (A-E) &bull; 14. Pembahasan &bull; 15. Gambar_Pembahasan_Drive
+                      </div>
+                    </div>
                   </div>
                   <div class="pt-2 flex flex-wrap items-center gap-2">
                     <button type="button" onclick="document.getElementById('qbank-csv-file-input').click()" class="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-navy-950 font-extrabold text-xs flex items-center gap-2 shadow-lg">
@@ -4964,7 +4970,7 @@ service cloud.firestore {
                     id="qbank-bulk-paste-input"
                     rows="4"
                     oninput="parseQuestionBankBulkText(this.value)"
-                    placeholder="Paste langsung blok tabel dari Excel / Google Sheets di sini...&#10;Format 14 Kolom: Pertanyaan | Gambar_Soal_Drive | Teks_A | Gambar_A_Drive | Teks_B | Gambar_B_Drive | Teks_C | Gambar_C_Drive | Teks_D | Gambar_D_Drive | Teks_E | Gambar_E_Drive | Kunci (A-E) | Pembahasan&#10;Format Ringkas: Pertanyaan | Opsi_A | Opsi_B | Opsi_C | Opsi_D | Opsi_E | Kunci (A-E) | Pembahasan (Gunakan 'Teks || https://drive.google.com/...' untuk opsi Teks + Gambar)"
+                    placeholder="Paste langsung blok tabel dari Excel / Google Sheets di sini...&#10;Format 15 Kolom Terbaru: Pertanyaan | Gambar_Soal_Drive | Teks_A | Gambar_A_Drive | Teks_B | Gambar_B_Drive | Teks_C | Gambar_C_Drive | Teks_D | Gambar_D_Drive | Teks_E | Gambar_E_Drive | Kunci_Jawaban (A-E) | Pembahasan | Gambar_Pembahasan_Drive&#10;Format Ringkas: Pertanyaan || Link_Drive | Opsi_A | Opsi_B | Opsi_C | Opsi_D | Opsi_E | Kunci (A-E) | Pembahasan || Link_Drive"
                     class="w-full px-3.5 py-2.5 rounded-xl bg-navy-950 border border-white/15 text-white text-xs font-mono leading-relaxed focus:outline-none focus:border-gold-500"
                   ></textarea>
                   <div class="flex flex-wrap items-center justify-between gap-2">
@@ -12689,12 +12695,17 @@ service cloud.firestore {
       let explanationImageUrl = '';
       let explanationType = 'text';
 
+      let questionType = 'text';
+
       if (cols.length >= 13) {
-        // Format Lengkap 13-15 Kolom:
+        // Format Lengkap Terbaru 15 Kolom (kompatibel juga dengan 13-14 kolom):
         // 0: Pertanyaan | 1: Gambar_Soal_Drive | 2: Teks_A | 3: Gambar_A_Drive | 4: Teks_B | 5: Gambar_B_Drive |
-        // 6: Teks_C | 7: Gambar_C_Drive | 8: Teks_D | 9: Gambar_D_Drive | 10: Teks_E | 11: Gambar_E_Drive | 12: Kunci | 13: Pembahasan | 14: Gambar_Pembahasan_Drive
-        qText = cols[0] || '';
-        qImageUrl = cols[1] || '';
+        // 6: Teks_C | 7: Gambar_C_Drive | 8: Teks_D | 9: Gambar_D_Drive | 10: Teks_E | 11: Gambar_E_Drive | 12: Kunci_Jawaban | 13: Pembahasan | 14: Gambar_Pembahasan_Drive
+        const qDetect = detectOptionModeAndValues(cols[0] || '', cols[1] || '');
+        qText = qDetect.text;
+        qImageUrl = qDetect.image;
+        questionType = qDetect.mode;
+
         for (let i = 0; i < 5; i++) {
           const tCol = cols[2 + i * 2] || '';
           const gCol = cols[3 + i * 2] || '';
@@ -12708,8 +12719,11 @@ service cloud.firestore {
       } else if (cols.length >= 8 && isLikelyGoogleDriveOrImageUrl(cols[1]) && cols.length >= 9) {
         // Format 9-10 Kolom (dengan Gambar_Soal_Drive di kolom ke-2):
         // 0: Pertanyaan | 1: Gambar_Soal_Drive | 2..6: Opsi A..E | 7: Kunci | 8: Pembahasan | 9: Gambar_Pembahasan_Drive
-        qText = cols[0] || '';
-        qImageUrl = cols[1] || '';
+        const qDetect = detectOptionModeAndValues(cols[0] || '', cols[1] || '');
+        qText = qDetect.text;
+        qImageUrl = qDetect.image;
+        questionType = qDetect.mode;
+
         for (let i = 0; i < 5; i++) {
           optDetections.push(detectOptionModeAndValues(cols[2 + i] || '', ''));
         }
@@ -12721,9 +12735,11 @@ service cloud.firestore {
       } else {
         // Format Ringkas 7-9 Kolom:
         // 0: Pertanyaan (bisa "Teks Soal || https://drive.google.com/...") | 1..5: Opsi A..E | 6: Kunci | 7: Pembahasan (bisa "Teks || https://drive.google.com/...") | 8: Gambar_Pembahasan_Drive
-        const qSplit = detectOptionModeAndValues(cols[0] || '', '');
-        qText = qSplit.text || (qSplit.image ? 'Perhatikan gambar berikut:' : (cols[0] || ''));
-        qImageUrl = qSplit.image || '';
+        const qDetect = detectOptionModeAndValues(cols[0] || '', '');
+        qText = qDetect.text;
+        qImageUrl = qDetect.image;
+        questionType = qDetect.mode;
+
         for (let i = 0; i < 5; i++) {
           optDetections.push(detectOptionModeAndValues(cols[1 + i] || '', ''));
         }
@@ -12746,6 +12762,7 @@ service cloud.firestore {
 
       return {
         q: qText || 'Perhatikan gambar berikut:',
+        questionType,
         imageUrl: qImageUrl,
         options,
         optionImages,
@@ -12753,7 +12770,8 @@ service cloud.firestore {
         correct,
         explanation,
         explanationImageUrl,
-        explanationType
+        explanationType,
+        synced: true
       };
     }
 
@@ -12937,12 +12955,29 @@ service cloud.firestore {
           `;
         }).join('');
 
+        const qMode = item.questionType || (item.q && item.imageUrl ? 'both' : (item.imageUrl ? 'image' : 'text'));
+        const qModeBadge = qMode === 'both'
+          ? '<span class="px-1.5 py-0.2 rounded border bg-amber-500/15 border-amber-500/35 text-amber-300 text-[9px] font-extrabold uppercase">Soal: Teks + Gambar</span>'
+          : (qMode === 'image'
+            ? '<span class="px-1.5 py-0.2 rounded border bg-sky-500/15 border-sky-500/35 text-sky-300 text-[9px] font-extrabold uppercase">Soal: Gambar Drive</span>'
+            : '<span class="px-1.5 py-0.2 rounded border bg-emerald-500/15 border-emerald-500/35 text-emerald-300 text-[9px] font-extrabold uppercase">Soal: Teks</span>');
+
+        const expMode = item.explanationType || (item.explanation && item.explanationImageUrl ? 'both' : (item.explanationImageUrl ? 'image' : 'text'));
+        const expModeBadge = (item.explanation || item.explanationImageUrl)
+          ? (expMode === 'both'
+            ? '<span class="px-1.5 py-0.2 rounded border bg-amber-500/15 border-amber-500/35 text-amber-300 text-[9px] font-extrabold uppercase">Pembahasan: Teks + Gambar</span>'
+            : (expMode === 'image'
+              ? '<span class="px-1.5 py-0.2 rounded border bg-sky-500/15 border-sky-500/35 text-sky-300 text-[9px] font-extrabold uppercase">Pembahasan: Gambar Drive</span>'
+              : '<span class="px-1.5 py-0.2 rounded border bg-emerald-500/15 border-emerald-500/35 text-emerald-300 text-[9px] font-extrabold uppercase">Pembahasan: Teks</span>'))
+          : '';
+
         return `
           <tr class="hover:bg-white/5 transition align-top">
             <td class="py-3 px-3 text-center font-extrabold text-gold-400">#${idx + 1}</td>
-            <td class="py-3 px-3 space-y-1">
+            <td class="py-3 px-3 space-y-1.5">
+              <div>${qModeBadge}</div>
               <div class="font-semibold text-white leading-relaxed">${item.q}</div>
-              ${item.imageUrl ? `<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-mono"><i class="fa-solid fa-image"></i><span>Gambar Soal Drive Terdeteksi</span></div>` : ''}
+              ${item.imageUrl ? `<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-mono truncate max-w-[230px]" title="${item.imageUrl.replace(/"/g, '&quot;')}"><i class="fa-brands fa-google-drive"></i><span>${item.imageUrl}</span></div>` : ''}
             </td>
             <td class="py-3 px-3">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${modeBadges}</div>
@@ -12952,9 +12987,10 @@ service cloud.firestore {
                 ${letters[item.correct] || 'A'}
               </span>
             </td>
-            <td class="py-3 px-3 text-slate-300 text-[11px] leading-relaxed space-y-1">
+            <td class="py-3 px-3 text-slate-300 text-[11px] leading-relaxed space-y-1.5">
+              ${expModeBadge ? `<div>${expModeBadge}</div>` : ''}
               <div>${item.explanation || (item.explanationImageUrl ? '' : '<span class="text-slate-500 italic">-</span>')}</div>
-              ${item.explanationImageUrl ? `<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-mono"><i class="fa-brands fa-google-drive"></i><span>Gambar Pembahasan Drive</span></div>` : ''}
+              ${item.explanationImageUrl ? `<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-mono truncate max-w-[220px]" title="${item.explanationImageUrl.replace(/"/g, '&quot;')}"><i class="fa-brands fa-google-drive"></i><span>${item.explanationImageUrl}</span></div>` : ''}
             </td>
             <td class="py-3 px-3 text-center">
               <button type="button" onclick="removePreviewQuestionAt(${idx})" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold" title="Hapus baris ini dari pratinjau">
@@ -13100,12 +13136,14 @@ service cloud.firestore {
         'Teks_E',
         'Gambar_E_Drive',
         'Kunci_Jawaban',
-        'Pembahasan'
+        'Pembahasan',
+        'Gambar_Pembahasan_Drive'
       ];
       const sampleRows = [
         headers.join(','),
+        // Contoh 1: Soal, Opsi A-E, dan Pembahasan berupa Mode Teks Murni
         [
-          escapeCsvCell('Contoh Soal Mode Teks: Sinonim dari kata INTEGRITAS adalah...'),
+          escapeCsvCell('Contoh 1 (Mode Teks): Sinonim dari kata INTEGRITAS adalah...'),
           escapeCsvCell(''),
           escapeCsvCell('Kejujuran dan konsistensi moral'),
           escapeCsvCell(''),
@@ -13118,10 +13156,12 @@ service cloud.firestore {
           escapeCsvCell('Kepatuhan pasif'),
           escapeCsvCell(''),
           'A',
-          escapeCsvCell('Integritas berarti mutu, sifat, atau keadaan yang menunjukkan kesatuan yang utuh dan kejujuran.')
+          escapeCsvCell('Integritas berarti mutu, sifat, atau keadaan yang menunjukkan kesatuan yang utuh dan kejujuran.'),
+          escapeCsvCell('')
         ].join(','),
+        // Contoh 2: Soal (Teks + Gambar Drive), Opsi A (Gambar Drive), Opsi B (Teks + Gambar Drive), Opsi C-E (Teks), dan Pembahasan (Teks + Gambar Drive)
         [
-          escapeCsvCell('Contoh Soal Mode Gambar Drive & Teks+Gambar: Manakah kelanjutan rotasi bangun berikut?'),
+          escapeCsvCell('Contoh 2 (Mode Teks + Gambar Drive pada Soal, Opsi & Pembahasan): Manakah kelanjutan rotasi bangun berikut?'),
           escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
           escapeCsvCell(''),
           escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
@@ -13134,7 +13174,26 @@ service cloud.firestore {
           escapeCsvCell('Refleksi Vertikal'),
           escapeCsvCell(''),
           'B',
-          escapeCsvCell('Opsi A otomatis terdeteksi sebagai Gambar Drive, sedangkan Opsi B terdeteksi sebagai Teks + Gambar.')
+          escapeCsvCell('Soal, Opsi B, dan Pembahasan dilengkapi gambar Google Drive, sedangkan Opsi A otomatis terdeteksi sebagai mode Gambar Drive.'),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link')
+        ].join(','),
+        // Contoh 3: Soal, Opsi A-E, dan Pembahasan berupa Mode Gambar Drive Murni
+        [
+          escapeCsvCell(''),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
+          escapeCsvCell(''),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
+          escapeCsvCell(''),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
+          escapeCsvCell(''),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
+          escapeCsvCell(''),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
+          escapeCsvCell(''),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'),
+          'C',
+          escapeCsvCell(''),
+          escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link')
         ].join(',')
       ];
 
@@ -13143,7 +13202,7 @@ service cloud.firestore {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Template_Impor_Bank_Soal_TNF_CLASS.csv';
+      a.download = 'Template_Impor_Bank_Soal_TNF_CLASS_Terbaru_15_Kolom.csv';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -13152,9 +13211,9 @@ service cloud.firestore {
 
     function loadSampleBulkQuestions() {
       const sampleText = [
-        'Pertanyaan\tGambar_Soal_Drive\tTeks_A\tGambar_A_Drive\tTeks_B\tGambar_B_Drive\tTeks_C\tGambar_C_Drive\tTeks_D\tGambar_D_Drive\tTeks_E\tGambar_E_Drive\tKunci_Jawaban\tPembahasan',
-        'Deret angka: 4, 9, 16, 25, 36, ... Berapakah suku berikutnya?\t\t42\t\t45\t\t49\t\t56\t\t64\t\tC\tPola bilangan kuadrat berturut-turut: 2^2, 3^2, 4^2, 5^2, 6^2, maka suku berikutnya 7^2 = 49.',
-        'Perhatikan gambar simbol berikut, pilihlah opsi dengan rotasi yang tepat!\thttps://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link\t\thttps://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link\tRotasi 90° Searah Jarum Jam\thttps://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link\tRotasi 180°\t\tPencerminan Vertikal\t\tPencerminan Horizontal\t\tB\tOpsi A otomatis menjadi mode Gambar Drive, Opsi B menjadi Teks + Gambar, dan Opsi C-E menjadi mode Teks.'
+        'Pertanyaan\tGambar_Soal_Drive\tTeks_A\tGambar_A_Drive\tTeks_B\tGambar_B_Drive\tTeks_C\tGambar_C_Drive\tTeks_D\tGambar_D_Drive\tTeks_E\tGambar_E_Drive\tKunci_Jawaban\tPembahasan\tGambar_Pembahasan_Drive',
+        'Deret angka: 4, 9, 16, 25, 36, ... Berapakah suku berikutnya?\t\t42\t\t45\t\t49\t\t56\t\t64\t\tC\tPola bilangan kuadrat berturut-turut: 2^2, 3^2, 4^2, 5^2, 6^2, maka suku berikutnya 7^2 = 49.\t',
+        'Perhatikan gambar simbol berikut, pilihlah opsi dengan rotasi yang tepat!\thttps://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link\t\thttps://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link\tRotasi 90° Searah Jarum Jam\thttps://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link\tRotasi 180°\t\tPencerminan Vertikal\t\tPencerminan Horizontal\t\tB\tSoal, Opsi B, dan Pembahasan dilengkapi gambar Google Drive, sedangkan Opsi A otomatis menjadi mode Gambar Drive.\thttps://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link'
       ].join('\n');
 
       const pasteInput = document.getElementById('qbank-bulk-paste-input');
