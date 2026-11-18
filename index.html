@@ -125,6 +125,12 @@
                   }
                   return;
                 }
+                if (docId === "EBOOK_LIBRARY_DATA" || data.recordType === "ebook_library") {
+                  if (typeof window.syncEbookLibraryFromFirebase === "function") {
+                    window.syncEbookLibraryFromFirebase(data);
+                  }
+                  return;
+                }
                 cloudRecords.push({
                   id: docId,
                   ...data,
@@ -317,6 +323,25 @@
             await setDoc(doc(db, "tnf_cat_results", "SYS_CONFIG_CAT"), payload, { merge: true });
             try {
               await setDoc(doc(db, "tnf_system_config", "cat_config"), payload, { merge: true });
+            } catch (e) {}
+            this.connected = true;
+            this.lastError = "";
+          },
+
+          async saveEbookLibrary(ebookLibraryObj) {
+            if (!ebookLibraryObj || typeof ebookLibraryObj !== "object") return;
+            await ensureWriteSession();
+            const payload = {
+              recordType: "ebook_library",
+              tnipolriModules: JSON.parse(JSON.stringify(ebookLibraryObj.tnipolriModules || [])),
+              cpnsModules: JSON.parse(JSON.stringify(ebookLibraryObj.cpnsModules || [])),
+              tniCategories: JSON.parse(JSON.stringify(ebookLibraryObj.tniCategories || [])),
+              cpnsCategories: JSON.parse(JSON.stringify(ebookLibraryObj.cpnsCategories || [])),
+              updatedAt: serverTimestamp()
+            };
+            await setDoc(doc(db, "tnf_cat_results", "EBOOK_LIBRARY_DATA"), payload, { merge: true });
+            try {
+              await setDoc(doc(db, "tnf_system_config", "ebook_library"), payload, { merge: true });
             } catch (e) {}
             this.connected = true;
             this.lastError = "";
@@ -1412,7 +1437,7 @@
           </div>
 
           <div id="ebook-unlocked-content" class="space-y-6">
-            <div class="flex flex-wrap items-center gap-2">
+            <div id="tni-ebook-filter-bar" class="flex flex-wrap items-center gap-2">
               <button type="button" data-mod-filter="ALL" onclick="renderModules('ALL')" class="mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950">
                 Semua Modul
               </button>
@@ -2661,7 +2686,7 @@
           </div>
 
           <div id="cpns-ebook-unlocked-content" class="space-y-6">
-          <div class="flex flex-wrap items-center gap-2">
+          <div id="cpns-ebook-filter-bar" class="flex flex-wrap items-center gap-2">
             <button type="button" data-cpns-mod-filter="ALL" onclick="renderCpnsModules('ALL')" class="cpns-mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950">
               Semua Modul CPNS
             </button>
@@ -4153,6 +4178,9 @@
             <button type="button" onclick="switchAdminTab('questions')" id="admin-tab-btn-questions" class="admin-tab-btn px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-navy-900 text-slate-300 border border-white/10">
               <i class="fa-solid fa-database mr-1.5"></i>Editor Bank Soal
             </button>
+            <button type="button" onclick="switchAdminTab('ebooks')" id="admin-tab-btn-ebooks" class="admin-tab-btn px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all bg-navy-900 text-slate-300 border border-white/10">
+              <i class="fa-solid fa-book-open-reader mr-1.5"></i>Manajemen E-Book
+            </button>
             <button type="button" onclick="logoutAdminPanel()" class="px-4 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-300 text-xs font-bold">
               <i class="fa-solid fa-right-from-bracket mr-1"></i>Keluar
             </button>
@@ -5026,6 +5054,198 @@ service cloud.firestore {
             <div id="admin-qbank-info" class="p-3.5 rounded-2xl bg-navy-950/80 border border-white/10 text-xs text-slate-300"></div>
 
             <div id="admin-qbank-list" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- ADMIN TAB 4: MANAJEMEN E-BOOK & MODUL PDF (TNI/POLRI & CPNS + GOOGLE DRIVE + CLOUD FIRESTORE) -->
+        <div id="admin-panel-ebooks" class="hidden space-y-6">
+          <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs font-bold uppercase tracking-wider text-gold-500">Perpustakaan Digital • TNI/POLRI &amp; CPNS</span>
+                  <span id="ebook-cloud-sync-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider">
+                    <i class="fa-solid fa-cloud-check"></i><span>E-Book Tersimpan di Cloud Firestore</span>
+                  </span>
+                </div>
+                <h2 class="text-xl font-extrabold text-white mt-0.5">Manajemen Jenis E-Book, Keterangan Materi &amp; Link Download Google Drive</h2>
+                <p class="text-xs text-slate-300 mt-1">
+                  Tambah jenis/kategori E-Book baru secara manual, isi keterangan modul, dan tempelkan link Google Drive E-Book yang langsung terhubung dengan tombol <strong>Download E-Book</strong> peserta.
+                </p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2.5">
+                <button type="button" onclick="openEbookEditorModal('tnipolri', null)" class="btn-gold px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-lg">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Tambah E-Book Baru</span>
+                </button>
+                <button type="button" onclick="syncEbookLibraryToCloudNow()" class="px-3.5 py-2.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 text-xs font-extrabold flex items-center gap-2 transition">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>Sinkronkan E-Book ke Cloud</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel Tambah Jenis / Kategori E-Book Secara Manual oleh Admin -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div class="lg:col-span-6 p-4 sm:p-5 rounded-2xl bg-navy-950/90 border border-gold-500/35 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-gold-400">
+                    <i class="fa-solid fa-folder-plus mr-1.5"></i>1. Tambah Jenis / Kategori E-Book Secara Manual
+                  </span>
+                  <span class="text-[10px] text-slate-400 font-semibold">Otomatis muncul di filter halaman peserta</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                  <div class="sm:col-span-4">
+                    <label for="admin-new-ebook-cat-div" class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Divisi E-Book</label>
+                    <select id="admin-new-ebook-cat-div" class="w-full px-3 py-2.5 rounded-xl bg-navy-900 border border-white/15 text-xs text-white font-bold focus:border-gold-500 focus:outline-none">
+                      <option value="tnipolri">Divisi TNI / POLRI</option>
+                      <option value="cpns">Divisi CPNS &amp; Kedinasan</option>
+                    </select>
+                  </div>
+                  <div class="sm:col-span-4">
+                    <label for="admin-new-ebook-cat-code" class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Kode Jenis (Singkat)</label>
+                    <input type="text" id="admin-new-ebook-cat-code" placeholder="Misal: WAWANCARA / PMK" class="w-full px-3 py-2.5 rounded-xl bg-navy-900 border border-white/15 text-xs text-white font-bold uppercase focus:border-gold-500 focus:outline-none" />
+                  </div>
+                  <div class="sm:col-span-4">
+                    <label for="admin-new-ebook-cat-label" class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Nama Tampilan Jenis E-Book</label>
+                    <input type="text" id="admin-new-ebook-cat-label" placeholder="Misal: Wawancara &amp; Mental Ideologi" class="w-full px-3 py-2.5 rounded-xl bg-navy-900 border border-white/15 text-xs text-white font-semibold focus:border-gold-500 focus:outline-none" />
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <span class="text-[11px] text-slate-400">Jenis E-Book yang ditambahkan dapat langsung dipilih saat menambah atau mengedit modul E-Book.</span>
+                  <button type="button" onclick="adminAddCustomEbookCategory()" class="px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold flex items-center gap-1.5">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Simpan Jenis E-Book Baru</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="lg:col-span-6 p-4 sm:p-5 rounded-2xl bg-navy-950/90 border border-sky-500/35 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-sky-300">
+                    <i class="fa-solid fa-tags mr-1.5"></i>Daftar Jenis / Kategori E-Book Aktif
+                  </span>
+                  <span class="text-[10px] text-slate-400 font-semibold">Klik tanda × pada kategori kustom untuk menghapus</span>
+                </div>
+                <div class="space-y-2 text-xs">
+                  <div>
+                    <span class="text-[10px] font-bold uppercase text-gold-400 block mb-1">Jenis E-Book Divisi TNI / POLRI:</span>
+                    <div id="admin-ebook-cats-tnipolri" class="flex flex-wrap gap-1.5"></div>
+                  </div>
+                  <div class="pt-1 border-t border-white/10">
+                    <span class="text-[10px] font-bold uppercase text-sky-300 block mb-1">Jenis E-Book Divisi CPNS &amp; Kedinasan:</span>
+                    <div id="admin-ebook-cats-cpns" class="flex flex-wrap gap-1.5"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Langsung Tambah / Edit E-Book Beserta Link Google Drive -->
+            <div id="admin-inline-ebook-form-card" class="p-5 sm:p-6 rounded-2xl bg-navy-950/95 border-2 border-gold-500/40 space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+                <div>
+                  <span id="admin-ebook-form-badge" class="px-2.5 py-0.5 rounded-full bg-gold-500/20 border border-gold-500/40 text-gold-300 text-[10px] font-extrabold uppercase tracking-wider">Form Input &amp; Edit E-Book</span>
+                  <h3 id="admin-ebook-form-title" class="text-base sm:text-lg font-extrabold text-white mt-1">Tambah / Edit E-Book &amp; Tautan Download Google Drive</h3>
+                </div>
+                <button type="button" onclick="resetAdminInlineEbookForm()" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 text-xs font-bold">
+                  <i class="fa-solid fa-rotate-left mr-1"></i>Reset Form Baru
+                </button>
+              </div>
+
+              <input type="hidden" id="admin-ebook-edit-id" value="" />
+
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5 text-xs">
+                <div class="md:col-span-3">
+                  <label for="admin-ebook-division" class="block font-bold text-slate-300 mb-1">Divisi Portal E-Book</label>
+                  <select id="admin-ebook-division" onchange="populateAdminEbookCategorySelect()" class="w-full px-3.5 py-2.5 rounded-xl bg-navy-900 border border-gold-500/40 text-gold-400 font-extrabold focus:outline-none">
+                    <option value="tnipolri">E-Book TNI / POLRI</option>
+                    <option value="cpns">E-Book CPNS &amp; Kedinasan</option>
+                  </select>
+                </div>
+
+                <div class="md:col-span-3">
+                  <label for="admin-ebook-category" class="block font-bold text-slate-300 mb-1">Pilih Jenis E-Book</label>
+                  <select id="admin-ebook-category" onchange="handleAdminEbookCategorySelectChange()" class="w-full px-3.5 py-2.5 rounded-xl bg-navy-900 border border-white/15 text-white font-bold focus:border-gold-500 focus:outline-none">
+                  </select>
+                </div>
+
+                <div id="admin-ebook-custom-cat-wrap" class="md:col-span-3 hidden">
+                  <label for="admin-ebook-custom-cat" class="block font-bold text-amber-300 mb-1">Ketik Jenis E-Book Baru</label>
+                  <input type="text" id="admin-ebook-custom-cat" placeholder="Contoh: MENTAL IDEOLOGI" class="w-full px-3.5 py-2.5 rounded-xl bg-navy-900 border border-amber-500/45 text-white font-bold uppercase focus:border-gold-500 focus:outline-none" />
+                </div>
+
+                <div class="md:col-span-3">
+                  <label for="admin-ebook-badge" class="block font-bold text-slate-300 mb-1">Label Sub-Jenis / Badge E-Book</label>
+                  <input type="text" id="admin-ebook-badge" placeholder="Contoh: Psiko I • Kecerdasan / SKD • TWK" class="w-full px-3.5 py-2.5 rounded-xl bg-navy-900 border border-white/15 text-white font-semibold focus:border-gold-500 focus:outline-none" />
+                </div>
+
+                <div class="md:col-span-3">
+                  <label for="admin-ebook-pages" class="block font-bold text-slate-300 mb-1">Keterangan Halaman &amp; Format</label>
+                  <input type="text" id="admin-ebook-pages" placeholder="Contoh: 120 Halaman • PDF" value="120 Halaman • PDF" class="w-full px-3.5 py-2.5 rounded-xl bg-navy-900 border border-white/15 text-white font-semibold focus:border-gold-500 focus:outline-none" />
+                </div>
+
+                <div class="md:col-span-6">
+                  <label for="admin-ebook-title" class="block font-bold text-slate-300 mb-1">Judul Lengkap E-Book / Modul PDF</label>
+                  <input type="text" id="admin-ebook-title" placeholder="Ketik judul E-Book yang akan tampil kepada peserta..." class="w-full px-3.5 py-2.5 rounded-xl bg-navy-900 border border-white/15 text-white font-bold focus:border-gold-500 focus:outline-none" />
+                </div>
+
+                <div class="md:col-span-6">
+                  <label for="admin-ebook-drive-url" class="block font-bold text-sky-300 mb-1">
+                    <i class="fa-brands fa-google-drive mr-1"></i>Link Google Drive E-Book (Terhubung ke Tombol Download E-Book)
+                  </label>
+                  <div class="relative">
+                    <input
+                      type="text"
+                      id="admin-ebook-drive-url"
+                      placeholder="Tempel link Google Drive E-Book (https://drive.google.com/file/d/.../view?usp=drive_link)"
+                      class="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-navy-900 border border-sky-500/45 text-white font-semibold focus:border-gold-500 focus:outline-none"
+                    />
+                    <i class="fa-brands fa-google-drive text-sky-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                  </div>
+                </div>
+
+                <div class="md:col-span-6">
+                  <label for="admin-ebook-summary" class="block font-bold text-slate-300 mb-1">Keterangan / Ringkasan Isi E-Book</label>
+                  <textarea id="admin-ebook-summary" rows="3" placeholder="Tuliskan penjelasan/keterangan isi materi E-Book ini..." class="w-full p-3 rounded-xl bg-navy-900 border border-white/15 text-white font-medium focus:border-gold-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="md:col-span-6">
+                  <label for="admin-ebook-highlights" class="block font-bold text-slate-300 mb-1">Pokok Bahasan Utama (Pisahkan dengan baris baru / Enter)</label>
+                  <textarea id="admin-ebook-highlights" rows="3" placeholder="Poin bahasan 1&#10;Poin bahasan 2&#10;Poin bahasan 3" class="w-full p-3 rounded-xl bg-navy-900 border border-white/15 text-white font-medium focus:border-gold-500 focus:outline-none"></textarea>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/10">
+                <span class="text-[11px] text-slate-400">
+                  <i class="fa-solid fa-cloud-arrow-up text-emerald-400 mr-1"></i>Setiap E-Book yang disimpan otomatis diperbarui di halaman peserta &amp; tersimpan real-time ke <strong>Cloud Firestore</strong>.
+                </span>
+                <button type="button" onclick="saveAdminEbookFromInlineForm()" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-lg">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span id="admin-ebook-save-btn-text">Simpan E-Book &amp; Sinkronkan Cloud</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter & Daftar Seluruh E-Book (TNI/POLRI & CPNS) -->
+            <div class="space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                  <button type="button" id="admin-ebook-filter-all" onclick="setAdminEbookListFilter('ALL')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950">
+                    Semua E-Book
+                  </button>
+                  <button type="button" id="admin-ebook-filter-tnipolri" onclick="setAdminEbookListFilter('tnipolri')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-navy-950 text-slate-300 border border-white/10">
+                    Divisi TNI / POLRI
+                  </button>
+                  <button type="button" id="admin-ebook-filter-cpns" onclick="setAdminEbookListFilter('cpns')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-navy-950 text-slate-300 border border-white/10">
+                    Divisi CPNS &amp; Kedinasan
+                  </button>
+                </div>
+                <div id="admin-ebook-count-summary" class="text-xs font-bold text-slate-300"></div>
+              </div>
+
+              <div id="admin-ebook-manager-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -7245,7 +7465,22 @@ service cloud.firestore {
     // =========================================================================
     // 3. E-BOOK & MODUL PDF DATA & RENDERER
     // =========================================================================
-    const TNF_EBOOK_MODULES = [
+    const EBOOK_LIBRARY_STORAGE_KEY = 'TNF_CLASS_EBOOK_LIBRARY_V1';
+    const DEFAULT_TNI_EBOOK_CATEGORIES = [
+      { code: 'PSIKOLOGI', label: 'Psikologi & Kecermatan', isDefault: true },
+      { code: 'AKADEMIK', label: 'Akademik (TKA & SKD)', isDefault: true },
+      { code: 'JASMANI', label: 'Kesamaptaan Jasmani', isDefault: true }
+    ];
+    const DEFAULT_CPNS_EBOOK_CATEGORIES = [
+      { code: 'TWK', label: 'TWK (Pilar & Bela Negara)', isDefault: true },
+      { code: 'TIU', label: 'TIU (Verbal, Numerik & Figural)', isDefault: true },
+      { code: 'TKP', label: 'TKP (Pelayanan & Anti-Radikalisme)', isDefault: true },
+      { code: 'SKB', label: 'SKB & Wawancara ASN', isDefault: true }
+    ];
+    let TNI_EBOOK_CATEGORIES = JSON.parse(JSON.stringify(DEFAULT_TNI_EBOOK_CATEGORIES));
+    let CPNS_EBOOK_CATEGORIES = JSON.parse(JSON.stringify(DEFAULT_CPNS_EBOOK_CATEGORIES));
+
+    const DEFAULT_TNF_EBOOK_MODULES = [
       {
         id: 'MOD-PSI-01',
         category: 'PSIKOLOGI',
@@ -7326,7 +7561,36 @@ service cloud.firestore {
       }
     ];
 
+    let TNF_EBOOK_MODULES = JSON.parse(JSON.stringify(DEFAULT_TNF_EBOOK_MODULES));
+    let currentTniEbookFilter = 'ALL';
+
+    function extractGoogleDriveDownloadOrViewUrl(rawUrl) {
+      const clean = String(rawUrl || '').trim();
+      if (!clean) return '';
+      if (/^https?:\/\//i.test(clean)) return clean;
+      return 'https://' + clean;
+    }
+
+    function renderTniEbookFilterButtons(activeCat = 'ALL') {
+      const bar = document.getElementById('tni-ebook-filter-bar');
+      if (!bar) return;
+      const allCats = [{ code: 'ALL', label: 'Semua Modul' }, ...TNI_EBOOK_CATEGORIES];
+      bar.innerHTML = allCats.map(c => {
+        const isSel = c.code === activeCat;
+        return `
+          <button type="button" data-mod-filter="${c.code}" onclick="renderModules('${c.code.replace(/'/g, "\'")}')" class="${
+            isSel
+              ? 'mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950'
+              : 'mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-navy-950 text-slate-300 border border-white/10 hover:border-gold-500/40'
+          }">
+            ${c.label}
+          </button>
+        `;
+      }).join('');
+    }
+
     function renderModules(filterCategory = 'ALL') {
+      currentTniEbookFilter = filterCategory || 'ALL';
       const grid = document.getElementById('ebook-modules-grid');
       const unlockedWrapper = document.getElementById('ebook-unlocked-content');
       const restrictedNotice = document.getElementById('ebook-restricted-notice');
@@ -7355,45 +7619,57 @@ service cloud.firestore {
         }
       }
 
-      document.querySelectorAll('.mod-filter-btn').forEach(btn => {
-        const isSelected = btn.dataset.modFilter === filterCategory;
-        btn.className = isSelected
-          ? 'mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950'
-          : 'mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-navy-950 text-slate-300 border border-white/10 hover:border-gold-500/40';
-      });
+      renderTniEbookFilterButtons(currentTniEbookFilter);
 
-      const filtered = filterCategory === 'ALL'
+      const filtered = currentTniEbookFilter === 'ALL'
         ? TNF_EBOOK_MODULES
-        : TNF_EBOOK_MODULES.filter(m => m.category === filterCategory);
+        : TNF_EBOOK_MODULES.filter(m => String(m.category || '').toUpperCase() === String(currentTniEbookFilter).toUpperCase());
 
-      grid.innerHTML = filtered.map(mod => `
-        <div class="p-5 rounded-2xl bg-navy-950/85 border border-white/10 hover:border-gold-500/40 flex flex-col justify-between space-y-4 transition-all">
-          <div class="space-y-3">
-            <div class="flex items-center justify-between gap-2">
-              <span class="px-2.5 py-1 rounded-lg bg-gold-500/15 text-gold-400 text-[11px] font-extrabold">${mod.badge}</span>
-              <span class="text-[11px] font-semibold text-slate-400">${mod.pages}</span>
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full p-8 rounded-2xl bg-navy-950/80 border border-white/10 text-center text-xs text-slate-400">Belum ada modul E-Book pada kategori <strong>${currentTniEbookFilter}</strong>.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(mod => {
+        const hasDrive = Boolean((mod.driveUrl || '').trim());
+        const highlightsList = Array.isArray(mod.highlights) ? mod.highlights : [];
+        return `
+          <div class="p-5 rounded-2xl bg-navy-950/85 border border-white/10 hover:border-gold-500/40 flex flex-col justify-between space-y-4 transition-all">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-2.5 py-1 rounded-lg bg-gold-500/15 text-gold-400 text-[11px] font-extrabold">${mod.badge || mod.category}</span>
+                <span class="text-[11px] font-semibold text-slate-400">${mod.pages || 'PDF'}</span>
+              </div>
+              <h3 class="font-extrabold text-white text-base leading-snug">${mod.title}</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">${mod.summary || ''}</p>
+              ${highlightsList.length > 0 ? `
+                <ul class="space-y-1.5 pt-1">
+                  ${highlightsList.map(h => `
+                    <li class="text-[11px] text-slate-400 flex items-start gap-2">
+                      <i class="fa-solid fa-circle-check text-gold-500 mt-0.5"></i>
+                      <span>${h}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              ` : ''}
+              ${hasDrive ? `
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-500/35 text-sky-300 text-[10px] font-extrabold">
+                  <i class="fa-brands fa-google-drive"></i>
+                  <span>File E-Book Google Drive Tersedia</span>
+                </div>
+              ` : ''}
             </div>
-            <h3 class="font-extrabold text-white text-base leading-snug">${mod.title}</h3>
-            <p class="text-xs text-slate-300 leading-relaxed">${mod.summary}</p>
-            <ul class="space-y-1.5 pt-1">
-              ${mod.highlights.map(h => `
-                <li class="text-[11px] text-slate-400 flex items-start gap-2">
-                  <i class="fa-solid fa-circle-check text-gold-500 mt-0.5"></i>
-                  <span>${h}</span>
-                </li>
-              `).join('')}
-            </ul>
+            <div class="flex items-center gap-2 pt-3 border-t border-white/10">
+              <button type="button" onclick="previewEbookModule('${mod.id}')" class="flex-1 py-2.5 px-3 rounded-xl bg-navy-900 hover:bg-navy-800 border border-white/15 text-xs font-bold text-white">
+                <i class="fa-solid fa-eye text-gold-400 mr-1.5"></i>Pratinjau
+              </button>
+              <button type="button" onclick="downloadEbookSummary('${mod.id}')" class="flex-1 py-2.5 px-3 rounded-xl btn-gold text-xs font-extrabold">
+                <i class="fa-solid fa-download mr-1.5"></i>Download E-Book
+              </button>
+            </div>
           </div>
-          <div class="flex items-center gap-2 pt-3 border-t border-white/10">
-            <button type="button" onclick="previewEbookModule('${mod.id}')" class="flex-1 py-2.5 px-3 rounded-xl bg-navy-900 hover:bg-navy-800 border border-white/15 text-xs font-bold text-white">
-              <i class="fa-solid fa-eye text-gold-400 mr-1.5"></i>Pratinjau
-            </button>
-            <button type="button" onclick="downloadEbookSummary('${mod.id}')" class="flex-1 py-2.5 px-3 rounded-xl btn-gold text-xs font-extrabold">
-              <i class="fa-solid fa-download mr-1.5"></i>Unduh Silabus
-            </button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function previewEbookModule(modId) {
@@ -7402,47 +7678,62 @@ service cloud.firestore {
         switchTniSubTab('ebook');
         return;
       }
-      if (!perms.canAccessEbook) {
-        openUpgradePackageModal('Paket Silver (1 Bulan)');
+      if (!perms.canAccessEbookTni) {
+        openUpgradePackageModal('Paket Akses E-Book TNI/POLRI');
         return;
       }
 
       const mod = TNF_EBOOK_MODULES.find(m => m.id === modId);
       if (!mod) return;
+      const highlightsList = Array.isArray(mod.highlights) ? mod.highlights : [];
+      const hasDrive = Boolean((mod.driveUrl || '').trim());
 
       openCustomModal({
-        badge: mod.badge,
+        badge: mod.badge || mod.category,
         title: mod.title,
         bodyHtml: `
           <div class="space-y-3 text-xs sm:text-sm">
             <div class="p-3.5 rounded-2xl bg-navy-950/90 border border-gold-500/30">
-              <span class="text-[11px] font-bold text-gold-400 uppercase block mb-1">Ringkasan Materi (${mod.pages})</span>
-              <p class="text-slate-200 leading-relaxed">${mod.summary}</p>
+              <span class="text-[11px] font-bold text-gold-400 uppercase block mb-1">Keterangan &amp; Ringkasan E-Book (${mod.pages || 'PDF'})</span>
+              <p class="text-slate-200 leading-relaxed">${mod.summary || ''}</p>
             </div>
-            <div class="space-y-1.5">
-              <span class="text-xs font-extrabold text-white block">Pokok Bahasan Utama:</span>
-              <ul class="space-y-1.5 text-xs text-slate-300">
-                ${mod.highlights.map(h => `<li class="flex items-start gap-2"><i class="fa-solid fa-check text-gold-400 mt-0.5"></i><span>${h}</span></li>`).join('')}
-              </ul>
-            </div>
+            ${highlightsList.length > 0 ? `
+              <div class="space-y-1.5">
+                <span class="text-xs font-extrabold text-white block">Pokok Bahasan Utama:</span>
+                <ul class="space-y-1.5 text-xs text-slate-300">
+                  ${highlightsList.map(h => `<li class="flex items-start gap-2"><i class="fa-solid fa-check text-gold-400 mt-0.5"></i><span>${h}</span></li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+            ${hasDrive ? `
+              <div class="p-3 rounded-xl bg-sky-500/15 border border-sky-500/35 text-xs text-sky-200 flex items-center justify-between gap-2">
+                <span><i class="fa-brands fa-google-drive mr-1.5 text-sky-400"></i>Tautan E-Book Google Drive terhubung dan siap diunduh.</span>
+              </div>
+            ` : ''}
           </div>
         `,
         actionsHtml: `
           <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
-          <button type="button" onclick="downloadEbookSummary('${mod.id}')" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold"><i class="fa-solid fa-download mr-1.5"></i> Unduh Ringkasan Modul</button>
+          <button type="button" onclick="downloadEbookSummary('${mod.id}')" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold"><i class="fa-solid fa-download mr-1.5"></i> Download E-Book</button>
         `
       });
     }
 
     function downloadEbookSummary(modId) {
       const perms = getParticipantPermissions();
-      if (!perms.canAccessEbook) {
-        openUpgradePackageModal('Paket Silver (1 Bulan)');
+      if (!perms.canAccessEbookTni) {
+        openUpgradePackageModal('Paket Akses E-Book TNI/POLRI');
         return;
       }
 
       const mod = TNF_EBOOK_MODULES.find(m => m.id === modId);
       if (!mod) return;
+
+      const driveLink = extractGoogleDriveDownloadOrViewUrl(mod.driveUrl);
+      if (driveLink) {
+        window.open(driveLink, '_blank', 'noopener,noreferrer');
+        return;
+      }
 
       const content = [
         '==============================================================',
@@ -8579,15 +8870,23 @@ service cloud.firestore {
     window.syncResultsFromFirebase = function (cloudRecords, isConnected) {
       if (!Array.isArray(cloudRecords)) return;
       const mergedMap = new Map();
+      const isSystemDoc = (r) => {
+        if (!r || !r.id) return true;
+        const idStr = String(r.id);
+        return (
+          idStr.startsWith('QBANK_DOC_') ||
+          idStr === 'SYS_CONFIG_CAT' ||
+          idStr === 'EBOOK_LIBRARY_DATA' ||
+          r.recordType === 'question_bank' ||
+          r.recordType === 'cat_config' ||
+          r.recordType === 'ebook_library'
+        );
+      };
       CAT_RESULTS_STORE.forEach(r => {
-        if (r && r.id && !String(r.id).startsWith('QBANK_DOC_') && r.id !== 'SYS_CONFIG_CAT' && r.recordType !== 'question_bank' && r.recordType !== 'cat_config') {
-          mergedMap.set(r.id, r);
-        }
+        if (!isSystemDoc(r)) mergedMap.set(r.id, r);
       });
       cloudRecords.forEach(r => {
-        if (r && r.id && !String(r.id).startsWith('QBANK_DOC_') && r.id !== 'SYS_CONFIG_CAT' && r.recordType !== 'question_bank' && r.recordType !== 'cat_config') {
-          mergedMap.set(r.id, { ...r, synced: true });
-        }
+        if (!isSystemDoc(r)) mergedMap.set(r.id, { ...r, synced: true });
       });
       CAT_RESULTS_STORE = Array.from(mergedMap.values());
       saveLocalBackupResults();
@@ -9762,7 +10061,7 @@ service cloud.firestore {
     // 5B. DASHBOARD KHUSUS ADMIN (RANKING TERINTEGRASI, WHITELIST & UPGRADE PAKET)
     // =========================================================================
     function switchAdminTab(tabName) {
-      const tabs = ['results', 'settings', 'questions'];
+      const tabs = ['results', 'settings', 'questions', 'ebooks'];
       const active = tabs.includes(tabName) ? tabName : 'results';
 
       tabs.forEach(t => {
@@ -9781,12 +10080,14 @@ service cloud.firestore {
       if (active === 'results') renderAdminResultsTable();
       if (active === 'settings') populateAdminSettingsForm();
       if (active === 'questions') renderAdminQuestionList();
+      if (active === 'ebooks' && typeof renderAdminEbookManager === 'function') renderAdminEbookManager();
     }
 
     function renderAdminDashboardAll() {
       renderAdminResultsTable();
       populateAdminSettingsForm();
       renderAdminQuestionList();
+      if (typeof renderAdminEbookManager === 'function') renderAdminEbookManager();
     }
 
     function logoutAdminPanel() {
@@ -11129,6 +11430,17 @@ service cloud.firestore {
       if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.saveCatConfig === 'function') {
         try {
           await window.TNF_FIREBASE.saveCatConfig(CAT_CONFIG);
+          syncedCount++;
+        } catch (e) {}
+      }
+      if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.saveEbookLibrary === 'function') {
+        try {
+          await window.TNF_FIREBASE.saveEbookLibrary({
+            tnipolriModules: TNF_EBOOK_MODULES,
+            cpnsModules: CPNS_EBOOK_MODULES,
+            tniCategories: TNI_EBOOK_CATEGORIES,
+            cpnsCategories: CPNS_EBOOK_CATEGORIES
+          });
           syncedCount++;
         } catch (e) {}
       }
@@ -13588,7 +13900,7 @@ service cloud.firestore {
     // =========================================================================
     let currentActiveCpnsSubTab = 'pg';
 
-    const CPNS_EBOOK_MODULES = [
+    const DEFAULT_CPNS_EBOOK_MODULES = [
       {
         id: 'CPNS-TWK-01',
         category: 'TWK',
@@ -14218,7 +14530,29 @@ service cloud.firestore {
       }, 60);
     }
 
+    let CPNS_EBOOK_MODULES = JSON.parse(JSON.stringify(DEFAULT_CPNS_EBOOK_MODULES));
+    let currentCpnsEbookFilter = 'ALL';
+
+    function renderCpnsEbookFilterButtons(activeCat = 'ALL') {
+      const bar = document.getElementById('cpns-ebook-filter-bar');
+      if (!bar) return;
+      const allCats = [{ code: 'ALL', label: 'Semua Modul CPNS' }, ...CPNS_EBOOK_CATEGORIES];
+      bar.innerHTML = allCats.map(c => {
+        const isSel = c.code === activeCat;
+        return `
+          <button type="button" data-cpns-mod-filter="${c.code}" onclick="renderCpnsModules('${c.code.replace(/'/g, "\'")}')" class="${
+            isSel
+              ? 'cpns-mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950'
+              : 'cpns-mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-navy-950 text-slate-300 border border-white/10 hover:border-gold-500/40'
+          }">
+            ${c.label}
+          </button>
+        `;
+      }).join('');
+    }
+
     function renderCpnsModules(filterCat = 'ALL') {
+      currentCpnsEbookFilter = filterCat || 'ALL';
       const grid = document.getElementById('cpns-ebook-modules-grid');
       const unlockedWrapper = document.getElementById('cpns-ebook-unlocked-content');
       const restrictedNotice = document.getElementById('cpns-ebook-restricted-notice');
@@ -14241,45 +14575,57 @@ service cloud.firestore {
         }
       }
 
-      document.querySelectorAll('.cpns-mod-filter-btn').forEach(btn => {
-        const isSel = btn.dataset.cpnsModFilter === filterCat;
-        btn.className = isSel
-          ? 'cpns-mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950'
-          : 'cpns-mod-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-navy-950 text-slate-300 border border-white/10 hover:border-gold-500/40';
-      });
+      renderCpnsEbookFilterButtons(currentCpnsEbookFilter);
 
-      const list = filterCat === 'ALL'
+      const list = currentCpnsEbookFilter === 'ALL'
         ? CPNS_EBOOK_MODULES
-        : CPNS_EBOOK_MODULES.filter(m => m.category === filterCat);
+        : CPNS_EBOOK_MODULES.filter(m => String(m.category || '').toUpperCase() === String(currentCpnsEbookFilter).toUpperCase());
 
-      grid.innerHTML = list.map(mod => `
-        <div class="p-5 rounded-2xl bg-navy-950/85 border border-white/10 hover:border-gold-500/40 flex flex-col justify-between space-y-4 transition-all">
-          <div class="space-y-3">
-            <div class="flex items-center justify-between gap-2">
-              <span class="px-2.5 py-1 rounded-lg bg-gold-500/15 text-gold-400 text-[11px] font-extrabold">${mod.badge}</span>
-              <span class="text-[11px] font-semibold text-slate-400">${mod.pages}</span>
+      if (list.length === 0) {
+        grid.innerHTML = `<div class="col-span-full p-8 rounded-2xl bg-navy-950/80 border border-white/10 text-center text-xs text-slate-400">Belum ada modul E-Book CPNS pada kategori <strong>${currentCpnsEbookFilter}</strong>.</div>`;
+        return;
+      }
+
+      grid.innerHTML = list.map(mod => {
+        const hasDrive = Boolean((mod.driveUrl || '').trim());
+        const highlightsList = Array.isArray(mod.highlights) ? mod.highlights : [];
+        return `
+          <div class="p-5 rounded-2xl bg-navy-950/85 border border-white/10 hover:border-gold-500/40 flex flex-col justify-between space-y-4 transition-all">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-2.5 py-1 rounded-lg bg-gold-500/15 text-gold-400 text-[11px] font-extrabold">${mod.badge || mod.category}</span>
+                <span class="text-[11px] font-semibold text-slate-400">${mod.pages || 'PDF'}</span>
+              </div>
+              <h3 class="font-extrabold text-white text-base leading-snug">${mod.title}</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">${mod.summary || ''}</p>
+              ${highlightsList.length > 0 ? `
+                <ul class="space-y-1.5 pt-1">
+                  ${highlightsList.map(h => `
+                    <li class="text-[11px] text-slate-400 flex items-start gap-2">
+                      <i class="fa-solid fa-circle-check text-gold-500 mt-0.5"></i>
+                      <span>${h}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              ` : ''}
+              ${hasDrive ? `
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-500/35 text-sky-300 text-[10px] font-extrabold">
+                  <i class="fa-brands fa-google-drive"></i>
+                  <span>File E-Book Google Drive Tersedia</span>
+                </div>
+              ` : ''}
             </div>
-            <h3 class="font-extrabold text-white text-base leading-snug">${mod.title}</h3>
-            <p class="text-xs text-slate-300 leading-relaxed">${mod.summary}</p>
-            <ul class="space-y-1.5 pt-1">
-              ${mod.highlights.map(h => `
-                <li class="text-[11px] text-slate-400 flex items-start gap-2">
-                  <i class="fa-solid fa-circle-check text-gold-500 mt-0.5"></i>
-                  <span>${h}</span>
-                </li>
-              `).join('')}
-            </ul>
+            <div class="flex items-center gap-2 pt-3 border-t border-white/10">
+              <button type="button" onclick="previewCpnsEbookModule('${mod.id}')" class="flex-1 py-2.5 px-3 rounded-xl bg-navy-900 hover:bg-navy-800 border border-white/15 text-xs font-bold text-white">
+                <i class="fa-solid fa-eye text-gold-400 mr-1.5"></i>Pratinjau
+              </button>
+              <button type="button" onclick="downloadCpnsEbookSummary('${mod.id}')" class="flex-1 py-2.5 px-3 rounded-xl btn-gold text-xs font-extrabold">
+                <i class="fa-solid fa-download mr-1.5"></i>Download E-Book
+              </button>
+            </div>
           </div>
-          <div class="flex items-center gap-2 pt-3 border-t border-white/10">
-            <button type="button" onclick="previewCpnsEbookModule('${mod.id}')" class="flex-1 py-2.5 px-3 rounded-xl bg-navy-900 hover:bg-navy-800 border border-white/15 text-xs font-bold text-white">
-              <i class="fa-solid fa-eye text-gold-400 mr-1.5"></i>Pratinjau
-            </button>
-            <button type="button" onclick="downloadCpnsEbookSummary('${mod.id}')" class="flex-1 py-2.5 px-3 rounded-xl btn-gold text-xs font-extrabold">
-              <i class="fa-solid fa-download mr-1.5"></i>Unduh Silabus
-            </button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function previewCpnsEbookModule(modId) {
@@ -14289,32 +14635,42 @@ service cloud.firestore {
         showCpnsAuthAlert('Silakan login menggunakan email peserta yang terdaftar untuk membuka E-Book & Modul PDF CPNS.', false);
         return;
       }
-      if (!perms.canAccessEbook) {
-        openUpgradePackageModal('Paket Bimbel CPNS Silver (1 Bulan)');
+      if (!perms.canAccessEbookCpns) {
+        openUpgradePackageModal('Paket Akses E-Book CPNS');
         return;
       }
       const mod = CPNS_EBOOK_MODULES.find(m => m.id === modId);
       if (!mod) return;
+      const highlightsList = Array.isArray(mod.highlights) ? mod.highlights : [];
+      const hasDrive = Boolean((mod.driveUrl || '').trim());
+
       openCustomModal({
-        badge: mod.badge,
+        badge: mod.badge || mod.category,
         title: mod.title,
         bodyHtml: `
           <div class="space-y-3 text-xs sm:text-sm">
             <div class="p-3.5 rounded-2xl bg-navy-950/90 border border-gold-500/30">
-              <span class="text-[11px] font-bold text-gold-400 uppercase block mb-1">Ringkasan Modul CPNS (${mod.pages})</span>
-              <p class="text-slate-200 leading-relaxed">${mod.summary}</p>
+              <span class="text-[11px] font-bold text-gold-400 uppercase block mb-1">Keterangan &amp; Ringkasan E-Book CPNS (${mod.pages || 'PDF'})</span>
+              <p class="text-slate-200 leading-relaxed">${mod.summary || ''}</p>
             </div>
-            <div class="space-y-1.5">
-              <span class="text-xs font-extrabold text-white block">Pokok Bahasan Utama:</span>
-              <ul class="space-y-1.5 text-xs text-slate-300">
-                ${mod.highlights.map(h => `<li class="flex items-start gap-2"><i class="fa-solid fa-check text-gold-400 mt-0.5"></i><span>${h}</span></li>`).join('')}
-              </ul>
-            </div>
+            ${highlightsList.length > 0 ? `
+              <div class="space-y-1.5">
+                <span class="text-xs font-extrabold text-white block">Pokok Bahasan Utama:</span>
+                <ul class="space-y-1.5 text-xs text-slate-300">
+                  ${highlightsList.map(h => `<li class="flex items-start gap-2"><i class="fa-solid fa-check text-gold-400 mt-0.5"></i><span>${h}</span></li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+            ${hasDrive ? `
+              <div class="p-3 rounded-xl bg-sky-500/15 border border-sky-500/35 text-xs text-sky-200 flex items-center justify-between gap-2">
+                <span><i class="fa-brands fa-google-drive mr-1.5 text-sky-400"></i>Tautan E-Book Google Drive terhubung dan siap diunduh.</span>
+              </div>
+            ` : ''}
           </div>
         `,
         actionsHtml: `
           <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Tutup</button>
-          <button type="button" onclick="downloadCpnsEbookSummary('${mod.id}')" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold"><i class="fa-solid fa-download mr-1.5"></i> Unduh Silabus Modul</button>
+          <button type="button" onclick="downloadCpnsEbookSummary('${mod.id}')" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-extrabold"><i class="fa-solid fa-download mr-1.5"></i> Download E-Book</button>
         `
       });
     }
@@ -14326,12 +14682,18 @@ service cloud.firestore {
         showCpnsAuthAlert('Silakan login menggunakan email peserta yang terdaftar untuk mengunduh E-Book & Modul PDF CPNS.', false);
         return;
       }
-      if (!perms.canAccessEbook) {
-        openUpgradePackageModal('Paket Bimbel CPNS Silver (1 Bulan)');
+      if (!perms.canAccessEbookCpns) {
+        openUpgradePackageModal('Paket Akses E-Book CPNS');
         return;
       }
       const mod = CPNS_EBOOK_MODULES.find(m => m.id === modId);
       if (!mod) return;
+
+      const driveLink = extractGoogleDriveDownloadOrViewUrl(mod.driveUrl);
+      if (driveLink) {
+        window.open(driveLink, '_blank', 'noopener,noreferrer');
+        return;
+      }
       const content = [
         '==============================================================',
         'TNF CLASS (TheNextFuture Class) - Divisi ASN, CPNS & Kedinasan',
@@ -14364,6 +14726,502 @@ service cloud.firestore {
       URL.revokeObjectURL(url);
     }
 
+
+
+    // =========================================================================
+    // MANAJEMEN E-BOOK & MODUL PDF ADMIN + SINKRONISASI CLOUD FIRESTORE
+    // =========================================================================
+    let currentAdminEbookListFilter = 'ALL';
+
+    function updateEbookCloudBadge(text, isOnline = true) {
+      const badge = document.getElementById('ebook-cloud-sync-badge');
+      if (!badge) return;
+      if (isOnline) {
+        badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider';
+        badge.innerHTML = `<i class="fa-solid fa-cloud-check"></i><span>${text || 'E-Book Tersimpan di Cloud Firestore'}</span>`;
+      } else {
+        badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider';
+        badge.innerHTML = `<i class="fa-solid fa-rotate"></i><span>${text || 'Menyinkronkan E-Book ke Cloud...'}</span>`;
+      }
+    }
+
+    function saveEbookLibraryToStorage() {
+      const payload = {
+        tnipolriModules: TNF_EBOOK_MODULES,
+        cpnsModules: CPNS_EBOOK_MODULES,
+        tniCategories: TNI_EBOOK_CATEGORIES,
+        cpnsCategories: CPNS_EBOOK_CATEGORIES
+      };
+      try {
+        localStorage.setItem(EBOOK_LIBRARY_STORAGE_KEY, JSON.stringify(payload));
+      } catch (e) {
+        console.warn('Gagal menyimpan E-Book Library ke localStorage:', e);
+      }
+
+      if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.saveEbookLibrary === 'function') {
+        updateEbookCloudBadge('Menyinkronkan ke Cloud Firestore...', false);
+        window.TNF_FIREBASE.saveEbookLibrary(payload)
+          .then(() => {
+            updateEbookCloudBadge('E-Book Tersimpan di Cloud Firestore (Realtime)', true);
+          })
+          .catch(() => {
+            updateEbookCloudBadge('Tersimpan Lokal (Menunggu Cloud)', false);
+          });
+      }
+    }
+
+    function loadSavedEbookLibrary() {
+      try {
+        const raw = localStorage.getItem(EBOOK_LIBRARY_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            if (Array.isArray(parsed.tnipolriModules) && parsed.tnipolriModules.length > 0) {
+              TNF_EBOOK_MODULES = parsed.tnipolriModules;
+            }
+            if (Array.isArray(parsed.cpnsModules) && parsed.cpnsModules.length > 0) {
+              CPNS_EBOOK_MODULES = parsed.cpnsModules;
+            }
+            if (Array.isArray(parsed.tniCategories) && parsed.tniCategories.length > 0) {
+              TNI_EBOOK_CATEGORIES = parsed.tniCategories;
+            }
+            if (Array.isArray(parsed.cpnsCategories) && parsed.cpnsCategories.length > 0) {
+              CPNS_EBOOK_CATEGORIES = parsed.cpnsCategories;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Gagal memuat E-Book Library dari localStorage:', e);
+      }
+    }
+
+    window.syncEbookLibraryFromFirebase = function (cloudData) {
+      if (!cloudData || typeof cloudData !== 'object') return;
+      let changed = false;
+      if (Array.isArray(cloudData.tnipolriModules) && cloudData.tnipolriModules.length > 0) {
+        TNF_EBOOK_MODULES = cloudData.tnipolriModules;
+        changed = true;
+      }
+      if (Array.isArray(cloudData.cpnsModules) && cloudData.cpnsModules.length > 0) {
+        CPNS_EBOOK_MODULES = cloudData.cpnsModules;
+        changed = true;
+      }
+      if (Array.isArray(cloudData.tniCategories) && cloudData.tniCategories.length > 0) {
+        TNI_EBOOK_CATEGORIES = cloudData.tniCategories;
+        changed = true;
+      }
+      if (Array.isArray(cloudData.cpnsCategories) && cloudData.cpnsCategories.length > 0) {
+        CPNS_EBOOK_CATEGORIES = cloudData.cpnsCategories;
+        changed = true;
+      }
+
+      if (changed) {
+        try {
+          localStorage.setItem(EBOOK_LIBRARY_STORAGE_KEY, JSON.stringify({
+            tnipolriModules: TNF_EBOOK_MODULES,
+            cpnsModules: CPNS_EBOOK_MODULES,
+            tniCategories: TNI_EBOOK_CATEGORIES,
+            cpnsCategories: CPNS_EBOOK_CATEGORIES
+          }));
+        } catch (e) {}
+        updateEbookCloudBadge('E-Book Tersimpan di Cloud Firestore (Realtime)', true);
+        renderModules(currentTniEbookFilter || 'ALL');
+        renderCpnsModules(currentCpnsEbookFilter || 'ALL');
+        if (isAdminAuthenticated && typeof renderAdminEbookManager === 'function') {
+          renderAdminEbookManager();
+        }
+      }
+    };
+
+    async function syncEbookLibraryToCloudNow() {
+      if (!window.TNF_FIREBASE || typeof window.TNF_FIREBASE.saveEbookLibrary !== 'function') return;
+      updateEbookCloudBadge('Menyinkronkan E-Book ke Cloud...', false);
+      try {
+        await window.TNF_FIREBASE.saveEbookLibrary({
+          tnipolriModules: TNF_EBOOK_MODULES,
+          cpnsModules: CPNS_EBOOK_MODULES,
+          tniCategories: TNI_EBOOK_CATEGORIES,
+          cpnsCategories: CPNS_EBOOK_CATEGORIES
+        });
+        updateEbookCloudBadge('E-Book Tersimpan di Cloud Firestore (Realtime)', true);
+        openCustomModal({
+          badge: 'Sinkronisasi Cloud E-Book Berhasil',
+          title: 'Perpustakaan E-Book Tersimpan ke Cloud Firestore',
+          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Seluruh <strong class="text-gold-400">${TNF_EBOOK_MODULES.length} E-Book TNI/POLRI</strong> dan <strong class="text-sky-300">${CPNS_EBOOK_MODULES.length} E-Book CPNS</strong> beserta jenis/kategori dan link Google Drive telah berhasil disimpan secara online dan real-time ke <strong>Cloud Firestore</strong>.</p>`
+        });
+      } catch (e) {
+        updateEbookCloudBadge('Gagal Sinkron Cloud', false);
+      }
+    }
+
+    function ensureCategoryRegistered(division, catCode, catLabel = '') {
+      const cleanCode = String(catCode || '').trim().toUpperCase();
+      if (!cleanCode) return;
+      const targetArr = division === 'cpns' ? CPNS_EBOOK_CATEGORIES : TNI_EBOOK_CATEGORIES;
+      const exists = targetArr.some(c => c.code.toUpperCase() === cleanCode);
+      if (!exists) {
+        targetArr.push({
+          code: cleanCode,
+          label: (catLabel || cleanCode).trim(),
+          isDefault: false
+        });
+      }
+    }
+
+    function adminAddCustomEbookCategory() {
+      const div = document.getElementById('admin-new-ebook-cat-div')?.value || 'tnipolri';
+      const rawCode = (document.getElementById('admin-new-ebook-cat-code')?.value || '').trim().toUpperCase();
+      const rawLabel = (document.getElementById('admin-new-ebook-cat-label')?.value || '').trim();
+
+      const code = rawCode || rawLabel.toUpperCase().replace(/[^A-Z0-9_ ]+/g, '').trim();
+      const label = rawLabel || code;
+
+      if (!code) {
+        openCustomModal({
+          badge: 'Input Belum Lengkap',
+          title: 'Masukkan Nama Jenis E-Book',
+          bodyHtml: `<p class="text-xs text-slate-300">Silakan isi <strong>Kode Jenis</strong> atau <strong>Nama Tampilan Jenis E-Book</strong> yang ingin ditambahkan secara manual.</p>`
+        });
+        return;
+      }
+
+      ensureCategoryRegistered(div, code, label);
+      saveEbookLibraryToStorage();
+
+      const codeInp = document.getElementById('admin-new-ebook-cat-code');
+      const labelInp = document.getElementById('admin-new-ebook-cat-label');
+      if (codeInp) codeInp.value = '';
+      if (labelInp) labelInp.value = '';
+
+      const formDiv = document.getElementById('admin-ebook-division');
+      if (formDiv) formDiv.value = div;
+      populateAdminEbookCategorySelect(code);
+      renderAdminEbookManager();
+      renderModules(currentTniEbookFilter);
+      renderCpnsModules(currentCpnsEbookFilter);
+    }
+
+    function adminRemoveCustomEbookCategory(division, code) {
+      const clean = String(code || '').toUpperCase();
+      if (division === 'cpns') {
+        CPNS_EBOOK_CATEGORIES = CPNS_EBOOK_CATEGORIES.filter(c => !(c.code.toUpperCase() === clean && !c.isDefault));
+      } else {
+        TNI_EBOOK_CATEGORIES = TNI_EBOOK_CATEGORIES.filter(c => !(c.code.toUpperCase() === clean && !c.isDefault));
+      }
+      saveEbookLibraryToStorage();
+      populateAdminEbookCategorySelect();
+      renderAdminEbookManager();
+      renderModules('ALL');
+      renderCpnsModules('ALL');
+    }
+
+    function populateAdminEbookCategorySelect(selectedCode = '') {
+      const div = document.getElementById('admin-ebook-division')?.value || 'tnipolri';
+      const sel = document.getElementById('admin-ebook-category');
+      if (!sel) return;
+
+      const list = div === 'cpns' ? CPNS_EBOOK_CATEGORIES : TNI_EBOOK_CATEGORIES;
+      const optionsHtml = list.map(c => `
+        <option value="${c.code}" ${selectedCode && c.code.toUpperCase() === selectedCode.toUpperCase() ? 'selected' : ''}>
+          ${c.code} — ${c.label}
+        </option>
+      `).join('') + `<option value="__CUSTOM__">+ Ketik Jenis E-Book Baru Manual...</option>`;
+
+      sel.innerHTML = optionsHtml;
+      handleAdminEbookCategorySelectChange();
+    }
+
+    function handleAdminEbookCategorySelectChange() {
+      const selVal = document.getElementById('admin-ebook-category')?.value || '';
+      const customWrap = document.getElementById('admin-ebook-custom-cat-wrap');
+      if (customWrap) {
+        customWrap.classList.toggle('hidden', selVal !== '__CUSTOM__');
+      }
+    }
+
+    function resetAdminInlineEbookForm(defaultDiv = 'tnipolri') {
+      const idEl = document.getElementById('admin-ebook-edit-id');
+      const divEl = document.getElementById('admin-ebook-division');
+      const customCatEl = document.getElementById('admin-ebook-custom-cat');
+      const badgeEl = document.getElementById('admin-ebook-badge');
+      const pagesEl = document.getElementById('admin-ebook-pages');
+      const titleEl = document.getElementById('admin-ebook-title');
+      const driveEl = document.getElementById('admin-ebook-drive-url');
+      const sumEl = document.getElementById('admin-ebook-summary');
+      const highEl = document.getElementById('admin-ebook-highlights');
+      const formBadge = document.getElementById('admin-ebook-form-badge');
+      const formTitle = document.getElementById('admin-ebook-form-title');
+      const saveBtnText = document.getElementById('admin-ebook-save-btn-text');
+
+      if (idEl) idEl.value = '';
+      if (divEl) divEl.value = defaultDiv;
+      populateAdminEbookCategorySelect();
+      if (customCatEl) customCatEl.value = '';
+      if (badgeEl) badgeEl.value = '';
+      if (pagesEl) pagesEl.value = '120 Halaman • PDF';
+      if (titleEl) titleEl.value = '';
+      if (driveEl) driveEl.value = '';
+      if (sumEl) sumEl.value = '';
+      if (highEl) highEl.value = '';
+      if (formBadge) formBadge.textContent = 'Mode Tambah E-Book Baru';
+      if (formTitle) formTitle.textContent = 'Tambah E-Book Baru & Tautan Download Google Drive';
+      if (saveBtnText) saveBtnText.textContent = 'Simpan E-Book Baru & Sinkronkan Cloud';
+    }
+
+    function openEbookEditorModal(division = 'tnipolri', editId = null) {
+      const card = document.getElementById('admin-inline-ebook-form-card');
+      if (!editId) {
+        resetAdminInlineEbookForm(division || 'tnipolri');
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('admin-ebook-title')?.focus();
+        return;
+      }
+
+      const targetList = division === 'cpns' ? CPNS_EBOOK_MODULES : TNF_EBOOK_MODULES;
+      const mod = targetList.find(m => m.id === editId);
+      if (!mod) return;
+
+      const idEl = document.getElementById('admin-ebook-edit-id');
+      const divEl = document.getElementById('admin-ebook-division');
+      const badgeEl = document.getElementById('admin-ebook-badge');
+      const pagesEl = document.getElementById('admin-ebook-pages');
+      const titleEl = document.getElementById('admin-ebook-title');
+      const driveEl = document.getElementById('admin-ebook-drive-url');
+      const sumEl = document.getElementById('admin-ebook-summary');
+      const highEl = document.getElementById('admin-ebook-highlights');
+      const formBadge = document.getElementById('admin-ebook-form-badge');
+      const formTitle = document.getElementById('admin-ebook-form-title');
+      const saveBtnText = document.getElementById('admin-ebook-save-btn-text');
+
+      if (idEl) idEl.value = mod.id;
+      if (divEl) divEl.value = division;
+      ensureCategoryRegistered(division, mod.category, mod.category);
+      populateAdminEbookCategorySelect(mod.category);
+      if (badgeEl) badgeEl.value = mod.badge || mod.category || '';
+      if (pagesEl) pagesEl.value = mod.pages || '120 Halaman • PDF';
+      if (titleEl) titleEl.value = mod.title || '';
+      if (driveEl) driveEl.value = mod.driveUrl || '';
+      if (sumEl) sumEl.value = mod.summary || '';
+      if (highEl) highEl.value = Array.isArray(mod.highlights) ? mod.highlights.join('\n') : '';
+      if (formBadge) formBadge.textContent = `Edit E-Book: ${mod.id}`;
+      if (formTitle) formTitle.textContent = `Edit Keterangan & Link Google Drive: ${mod.title}`;
+      if (saveBtnText) saveBtnText.textContent = 'Simpan Perubahan E-Book ke Cloud';
+
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('admin-ebook-drive-url')?.focus();
+    }
+
+    function saveAdminEbookFromInlineForm() {
+      const editId = (document.getElementById('admin-ebook-edit-id')?.value || '').trim();
+      const division = document.getElementById('admin-ebook-division')?.value || 'tnipolri';
+      const selectedCat = document.getElementById('admin-ebook-category')?.value || '';
+      const customCat = (document.getElementById('admin-ebook-custom-cat')?.value || '').trim().toUpperCase();
+      const finalCategory = (selectedCat === '__CUSTOM__' ? customCat : selectedCat).trim().toUpperCase() || (division === 'cpns' ? 'TWK' : 'PSIKOLOGI');
+
+      const badge = (document.getElementById('admin-ebook-badge')?.value || '').trim() || `${division === 'cpns' ? 'Modul CPNS' : 'Modul TNI/Polri'} • ${finalCategory}`;
+      const pages = (document.getElementById('admin-ebook-pages')?.value || '').trim() || '120 Halaman • PDF';
+      const title = (document.getElementById('admin-ebook-title')?.value || '').trim();
+      const driveUrl = (document.getElementById('admin-ebook-drive-url')?.value || '').trim();
+      const summary = (document.getElementById('admin-ebook-summary')?.value || '').trim();
+      const highlightsRaw = (document.getElementById('admin-ebook-highlights')?.value || '').trim();
+
+      if (!title) {
+        openCustomModal({
+          badge: 'Judul E-Book Kosong',
+          title: 'Harap Isi Judul E-Book',
+          bodyHtml: `<p class="text-xs text-slate-300">Silakan masukkan <strong>Judul Lengkap E-Book / Modul PDF</strong> terlebih dahulu sebelum menyimpan.</p>`
+        });
+        return;
+      }
+
+      ensureCategoryRegistered(division, finalCategory, finalCategory);
+
+      const highlights = highlightsRaw
+        ? highlightsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+        : ['Materi lengkap sesuai kisi-kisi terbaru', 'Dilengkapi latihan soal & pembahasan terstruktur'];
+
+      const targetList = division === 'cpns' ? CPNS_EBOOK_MODULES : TNF_EBOOK_MODULES;
+      const prefix = division === 'cpns' ? 'CPNS' : 'MOD';
+      const newId = editId || `${prefix}-${finalCategory.slice(0, 3)}-${Date.now().toString().slice(-4)}`;
+
+      const ebookObj = {
+        id: newId,
+        division,
+        category: finalCategory,
+        badge,
+        title,
+        pages,
+        summary: summary || `Modul pembelajaran ${title} (${badge}).`,
+        highlights,
+        driveUrl,
+        synced: true
+      };
+
+      // Cek apakah sebelumnya ada di divisi lain jika sedang diedit
+      if (editId) {
+        const idxInTni = TNF_EBOOK_MODULES.findIndex(m => m.id === editId);
+        const idxInCpns = CPNS_EBOOK_MODULES.findIndex(m => m.id === editId);
+        if (division === 'tnipolri') {
+          if (idxInCpns >= 0) CPNS_EBOOK_MODULES.splice(idxInCpns, 1);
+          if (idxInTni >= 0) TNF_EBOOK_MODULES[idxInTni] = ebookObj;
+          else TNF_EBOOK_MODULES.unshift(ebookObj);
+        } else {
+          if (idxInTni >= 0) TNF_EBOOK_MODULES.splice(idxInTni, 1);
+          if (idxInCpns >= 0) CPNS_EBOOK_MODULES[idxInCpns] = ebookObj;
+          else CPNS_EBOOK_MODULES.unshift(ebookObj);
+        }
+      } else {
+        targetList.unshift(ebookObj);
+      }
+
+      saveEbookLibraryToStorage();
+      resetAdminInlineEbookForm(division);
+      renderAdminEbookManager();
+      renderModules('ALL');
+      renderCpnsModules('ALL');
+
+      openCustomModal({
+        badge: editId ? 'E-Book Berhasil Diperbarui' : 'E-Book Baru Ditambahkan',
+        title: ebookObj.title,
+        bodyHtml: `
+          <div class="space-y-2 text-xs text-slate-200">
+            <p>Data E-Book pada jenis <strong class="text-gold-400">${ebookObj.category}</strong> (${ebookObj.badge}) telah berhasil disimpan dan disinkronkan ke <strong>Cloud Firestore</strong>.</p>
+            ${driveUrl ? `<p class="text-sky-300"><i class="fa-brands fa-google-drive mr-1"></i>Link Google Drive telah terhubung langsung dengan tombol <strong>Download E-Book</strong> di halaman peserta.</p>` : `<p class="text-slate-400">Catatan: Anda dapat menambahkan atau mengubah link Google Drive kapan saja melalui tombol <strong>Edit</strong>.</p>`}
+          </div>
+        `
+      });
+    }
+
+    function adminDeleteEbookItem(division, modId) {
+      if (division === 'cpns') {
+        CPNS_EBOOK_MODULES = CPNS_EBOOK_MODULES.filter(m => m.id !== modId);
+      } else {
+        TNF_EBOOK_MODULES = TNF_EBOOK_MODULES.filter(m => m.id !== modId);
+      }
+      saveEbookLibraryToStorage();
+      renderAdminEbookManager();
+      renderModules('ALL');
+      renderCpnsModules('ALL');
+    }
+
+    function setAdminEbookListFilter(filterVal) {
+      currentAdminEbookListFilter = filterVal || 'ALL';
+      ['ALL', 'tnipolri', 'cpns'].forEach(k => {
+        const btn = document.getElementById(`admin-ebook-filter-${k === 'ALL' ? 'all' : k}`);
+        if (btn) {
+          btn.className = k === currentAdminEbookListFilter
+            ? 'px-3.5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950'
+            : 'px-3.5 py-2 rounded-xl text-xs font-bold bg-navy-950 text-slate-300 border border-white/10';
+        }
+      });
+      renderAdminEbookManager();
+    }
+
+    function renderAdminEbookManager() {
+      const catTniEl = document.getElementById('admin-ebook-cats-tnipolri');
+      const catCpnsEl = document.getElementById('admin-ebook-cats-cpns');
+      const gridEl = document.getElementById('admin-ebook-manager-grid');
+      const summaryEl = document.getElementById('admin-ebook-count-summary');
+
+      const selEl = document.getElementById('admin-ebook-category');
+      if (selEl && !selEl.options.length) {
+        populateAdminEbookCategorySelect();
+      }
+
+      if (catTniEl) {
+        catTniEl.innerHTML = TNI_EBOOK_CATEGORIES.map(c => `
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-navy-900 border border-gold-500/35 text-[11px] font-bold text-slate-200">
+            <strong class="text-gold-400">${c.code}</strong>
+            <span class="text-slate-400">(${c.label})</span>
+            ${!c.isDefault ? `<button type="button" onclick="adminRemoveCustomEbookCategory('tnipolri', '${c.code.replace(/'/g, "\'")}')" class="text-rose-400 hover:text-rose-300 ml-1" title="Hapus jenis E-Book ini"><i class="fa-solid fa-xmark"></i></button>` : ''}
+          </span>
+        `).join('');
+      }
+
+      if (catCpnsEl) {
+        catCpnsEl.innerHTML = CPNS_EBOOK_CATEGORIES.map(c => `
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-navy-900 border border-sky-500/35 text-[11px] font-bold text-slate-200">
+            <strong class="text-sky-300">${c.code}</strong>
+            <span class="text-slate-400">(${c.label})</span>
+            ${!c.isDefault ? `<button type="button" onclick="adminRemoveCustomEbookCategory('cpns', '${c.code.replace(/'/g, "\'")}')" class="text-rose-400 hover:text-rose-300 ml-1" title="Hapus jenis E-Book ini"><i class="fa-solid fa-xmark"></i></button>` : ''}
+          </span>
+        `).join('');
+      }
+
+      if (summaryEl) {
+        summaryEl.innerHTML = `Total: <strong class="text-gold-400">${TNF_EBOOK_MODULES.length} E-Book TNI/POLRI</strong> • <strong class="text-sky-300">${CPNS_EBOOK_MODULES.length} E-Book CPNS</strong>`;
+      }
+
+      if (!gridEl) return;
+
+      const combined = [];
+      if (currentAdminEbookListFilter === 'ALL' || currentAdminEbookListFilter === 'tnipolri') {
+        TNF_EBOOK_MODULES.forEach(m => combined.push({ ...m, _div: 'tnipolri' }));
+      }
+      if (currentAdminEbookListFilter === 'ALL' || currentAdminEbookListFilter === 'cpns') {
+        CPNS_EBOOK_MODULES.forEach(m => combined.push({ ...m, _div: 'cpns' }));
+      }
+
+      if (combined.length === 0) {
+        gridEl.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-slate-400">Belum ada modul E-Book pada filter ini.</div>`;
+        return;
+      }
+
+      gridEl.innerHTML = combined.map(mod => {
+        const isCpns = mod._div === 'cpns';
+        const hasDrive = Boolean((mod.driveUrl || '').trim());
+        const driveHref = extractGoogleDriveDownloadOrViewUrl(mod.driveUrl);
+        return `
+          <div class="p-4 sm:p-5 rounded-2xl bg-navy-950/90 border ${hasDrive ? 'border-emerald-500/40' : 'border-white/10'} flex flex-col justify-between space-y-3">
+            <div class="space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${isCpns ? 'bg-sky-500/20 text-sky-300 border border-sky-500/35' : 'bg-gold-500/20 text-gold-400 border border-gold-500/35'}">
+                    ${isCpns ? 'CPNS' : 'TNI / POLRI'} • ${mod.category}
+                  </span>
+                  <span class="px-2 py-0.5 rounded bg-white/5 text-slate-300 text-[10px] font-bold">${mod.badge || ''}</span>
+                </div>
+                <span class="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-extrabold">
+                  <i class="fa-solid fa-cloud-check mr-1"></i>Cloud Sync
+                </span>
+              </div>
+
+              <h4 class="font-extrabold text-white text-sm leading-snug">${mod.title}</h4>
+              <p class="text-xs text-slate-300 leading-relaxed">${mod.summary || ''}</p>
+
+              <div class="p-2.5 rounded-xl bg-navy-900/90 border border-white/10 text-[11px] flex items-center justify-between gap-2">
+                ${hasDrive ? `
+                  <div class="truncate text-sky-300 font-mono">
+                    <i class="fa-brands fa-google-drive mr-1"></i>Link Drive Terhubung: <a href="${driveHref}" target="_blank" rel="noopener noreferrer" class="underline hover:text-white">${mod.driveUrl}</a>
+                  </div>
+                ` : `
+                  <div class="text-amber-300">
+                    <i class="fa-solid fa-link-slash mr-1"></i>Belum ada link Google Drive (Klik Edit untuk mengisi link Drive E-Book)
+                  </div>
+                `}
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10">
+              <span class="text-[10px] font-semibold text-slate-400">${mod.pages || 'PDF'}</span>
+              <div class="flex items-center gap-1.5">
+                ${hasDrive ? `
+                  <a href="${driveHref}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold">
+                    <i class="fa-solid fa-download mr-1"></i>Tes Download
+                  </a>
+                ` : ''}
+                <button type="button" onclick="openEbookEditorModal('${mod._div}', '${mod.id}')" class="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-bold">
+                  <i class="fa-solid fa-pen-to-square mr-1"></i>Edit / Link Drive
+                </button>
+                <button type="button" onclick="adminDeleteEbookItem('${mod._div}', '${mod.id}')" class="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold" title="Hapus E-Book">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
     // =========================================================================
     // 7C. ENGINE HALAMAN LATIHAN SOAL PSIKO (NUMERIK, VERBAL, LOGIKA, KETELITIAN & KRAEPELIN)
@@ -16037,6 +16895,7 @@ service cloud.firestore {
       loadLocalBackupResults();
       loadSavedCatConfig();
       loadSavedQuestionBank();
+      loadSavedEbookLibrary();
 
       renderModules('ALL');
       renderCpnsModules('ALL');
