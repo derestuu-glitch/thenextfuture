@@ -59,9 +59,13 @@
         const db = getFirestore(app);
         const resultsColRef = collection(db, "tnf_cat_results");
         const authorizedUsersColRef = collection(db, "authorized_users");
+        const questionBankColRef = collection(db, "tnf_question_bank");
+        const systemConfigDocRef = doc(db, "tnf_system_config", "cat_config");
 
         let unsubResults = null;
         let unsubAuthorizedUsers = null;
+        let unsubQuestionBank = null;
+        let unsubSystemConfig = null;
         let userWhitelistUnsubscribe = null;
 
         async function ensureWriteSession() {
@@ -83,6 +87,14 @@
           if (typeof unsubAuthorizedUsers === "function") {
             unsubAuthorizedUsers();
             unsubAuthorizedUsers = null;
+          }
+          if (typeof unsubQuestionBank === "function") {
+            unsubQuestionBank();
+            unsubQuestionBank = null;
+          }
+          if (typeof unsubSystemConfig === "function") {
+            unsubSystemConfig();
+            unsubSystemConfig = null;
           }
 
           // 1. Listener Real-Time Hasil Ujian CAT (`tnf_cat_results`)
@@ -126,6 +138,7 @@
                 const normalizedPackages = Array.isArray(data.packages) && data.packages.length > 0
                   ? data.packages
                   : [fallbackBatch];
+                const firstReg = Number(data.registeredAt) || Number(data.activatedAt) || null;
                 cloudUsers.push({
                   email: (data.email || docSnap.id).toLowerCase(),
                   nama: data.nama || "Peserta TNF CLASS",
@@ -133,7 +146,8 @@
                   packages: normalizedPackages,
                   status: data.status || "active",
                   source: data.source || "admin_manual",
-                  activatedAt: data.activatedAt || null,
+                  registeredAt: firstReg,
+                  activatedAt: firstReg,
                   expiresAt: data.expiresAt || null,
                   durationDays: data.durationDays || null,
                   durationLabel: data.durationLabel || "",
@@ -156,6 +170,46 @@
             },
             (error) => {
               window.TNF_FIREBASE.lastError = error?.code || error?.message || "";
+            }
+          );
+
+          // 3. Listener Real-Time Seluruh Bank Soal (`tnf_question_bank`)
+          unsubQuestionBank = onSnapshot(
+            questionBankColRef,
+            (snapshot) => {
+              window.TNF_FIREBASE.connected = true;
+              const cloudBanks = {};
+              snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const bKey = data.bankKey || docSnap.id;
+                if (bKey && Array.isArray(data.questions)) {
+                  cloudBanks[bKey] = data.questions;
+                }
+              });
+              if (typeof window.syncQuestionBankFromFirebase === "function") {
+                window.syncQuestionBankFromFirebase(cloudBanks, snapshot.empty);
+              }
+            },
+            (error) => {
+              console.warn("Realtime QuestionBank listener warning:", error?.message || error);
+            }
+          );
+
+          // 4. Listener Real-Time Konfigurasi & Kunci Subtes CAT (`tnf_system_config/cat_config`)
+          unsubSystemConfig = onSnapshot(
+            systemConfigDocRef,
+            (docSnap) => {
+              if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data && data.config && typeof window.syncCatConfigFromFirebase === "function") {
+                  window.syncCatConfigFromFirebase(data.config);
+                }
+              } else if (typeof window.pushInitialCatConfigToCloud === "function") {
+                window.pushInitialCatConfigToCloud();
+              }
+            },
+            (error) => {
+              console.warn("Realtime SystemConfig listener warning:", error?.message || error);
             }
           );
         }
@@ -182,31 +236,89 @@
             await deleteDoc(doc(db, "tnf_cat_results", docId));
           },
 
-          async grantAuthorizedEmail({ nama, email, batch, packages = null, status = "active", source = "admin_manual", activatedAt = null, expiresAt = null, durationDays = null, durationLabel = "", catPsikoUsed = 0, catAkademikUsed = 0, waNumber = "", requestedAt = "", upgradeRequest = null, lastUpgradeNote = "" }) {
+          async saveQuestionBankCategory(bankKey, questionsList) {
+            if (!bankKey || !Array.isArray(questionsList)) return;
+            await ensureWriteSession();
+            await setDoc(
+              doc(db, "tnf_question_bank", bankKey),
+              {
+                bankKey,
+                questions: JSON.parse(JSON.stringify(questionsList)),
+                count: questionsList.length,
+                updatedAt: serverTimestamp()
+              },
+              { merge: true }
+            );
+            this.connected = true;
+            this.lastError = "";
+          },
+
+          async saveAllQuestionBanks(fullBankObj) {
+            if (!fullBankObj || typeof fullBankObj !== "object") return;
+            await ensureWriteSession();
+            const keys = Object.keys(fullBankObj);
+            for (const bKey of keys) {
+              if (Array.isArray(fullBankObj[bKey])) {
+                await setDoc(
+                  doc(db, "tnf_question_bank", bKey),
+                  {
+                    bankKey: bKey,
+                    questions: JSON.parse(JSON.stringify(fullBankObj[bKey])),
+                    count: fullBankObj[bKey].length,
+                    updatedAt: serverTimestamp()
+                  },
+                  { merge: true }
+                );
+              }
+            }
+            this.connected = true;
+            this.lastError = "";
+          },
+
+          async saveCatConfig(cfgObj) {
+            if (!cfgObj || typeof cfgObj !== "object") return;
+            await ensureWriteSession();
+            await setDoc(
+              doc(db, "tnf_system_config", "cat_config"),
+              {
+                config: JSON.parse(JSON.stringify(cfgObj)),
+                updatedAt: serverTimestamp()
+              },
+              { merge: true }
+            );
+            this.connected = true;
+            this.lastError = "";
+          },
+
+          async grantAuthorizedEmail({ nama, email, batch, packages = null, status = "active", source = "admin_manual", registeredAt = null, activatedAt = null, expiresAt = null, durationDays = null, durationLabel = "", catPsikoUsed = 0, catAkademikUsed = 0, waNumber = "", requestedAt = "", upgradeRequest = null, lastUpgradeNote = "" }) {
             const cleanEmail = email.trim().toLowerCase();
             await ensureWriteSession();
             const userRef = doc(db, "authorized_users", cleanEmail);
 
-            // Jika mendaftar sebagai pending, jangan turunkan status akun yang sudah aktif
+            // Jika mendaftar sebagai pending, jangan turunkan status akun yang sudah aktif & pertahankan waktu pertama kali terdaftar
             let finalStatus = status;
-            if (status === "pending") {
-              try {
-                const existingSnap = await getDoc(userRef);
-                if (existingSnap.exists() && existingSnap.data().status === "active") {
+            let existingFirstRegistered = null;
+            try {
+              const existingSnap = await getDoc(userRef);
+              if (existingSnap.exists()) {
+                const exData = existingSnap.data();
+                existingFirstRegistered = Number(exData.registeredAt) || Number(exData.activatedAt) || null;
+                if (status === "pending" && exData.status === "active") {
                   finalStatus = "active";
                 }
-              } catch (e) {
-                // Lanjutkan dengan status awal jika pembacaan gagal
               }
+            } catch (e) {
+              // Lanjutkan dengan status awal jika pembacaan gagal
             }
 
+            const firstRegMs = existingFirstRegistered || Number(registeredAt) || Number(activatedAt) || Date.now();
             const finalPackages = Array.isArray(packages) && packages.length > 0
               ? packages
               : [batch || "Batch 1 - 2026"];
             const finalBatchLabel = batch || finalPackages.join(" + ");
             const durMeta = typeof window.computePackagesDurationSummary === "function"
-              ? window.computePackagesDurationSummary(finalPackages, activatedAt || Date.now())
-              : { activatedAt: activatedAt || Date.now(), expiresAt: expiresAt || (Date.now() + 30 * 86400000), durationDays: durationDays || 30, durationLabel: durationLabel || "1 Bulan (30 Hari)" };
+              ? window.computePackagesDurationSummary(finalPackages, firstRegMs)
+              : { activatedAt: firstRegMs, expiresAt: expiresAt || (firstRegMs + 30 * 86400000), durationDays: durationDays || 30, durationLabel: durationLabel || "1 Bulan (30 Hari)" };
 
             const payload = {
               nama: nama.trim(),
@@ -215,10 +327,11 @@
               packages: finalPackages,
               status: finalStatus,
               source: source,
-              activatedAt: activatedAt || durMeta.activatedAt,
-              expiresAt: expiresAt || durMeta.expiresAt,
-              durationDays: durationDays || durMeta.durationDays,
-              durationLabel: durationLabel || durMeta.durationLabel,
+              registeredAt: firstRegMs,
+              activatedAt: firstRegMs,
+              expiresAt: durMeta.expiresAt,
+              durationDays: durMeta.durationDays,
+              durationLabel: durMeta.durationLabel,
               catPsikoUsed: Number(catPsikoUsed) || 0,
               catAkademikUsed: Number(catAkademikUsed) || 0,
               updatedAt: serverTimestamp()
@@ -328,8 +441,9 @@
             const pkgs = Array.isArray(fallbackData.packages) && fallbackData.packages.length > 0
               ? fallbackData.packages
               : [fallbackData.batch || "Batch 1 - 2026"];
+            const firstRegMs = Number(fallbackData.registeredAt) || Number(fallbackData.activatedAt) || Date.now();
             const durMeta = typeof window.computePackagesDurationSummary === "function"
-              ? window.computePackagesDurationSummary(pkgs, newStatus === "active" ? Date.now() : (fallbackData.activatedAt || Date.now()))
+              ? window.computePackagesDurationSummary(pkgs, firstRegMs)
               : null;
             const updateObj = {
               nama: fallbackData.nama || "Peserta TNF CLASS",
@@ -338,10 +452,11 @@
               packages: pkgs,
               source: fallbackData.source || "admin_manual",
               status: newStatus,
+              registeredAt: firstRegMs,
+              activatedAt: firstRegMs,
               updatedAt: serverTimestamp()
             };
-            if (durMeta && newStatus === "active") {
-              updateObj.activatedAt = durMeta.activatedAt;
+            if (durMeta) {
               updateObj.expiresAt = durMeta.expiresAt;
               updateObj.durationDays = durMeta.durationDays;
               updateObj.durationLabel = durMeta.durationLabel;
@@ -424,12 +539,14 @@
                   const normalizedPackages = Array.isArray(data.packages) && data.packages.length > 0
                     ? data.packages
                     : [fallbackBatch];
+                  const firstRegMs = Number(data.registeredAt) || Number(data.activatedAt) || null;
                   const candidateSession = {
                     email: cleanEmail,
                     nama: data.nama || cleanEmail,
                     batch: data.batch || normalizedPackages.join(" + "),
                     packages: normalizedPackages,
-                    activatedAt: data.activatedAt || null,
+                    registeredAt: firstRegMs,
+                    activatedAt: firstRegMs,
                     expiresAt: data.expiresAt || null,
                     durationDays: data.durationDays || null,
                     durationLabel: data.durationLabel || "",
@@ -4390,6 +4507,12 @@ service cloud.firestore {
     match /tnf_cat_results/{resultId} {
       allow read, write: if true;
     }
+    match /tnf_question_bank/{bankKey} {
+      allow read, write: if true;
+    }
+    match /tnf_system_config/{docId} {
+      allow read, write: if true;
+    }
   }
 }</pre>
             </div>
@@ -4652,7 +4775,12 @@ service cloud.firestore {
           <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
               <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-gold-500">Manajemen Konten Ujian • TNI/POLRI &amp; CPNS</span>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs font-bold uppercase tracking-wider text-gold-500">Manajemen Konten Ujian • TNI/POLRI &amp; CPNS</span>
+                  <span id="qbank-cloud-sync-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider">
+                    <i class="fa-solid fa-cloud-check"></i><span>Bank Soal Online &amp; Realtime</span>
+                  </span>
+                </div>
                 <h2 class="text-xl font-extrabold text-white mt-0.5">Editor Bank Soal Psikologi, Akademik (TKA) &amp; CPNS (SKD/SKB)</h2>
                 <p class="text-xs text-slate-300 mt-1">Pilih subtes TNI/POLRI atau CPNS untuk menambah, mengedit teks/gambar Google Drive pada opsi A–E, atau menghapus butir soal.</p>
               </div>
@@ -5500,14 +5628,96 @@ service cloud.firestore {
       });
     }
 
+    function formatFullIndoDateTime(tsMs) {
+      if (!tsMs || isNaN(Number(tsMs))) return '-';
+      return new Date(Number(tsMs)).toLocaleString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    window.formatRealtimeCountdownString = function (expiresAtMs, isLifetime = false) {
+      if (isLifetime) {
+        return '∞ Aktif Selamanya (Tanpa Batas Waktu)';
+      }
+      const exp = Number(expiresAtMs) || 0;
+      const diffMs = exp - Date.now();
+      if (diffMs <= 0) {
+        return '00 Hari : 00 Jam : 00 Menit : 00 Detik (Masa Aktif Habis)';
+      }
+      const days = Math.floor(diffMs / 86400000);
+      const hours = Math.floor((diffMs % 86400000) / 3600000);
+      const minutes = Math.floor((diffMs % 3600000) / 60000);
+      const seconds = Math.floor((diffMs % 60000) / 1000);
+      return `${days} Hari : ${String(hours).padStart(2, '0')} Jam : ${String(minutes).padStart(2, '0')} Menit : ${String(seconds).padStart(2, '0')} Detik`;
+    };
+
+    function buildRealtimeCountdownBadgeHtml(durInfo) {
+      if (!durInfo) return '';
+      if (durInfo.isLifetime) {
+        return `
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold font-mono">
+            <i class="fa-solid fa-infinity text-gold-400"></i>
+            <span data-realtime-countdown="${durInfo.expiresAtMs || 0}" data-is-lifetime="1">∞ Aktif Selamanya (Tanpa Batas Waktu)</span>
+          </span>
+        `;
+      }
+      const initialStr = window.formatRealtimeCountdownString(durInfo.expiresAtMs, false);
+      const cls = durInfo.isExpired
+        ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
+        : 'bg-amber-500/15 border-amber-500/40 text-amber-300';
+      return `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border ${cls} text-[10px] font-extrabold font-mono">
+          <i class="fa-solid fa-stopwatch text-gold-400 animate-pulse"></i>
+          <span>Hitung Mundur Real-Time:</span>
+          <strong data-realtime-countdown="${durInfo.expiresAtMs || 0}" data-is-lifetime="0" class="tracking-tight text-white">${initialStr}</strong>
+        </span>
+      `;
+    }
+
+    function tickAllRealtimeAccountCountdowns() {
+      const nodes = document.querySelectorAll('[data-realtime-countdown]');
+      nodes.forEach(node => {
+        const isLife = node.getAttribute('data-is-lifetime') === '1';
+        const expMs = Number(node.getAttribute('data-realtime-countdown')) || 0;
+        node.textContent = window.formatRealtimeCountdownString(expMs, isLife);
+      });
+
+      // Cek secara real-time apakah masa aktif akun peserta yang sedang login telah habis detik ini
+      if (currentVerifiedUser) {
+        const durCheck = window.checkAccountDurationStatus(currentVerifiedUser);
+        if (durCheck.isExpired) {
+          if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.logoutParticipant === 'function') {
+            window.TNF_FIREBASE.logoutParticipant().catch(() => {});
+          }
+          if (typeof window.handleRevokedParticipantSession === 'function') {
+            window.handleRevokedParticipantSession(durCheck.reasonMessage);
+          }
+        }
+      }
+    }
+
+    let realtimeCountdownIntervalId = null;
+    function startRealtimeAccountCountdownTicker() {
+      if (realtimeCountdownIntervalId) clearInterval(realtimeCountdownIntervalId);
+      tickAllRealtimeAccountCountdowns();
+      realtimeCountdownIntervalId = setInterval(tickAllRealtimeAccountCountdowns, 1000);
+    }
+
     function ensureUserDurationFields(userObj) {
       if (!userObj) return userObj;
       const pkgs = getUserPackagesList(userObj);
-      const computed = window.computePackagesDurationSummary(pkgs, userObj.activatedAt || Date.now());
-      if (!userObj.activatedAt) userObj.activatedAt = computed.activatedAt;
-      if (!userObj.expiresAt) userObj.expiresAt = computed.expiresAt;
-      if (!userObj.durationDays) userObj.durationDays = computed.durationDays;
-      if (!userObj.durationLabel) userObj.durationLabel = computed.durationLabel;
+      // Masa aktif akun dihitung mundur secara real-time SEJAK PERTAMA KALI TERDAFTAR (registeredAt)
+      const firstRegMs = Number(userObj.registeredAt) || Number(userObj.activatedAt) || Date.now();
+      const computed = window.computePackagesDurationSummary(pkgs, firstRegMs);
+      userObj.registeredAt = firstRegMs;
+      userObj.activatedAt = firstRegMs;
+      userObj.expiresAt = computed.expiresAt;
+      userObj.durationDays = computed.durationDays;
+      userObj.durationLabel = computed.durationLabel;
       if (typeof userObj.catPsikoUsed !== 'number') userObj.catPsikoUsed = Number(userObj.catPsikoUsed) || 0;
       if (typeof userObj.catAkademikUsed !== 'number') userObj.catAkademikUsed = Number(userObj.catAkademikUsed) || 0;
       return userObj;
@@ -5517,23 +5727,30 @@ service cloud.firestore {
       if (!userObj) return { isExpired: false, remainingDays: 0, summaryText: '' };
       ensureUserDurationFields(userObj);
       const pkgs = getUserPackagesList(userObj);
-      const summary = window.computePackagesDurationSummary(pkgs, userObj.activatedAt);
-      const expMs = Number(userObj.expiresAt) || summary.expiresAt;
+      const firstRegMs = Number(userObj.registeredAt) || Number(userObj.activatedAt) || Date.now();
+      const summary = window.computePackagesDurationSummary(pkgs, firstRegMs);
+      const expMs = summary.expiresAt;
       const nowMs = Date.now();
       const diffMs = expMs - nowMs;
       const remainingDays = Math.max(0, Math.ceil(diffMs / 86400000));
 
       const psikoUsed = Number(userObj.catPsikoUsed) || 0;
       const akademikUsed = Number(userObj.catAkademikUsed) || 0;
+      const regFormatted = formatFullIndoDateTime(firstRegMs);
 
-      // Cek apakah waktu masa aktif paket sudah habis
-      if (diffMs <= 0) {
+      // Cek apakah waktu masa aktif paket sudah habis (kecuali paket Lifetime)
+      if (!summary.hasLifetimePackage && diffMs <= 0) {
         return {
           isExpired: true,
+          isLifetime: false,
           remainingDays: 0,
+          registeredAtMs: firstRegMs,
+          registeredAtFormatted: regFormatted,
+          expiresAtMs: expMs,
           expiresAtFormatted: formatShortIndoDate(expMs),
+          countdownText: window.formatRealtimeCountdownString(expMs, false),
           durationLabel: userObj.durationLabel || summary.durationLabel,
-          reasonMessage: `Masa aktif akun Anda untuk paket (${pkgs.join(' + ')}) dengan durasi ${userObj.durationLabel || summary.durationLabel} telah berakhir pada ${formatShortIndoDate(expMs)}. Silakan daftar ulang atau upgrade paket untuk mengaktifkan kembali akses Anda.`
+          reasonMessage: `Masa aktif akun Anda untuk paket (${pkgs.join(' + ')}) dengan durasi ${userObj.durationLabel || summary.durationLabel} (terdaftar sejak ${regFormatted}) telah berakhir pada ${formatShortIndoDate(expMs)}. Silakan daftar ulang atau tambah paket untuk mengaktifkan kembali akses Anda.`
         };
       }
 
@@ -5544,8 +5761,13 @@ service cloud.firestore {
         if (psikoExhausted && akademikExhausted && (summary.psikoQuota > 0 || summary.akademikQuota > 0)) {
           return {
             isExpired: true,
+            isLifetime: false,
             remainingDays,
+            registeredAtMs: firstRegMs,
+            registeredAtFormatted: regFormatted,
+            expiresAtMs: expMs,
             expiresAtFormatted: formatShortIndoDate(expMs),
+            countdownText: window.formatRealtimeCountdownString(expMs, false),
             durationLabel: userObj.durationLabel || summary.durationLabel,
             reasonMessage: `Kuota sesi ujian pada paket (${pkgs.join(' + ')}) Anda telah selesai digunakan (1x CAT). Silakan tambah atau upgrade paket untuk mengikuti simulasi CAT kembali.`
           };
@@ -5556,8 +5778,12 @@ service cloud.firestore {
         isExpired: false,
         isLifetime: Boolean(summary.hasLifetimePackage),
         remainingDays: summary.hasLifetimePackage ? '∞' : remainingDays,
+        registeredAtMs: firstRegMs,
+        registeredAtFormatted: regFormatted,
+        expiresAtMs: expMs,
         expiresAtFormatted: summary.hasLifetimePackage ? 'Selamanya (Tanpa Batas Waktu)' : formatShortIndoDate(expMs),
-        activatedAtFormatted: formatShortIndoDate(userObj.activatedAt),
+        activatedAtFormatted: regFormatted,
+        countdownText: window.formatRealtimeCountdownString(expMs, Boolean(summary.hasLifetimePackage)),
         durationLabel: summary.hasLifetimePackage ? summary.durationLabel : (userObj.durationLabel || summary.durationLabel),
         psikoQuota: summary.psikoQuota,
         akademikQuota: summary.akademikQuota,
@@ -6051,10 +6277,12 @@ service cloud.firestore {
         if (u && u.email) {
           const prev = mergedMap.get(u.email.toLowerCase()) || {};
           const pkgs = getUserPackagesList(u);
+          const firstRegMs = Number(u.registeredAt) || Number(prev.registeredAt) || Number(u.activatedAt) || Number(prev.activatedAt) || null;
           const item = ensureUserDurationFields({
             ...prev,
             ...u,
-            activatedAt: u.activatedAt || prev.activatedAt || null,
+            registeredAt: firstRegMs,
+            activatedAt: firstRegMs,
             expiresAt: u.expiresAt || prev.expiresAt || null,
             durationDays: u.durationDays || prev.durationDays || null,
             durationLabel: u.durationLabel || prev.durationLabel || '',
@@ -6293,12 +6521,13 @@ service cloud.firestore {
               <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-[11px] font-extrabold">
                   <i class="fa-regular fa-clock text-[10px]"></i>
-                  <span>Durasi Aktif: ${durInfo.durationLabel}</span>
+                  <span>Durasi Paket: ${durInfo.durationLabel}</span>
                 </span>
                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-navy-950 border border-white/15 text-slate-200 text-[10px] font-bold">
                   <i class="fa-regular fa-calendar-check text-gold-400"></i>
-                  <span>${durInfo.isLifetime ? 'Berlaku Selamanya (Lifetime Access)' : `Berlaku s/d ${durInfo.expiresAtFormatted} (Sisa ${durInfo.remainingDays} Hari)`}</span>
+                  <span>Terdaftar Sejak: ${durInfo.registeredAtFormatted} ${durInfo.isLifetime ? '' : `• s/d ${durInfo.expiresAtFormatted}`}</span>
                 </span>
+                ${buildRealtimeCountdownBadgeHtml(durInfo)}
                 ${quotaExtraHtml}
               </div>
             `;
@@ -6353,12 +6582,13 @@ service cloud.firestore {
             <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
               <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-[11px] font-extrabold">
                 <i class="fa-regular fa-clock text-[10px]"></i>
-                <span>Durasi Aktif: ${durInfoCpns.durationLabel}</span>
+                <span>Durasi Paket: ${durInfoCpns.durationLabel}</span>
               </span>
               <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-navy-950 border border-white/15 text-slate-200 text-[10px] font-bold">
                 <i class="fa-regular fa-calendar-check text-gold-400"></i>
-                <span>${durInfoCpns.isLifetime ? 'Berlaku Selamanya (Lifetime Access)' : `Berlaku s/d ${durInfoCpns.expiresAtFormatted} (Sisa ${durInfoCpns.remainingDays} Hari)`}</span>
+                <span>Terdaftar Sejak: ${durInfoCpns.registeredAtFormatted} ${durInfoCpns.isLifetime ? '' : `• s/d ${durInfoCpns.expiresAtFormatted}`}</span>
               </span>
+              ${buildRealtimeCountdownBadgeHtml(durInfoCpns)}
               ${cpnsQuotaHtml}
             </div>
           `;
@@ -7349,7 +7579,8 @@ service cloud.firestore {
         minute: '2-digit'
       });
 
-      const durMeta = window.computePackagesDurationSummary([packageName], Date.now());
+      const firstRegNow = Date.now();
+      const durMeta = window.computePackagesDurationSummary([packageName], firstRegNow);
       const newUser = {
         nama,
         email,
@@ -7359,6 +7590,7 @@ service cloud.firestore {
         packages: [packageName],
         status: targetStatus,
         source: 'website_checkout',
+        registeredAt: firstRegNow,
         activatedAt: durMeta.activatedAt,
         expiresAt: durMeta.expiresAt,
         durationDays: durMeta.durationDays,
@@ -8013,7 +8245,51 @@ service cloud.firestore {
       } catch (e) {
         console.warn('Gagal menyimpan config CAT:', e);
       }
+      if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.saveCatConfig === 'function') {
+        window.TNF_FIREBASE.saveCatConfig(CAT_CONFIG).catch(err => {
+          console.warn('Sinkronisasi Cloud CAT_CONFIG tertunda:', err);
+        });
+      }
     }
+
+    window.syncCatConfigFromFirebase = function (cloudCfg) {
+      if (!cloudCfg || typeof cloudCfg !== 'object') return;
+      CAT_CONFIG = {
+        locks: { ...DEFAULT_CAT_CONFIG.locks, ...(cloudCfg.locks || {}) },
+        psiko: {
+          ...DEFAULT_CAT_CONFIG.psiko,
+          ...(cloudCfg.psiko || {}),
+          kecerdasan: { ...DEFAULT_CAT_CONFIG.psiko.kecerdasan, ...(cloudCfg.psiko?.kecerdasan || {}) },
+          kepribadian: { ...DEFAULT_CAT_CONFIG.psiko.kepribadian, ...(cloudCfg.psiko?.kepribadian || {}) },
+          kecermatan: { ...DEFAULT_CAT_CONFIG.psiko.kecermatan, ...(cloudCfg.psiko?.kecermatan || {}) }
+        },
+        tka: {
+          tka_pu: { ...DEFAULT_CAT_CONFIG.tka.tka_pu, ...(cloudCfg.tka?.tka_pu || {}) },
+          tka_twk: { ...DEFAULT_CAT_CONFIG.tka.tka_twk, ...(cloudCfg.tka?.tka_twk || {}) },
+          tka_tbi: { ...DEFAULT_CAT_CONFIG.tka.tka_tbi, ...(cloudCfg.tka?.tka_tbi || {}) },
+          tka_mtk: { ...DEFAULT_CAT_CONFIG.tka.tka_mtk, ...(cloudCfg.tka?.tka_mtk || {}) },
+          cpns_twk: { ...DEFAULT_CAT_CONFIG.tka.cpns_twk, ...(cloudCfg.tka?.cpns_twk || {}) },
+          cpns_tiu: { ...DEFAULT_CAT_CONFIG.tka.cpns_tiu, ...(cloudCfg.tka?.cpns_tiu || {}) },
+          cpns_tkp: { ...DEFAULT_CAT_CONFIG.tka.cpns_tkp, ...(cloudCfg.tka?.cpns_tkp || {}) },
+          cpns_skb: { ...DEFAULT_CAT_CONFIG.tka.cpns_skb, ...(cloudCfg.tka?.cpns_skb || {}) }
+        }
+      };
+      try {
+        localStorage.setItem(CAT_CONFIG_STORAGE_KEY, JSON.stringify(CAT_CONFIG));
+      } catch (e) {}
+      if (isAdminAuthenticated && typeof renderAdminLockControls === 'function') {
+        renderAdminLockControls();
+      }
+      if (typeof renderCatLobby === 'function') renderCatLobby();
+      if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
+      if (typeof renderLatihanPsikoLobby === 'function') renderLatihanPsikoLobby();
+    };
+
+    window.pushInitialCatConfigToCloud = function () {
+      if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.saveCatConfig === 'function') {
+        window.TNF_FIREBASE.saveCatConfig(CAT_CONFIG).catch(() => {});
+      }
+    };
 
     function loadSavedCatConfig() {
       try {
@@ -8048,13 +8324,70 @@ service cloud.firestore {
       }
     }
 
-    function saveQuestionBankToStorage() {
+    function updateQuestionBankCloudBadge(statusText, isOnline = true) {
+      const el = document.getElementById('qbank-cloud-sync-badge');
+      if (!el) return;
+      if (isOnline) {
+        el.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider';
+        el.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i><span>${statusText || 'Bank Soal Online & Realtime'}</span>`;
+      } else {
+        el.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider';
+        el.innerHTML = `<i class="fa-solid fa-rotate"></i><span>${statusText || 'Menyimpan ke Cloud...'}</span>`;
+      }
+    }
+
+    function saveQuestionBankToStorage(specificBankKey = null) {
       try {
         localStorage.setItem(CAT_QBANK_STORAGE_KEY, JSON.stringify(QUESTION_BANK));
       } catch (e) {
         console.warn('Gagal menyimpan bank soal:', e);
       }
+      const targetKey = specificBankKey || document.getElementById('admin-qbank-select')?.value || null;
+      if (window.TNF_FIREBASE) {
+        updateQuestionBankCloudBadge('Menyinkronkan ke Cloud...', false);
+        if (targetKey && Array.isArray(QUESTION_BANK[targetKey]) && typeof window.TNF_FIREBASE.saveQuestionBankCategory === 'function') {
+          window.TNF_FIREBASE.saveQuestionBankCategory(targetKey, QUESTION_BANK[targetKey])
+            .then(() => updateQuestionBankCloudBadge('Tersimpan Online & Realtime', true))
+            .catch(() => updateQuestionBankCloudBadge('Tersimpan Lokal (Menunggu Cloud)', false));
+        } else if (typeof window.TNF_FIREBASE.saveAllQuestionBanks === 'function') {
+          window.TNF_FIREBASE.saveAllQuestionBanks(QUESTION_BANK)
+            .then(() => updateQuestionBankCloudBadge('Seluruh Bank Soal Online & Realtime', true))
+            .catch(() => updateQuestionBankCloudBadge('Tersimpan Lokal (Menunggu Cloud)', false));
+        }
+      }
     }
+
+    let hasSeededInitialCloudQuestionBank = false;
+    window.syncQuestionBankFromFirebase = function (cloudBanks, isCollectionEmpty = false) {
+      if (isCollectionEmpty && !hasSeededInitialCloudQuestionBank) {
+        hasSeededInitialCloudQuestionBank = true;
+        if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.saveAllQuestionBanks === 'function') {
+          window.TNF_FIREBASE.saveAllQuestionBanks(QUESTION_BANK).catch(() => {});
+        }
+        return;
+      }
+      if (!cloudBanks || typeof cloudBanks !== 'object') return;
+      let changed = false;
+      Object.keys(cloudBanks).forEach(bKey => {
+        if (Array.isArray(cloudBanks[bKey])) {
+          QUESTION_BANK[bKey] = cloudBanks[bKey];
+          changed = true;
+        }
+      });
+      if (changed) {
+        try {
+          localStorage.setItem(CAT_QBANK_STORAGE_KEY, JSON.stringify(QUESTION_BANK));
+        } catch (e) {}
+        updateQuestionBankCloudBadge('Bank Soal Online & Realtime', true);
+        if (isAdminAuthenticated && typeof renderAdminQuestionList === 'function') {
+          renderAdminQuestionList();
+        }
+        if (typeof renderMiniSkd === 'function') renderMiniSkd();
+        if (typeof renderCatLobby === 'function') renderCatLobby();
+        if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
+        if (typeof renderLatihanPsikoLobby === 'function') renderLatihanPsikoLobby();
+      }
+    };
 
     function loadSavedQuestionBank() {
       try {
@@ -10196,14 +10529,22 @@ service cloud.firestore {
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Paket Aktif (${userPackages.length}):</span>
                 <div class="flex flex-wrap gap-1">${packagesBadgesHtml}</div>
               </div>
-              <div class="p-2 rounded-xl bg-navy-900/90 border border-white/10 text-[10px] space-y-0.5">
+              <div class="p-2.5 rounded-xl bg-navy-900/90 border border-white/10 text-[10px] space-y-1">
                 <div class="flex items-center justify-between text-slate-300">
                   <span><i class="fa-regular fa-clock text-gold-400 mr-1"></i>Durasi Paket:</span>
                   <strong class="text-emerald-300">${durStatus.durationLabel}</strong>
                 </div>
                 <div class="flex items-center justify-between text-slate-400">
+                  <span>Terdaftar Sejak:</span>
+                  <strong class="text-slate-200">${durStatus.registeredAtFormatted}</strong>
+                </div>
+                <div class="flex items-center justify-between text-slate-400">
                   <span>Berlaku s/d:</span>
-                  <strong class="${durStatus.isExpired ? 'text-rose-400' : 'text-white'}">${durStatus.isLifetime ? 'Aktif Selamanya (Lifetime)' : `${durStatus.expiresAtFormatted} (${durStatus.isExpired ? 'Kedaluwarsa' : 'Sisa ' + durStatus.remainingDays + ' Hari'})`}</strong>
+                  <strong class="${durStatus.isExpired ? 'text-rose-400' : 'text-white'}">${durStatus.isLifetime ? 'Aktif Selamanya (Lifetime)' : durStatus.expiresAtFormatted}</strong>
+                </div>
+                <div class="pt-1 border-t border-white/10 flex items-center justify-between gap-1">
+                  <span class="text-amber-300 font-bold"><i class="fa-solid fa-stopwatch mr-1"></i>Sisa Waktu:</span>
+                  <strong data-realtime-countdown="${durStatus.expiresAtMs || 0}" data-is-lifetime="${durStatus.isLifetime ? '1' : '0'}" class="font-mono ${durStatus.isExpired ? 'text-rose-400' : 'text-emerald-300'}">${durStatus.countdownText}</strong>
                 </div>
               </div>
               ${isPending ? `
@@ -10581,9 +10922,12 @@ service cloud.firestore {
       if (!user) return;
 
       const pkgs = getUserPackagesList(user);
-      const durMeta = window.computePackagesDurationSummary(pkgs, Date.now());
+      // Masa aktif dihitung sejak pertama kali akun terdaftar (registeredAt)
+      const firstRegMs = Number(user.registeredAt) || Number(user.activatedAt) || Date.now();
+      const durMeta = window.computePackagesDurationSummary(pkgs, firstRegMs);
       user.status = 'active';
-      user.activatedAt = durMeta.activatedAt;
+      user.registeredAt = firstRegMs;
+      user.activatedAt = firstRegMs;
       user.expiresAt = durMeta.expiresAt;
       user.durationDays = durMeta.durationDays;
       user.durationLabel = durMeta.durationLabel;
@@ -10620,8 +10964,12 @@ service cloud.firestore {
       user.status = nextStatus;
       if (nextStatus === 'active') {
         const pkgs = getUserPackagesList(user);
-        const durMeta = window.computePackagesDurationSummary(pkgs, Date.now());
-        user.activatedAt = durMeta.activatedAt;
+        const firstRegMs = (user.registeredAt && user.expiresAt && user.expiresAt > Date.now())
+          ? Number(user.registeredAt)
+          : (Number(user.registeredAt) || Number(user.activatedAt) || Date.now());
+        const durMeta = window.computePackagesDurationSummary(pkgs, firstRegMs);
+        user.registeredAt = firstRegMs;
+        user.activatedAt = firstRegMs;
         user.expiresAt = durMeta.expiresAt;
         user.durationDays = durMeta.durationDays;
         user.durationLabel = durMeta.durationLabel;
@@ -10687,6 +11035,19 @@ service cloud.firestore {
       }
       saveLocalBackupResults();
       renderAdminResultsTable();
+
+      if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.saveAllQuestionBanks === 'function') {
+        try {
+          await window.TNF_FIREBASE.saveAllQuestionBanks(QUESTION_BANK);
+          syncedCount += Object.keys(QUESTION_BANK).length;
+        } catch (e) {}
+      }
+      if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.saveCatConfig === 'function') {
+        try {
+          await window.TNF_FIREBASE.saveCatConfig(CAT_CONFIG);
+          syncedCount++;
+        } catch (e) {}
+      }
 
       if (!silent) {
         openCustomModal({
@@ -13960,12 +14321,13 @@ service cloud.firestore {
             <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
               <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-[11px] font-extrabold">
                 <i class="fa-regular fa-clock text-[10px]"></i>
-                <span>Durasi Aktif: ${durInfo.durationLabel}</span>
+                <span>Durasi Paket: ${durInfo.durationLabel}</span>
               </span>
               <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-navy-950 border border-white/15 text-slate-200 text-[10px] font-bold">
                 <i class="fa-regular fa-calendar-check text-gold-400"></i>
-                <span>${durInfo.isLifetime ? 'Berlaku Selamanya (Lifetime Access)' : `Berlaku s/d ${durInfo.expiresAtFormatted} (Sisa ${durInfo.remainingDays} Hari)`}</span>
+                <span>Terdaftar Sejak: ${durInfo.registeredAtFormatted} ${durInfo.isLifetime ? '' : `• s/d ${durInfo.expiresAtFormatted}`}</span>
               </span>
+              ${buildRealtimeCountdownBadgeHtml(durInfo)}
             </div>
           `;
         }
@@ -15174,6 +15536,30 @@ service cloud.firestore {
       document.getElementById('lat-res-review-count-badge').textContent = `${total} Pembahasan Butir / Baris`;
       document.getElementById('latihan-psiko-review-list').innerHTML = reviewHtml;
 
+      // Simpan hasil pengerjaan Latihan Soal Psikologi secara online & real-time ke Cloud Firestore
+      const nowObj = new Date();
+      const timeStr = nowObj.toLocaleString('id-ID', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+      const participantName = currentVerifiedUser?.nama || 'Peserta Latihan Psiko';
+      const participantEmail = currentVerifiedUser?.email || 'latihan@tnfclass.id';
+      const participantBatch = currentVerifiedUser?.batch || 'Paket Latihan Soal Psikologi';
+      const latRecord = {
+        id: `LAT-${latihanRuntime.subMode || latihanRuntime.mode}-${Date.now()}`,
+        createdAt: Date.now(),
+        timestamp: timeStr,
+        nama: participantName,
+        noreg: participantEmail.toUpperCase(),
+        email: participantEmail,
+        kelas: participantBatch,
+        examType: `latihan_${latihanRuntime.subMode || latihanRuntime.mode}`,
+        examLabel: `Latihan Psiko: ${latihanRuntime.title}`,
+        score: Number(finalScore.toFixed(2)),
+        status: finalScore >= 61 ? 'MEMENUHI SYARAT (MS)' : 'PERLU LATIHAN (BMS)',
+        detailText: `Benar: ${correct} | Salah: ${wrong} | Kosong: ${empty} dari ${total} Soal/Baris`
+      };
+      persistNewResultToCloud(latRecord).catch(() => {});
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -15312,6 +15698,12 @@ service cloud.firestore {
       renderMiniSkd();
       updateBatchProjection();
       updateAccessStatusPills();
+      startRealtimeAccountCountdownTicker();
+      setTimeout(() => {
+        if (typeof syncAllDataToCloud === 'function') {
+          syncAllDataToCloud(true).catch(() => {});
+        }
+      }, 2500);
     });
   </script>
 </body>
