@@ -5494,6 +5494,7 @@ service cloud.firestore {
     function normalizeImageUrl(url) {
       const clean = (url || '').trim();
       if (!clean) return '';
+      if (/^data:image\//i.test(clean)) return clean;
       const gdriveMatch = clean.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
       if (gdriveMatch && gdriveMatch[1]) {
         return `https://lh3.googleusercontent.com/d/${gdriveMatch[1]}`;
@@ -8021,6 +8022,7 @@ service cloud.firestore {
         tka_twk: false,
         tka_tbi: false,
         tka_mtk: false,
+        cpns_skd_terpadu: false,
         cpns_twk: false,
         cpns_tiu: false,
         cpns_tkp: false,
@@ -8043,6 +8045,16 @@ service cloud.firestore {
         tka_twk: { label: 'Wawasan Kebangsaan (TWK)', short: 'TWK', count: 50, durationMin: 60, weight: 20 },
         tka_tbi: { label: 'Bahasa Inggris (TBI)', short: 'TBI', count: 50, durationMin: 60, weight: 30 },
         tka_mtk: { label: 'Matematika (MTK)', short: 'MTK', count: 40, durationMin: 60, weight: 20 },
+        cpns_skd_terpadu: {
+          label: 'Simulasi CAT SKD CPNS Terpadu (TWK 30 + TIU 35 + TKP 45)',
+          short: 'CAT SKD BKN',
+          count: 110,
+          twkCount: 30,
+          tiuCount: 35,
+          tkpCount: 45,
+          durationMin: 100,
+          weight: 100
+        },
         cpns_twk: { label: 'CPNS SKD: Wawasan Kebangsaan (TWK)', short: 'CPNS TWK', count: 30, durationMin: 30, weight: 30 },
         cpns_tiu: { label: 'CPNS SKD: Intelegensia Umum (TIU)', short: 'CPNS TIU', count: 35, durationMin: 35, weight: 35 },
         cpns_tkp: { label: 'CPNS SKD: Karakteristik Pribadi (TKP)', short: 'CPNS TKP', count: 45, durationMin: 35, weight: 35 },
@@ -8601,6 +8613,7 @@ service cloud.firestore {
           tka_twk: { ...DEFAULT_CAT_CONFIG.tka.tka_twk, ...(cloudCfg.tka?.tka_twk || {}) },
           tka_tbi: { ...DEFAULT_CAT_CONFIG.tka.tka_tbi, ...(cloudCfg.tka?.tka_tbi || {}) },
           tka_mtk: { ...DEFAULT_CAT_CONFIG.tka.tka_mtk, ...(cloudCfg.tka?.tka_mtk || {}) },
+          cpns_skd_terpadu: { ...DEFAULT_CAT_CONFIG.tka.cpns_skd_terpadu, ...(cloudCfg.tka?.cpns_skd_terpadu || {}) },
           cpns_twk: { ...DEFAULT_CAT_CONFIG.tka.cpns_twk, ...(cloudCfg.tka?.cpns_twk || {}) },
           cpns_tiu: { ...DEFAULT_CAT_CONFIG.tka.cpns_tiu, ...(cloudCfg.tka?.cpns_tiu || {}) },
           cpns_tkp: { ...DEFAULT_CAT_CONFIG.tka.cpns_tkp, ...(cloudCfg.tka?.cpns_tkp || {}) },
@@ -8644,6 +8657,7 @@ service cloud.firestore {
                 tka_twk: { ...DEFAULT_CAT_CONFIG.tka.tka_twk, ...(parsed.tka?.tka_twk || {}) },
                 tka_tbi: { ...DEFAULT_CAT_CONFIG.tka.tka_tbi, ...(parsed.tka?.tka_tbi || {}) },
                 tka_mtk: { ...DEFAULT_CAT_CONFIG.tka.tka_mtk, ...(parsed.tka?.tka_mtk || {}) },
+                cpns_skd_terpadu: { ...DEFAULT_CAT_CONFIG.tka.cpns_skd_terpadu, ...(parsed.tka?.cpns_skd_terpadu || {}) },
                 cpns_twk: { ...DEFAULT_CAT_CONFIG.tka.cpns_twk, ...(parsed.tka?.cpns_twk || {}) },
                 cpns_tiu: { ...DEFAULT_CAT_CONFIG.tka.cpns_tiu, ...(parsed.tka?.cpns_tiu || {}) },
                 cpns_tkp: { ...DEFAULT_CAT_CONFIG.tka.cpns_tkp, ...(parsed.tka?.cpns_tkp || {}) },
@@ -9319,6 +9333,14 @@ service cloud.firestore {
           CAT_CONFIG.psiko.kecerdasan.count,
           CAT_CONFIG.psiko.kecerdasan.durationMin
         );
+      } else if (examType === 'cpns_skd_terpadu') {
+        examRuntime.stage = 1;
+        const stepper = document.getElementById('psiko-stage-stepper');
+        if (stepper) {
+          stepper.classList.add('hidden');
+          stepper.classList.remove('grid');
+        }
+        startCpnsSkdCombinedStage();
       } else {
         examRuntime.stage = 1;
         const stepper = document.getElementById('psiko-stage-stepper');
@@ -9381,6 +9403,53 @@ service cloud.firestore {
       startExamTimer();
     }
 
+    function startCpnsSkdCombinedStage() {
+      const skdCfg = CAT_CONFIG.tka.cpns_skd_terpadu || DEFAULT_CAT_CONFIG.tka.cpns_skd_terpadu;
+      const twkCount = Number(skdCfg.twkCount) || 30;
+      const tiuCount = Number(skdCfg.tiuCount) || 35;
+      const tkpCount = Number(skdCfg.tkpCount) || 45;
+      const durationMin = Number(skdCfg.durationMin) || 100;
+
+      document.getElementById('cat-kecermatan-workspace').classList.add('hidden');
+      document.getElementById('cat-standard-workspace').classList.remove('hidden');
+
+      document.getElementById('cat-exam-category').textContent = `CAT SKD CPNS BKN • 1 SESI PENUH (${twkCount} TWK + ${tiuCount} TIU + ${tkpCount} TKP)`;
+      document.getElementById('cat-exam-title').textContent = `Simulasi CAT SKD CPNS Terpadu (${twkCount + tiuCount + tkpCount} Soal • ${durationMin} Menit)`;
+
+      const finishBtn = document.getElementById('btn-finish-stage');
+      if (finishBtn) {
+        finishBtn.disabled = false;
+        finishBtn.textContent = 'Selesai & Kirim Hasil SKD';
+      }
+
+      const twkPool = buildQuestionPool('cpns_twk', twkCount).map((item, i) => ({
+        ...item,
+        skdSection: 'TWK',
+        skdSectionLabel: `Subtes TWK (Soal ${i + 1}/${twkCount} • No. 1–${twkCount})`
+      }));
+      const tiuPool = buildQuestionPool('cpns_tiu', tiuCount).map((item, i) => ({
+        ...item,
+        skdSection: 'TIU',
+        skdSectionLabel: `Subtes TIU (Soal ${i + 1}/${tiuCount} • No. ${twkCount + 1}–${twkCount + tiuCount})`
+      }));
+      const tkpPool = buildQuestionPool('cpns_tkp', tkpCount).map((item, i) => ({
+        ...item,
+        skdSection: 'TKP',
+        skdSectionLabel: `Subtes TKP (Soal ${i + 1}/${tkpCount} • No. ${twkCount + tiuCount + 1}–${twkCount + tiuCount + tkpCount})`
+      }));
+
+      const combinedQuestions = [...twkPool, ...tiuPool, ...tkpPool];
+      examRuntime.questions = combinedQuestions;
+      examRuntime.answers = new Array(combinedQuestions.length).fill(null);
+      examRuntime.flags = new Array(combinedQuestions.length).fill(false);
+      examRuntime.currentIndex = 0;
+      examRuntime.navPage = 0;
+      examRuntime.remainingSec = Math.max(60, durationMin * 60);
+
+      renderCurrentStandardQuestion();
+      startExamTimer();
+    }
+
     function renderCurrentStandardQuestion() {
       const idx = examRuntime.currentIndex;
       const total = examRuntime.questions.length;
@@ -9388,9 +9457,13 @@ service cloud.firestore {
       if (!qObj) return;
 
       document.getElementById('cat-question-badge').textContent = `Soal No. ${idx + 1} dari ${total}`;
-      document.getElementById('cat-question-subtag').textContent = examRuntime.examType === 'psiko_terpadu'
-        ? `Psiko I • Tahap ${examRuntime.stage} dari 3`
-        : 'Pilihan Ganda (A–E)';
+      let subtagText = 'Pilihan Ganda (A–E)';
+      if (examRuntime.examType === 'psiko_terpadu') {
+        subtagText = `Psiko I • Tahap ${examRuntime.stage} dari 3`;
+      } else if (examRuntime.examType === 'cpns_skd_terpadu' && qObj.skdSectionLabel) {
+        subtagText = `CAT SKD BKN • ${qObj.skdSectionLabel}`;
+      }
+      document.getElementById('cat-question-subtag').textContent = subtagText;
 
       const qTextEl = document.getElementById('cat-question-text');
       if (qTextEl) {
@@ -9938,6 +10011,86 @@ service cloud.firestore {
         if (waConsultBtn) {
           waConsultBtn.href = `https://wa.me/6282339260231?text=${encodeURIComponent(waMsg)}`;
         }
+      } else if (examRuntime.examType === 'cpns_skd_terpadu') {
+        let twkCorrect = 0;
+        let tiuCorrect = 0;
+        let tkpScore = 0;
+        let tkpAnswered = 0;
+
+        examRuntime.questions.forEach((q, idx) => {
+          const ans = examRuntime.answers[idx];
+          if (ans === null || ans === undefined) return;
+          if (q.skdSection === 'TWK') {
+            if (ans === q.correct) twkCorrect++;
+          } else if (q.skdSection === 'TIU') {
+            if (ans === q.correct) tiuCorrect++;
+          } else if (q.skdSection === 'TKP') {
+            tkpAnswered++;
+            if (ans === q.correct) {
+              tkpScore += 5;
+            } else {
+              const dist = Math.abs(ans - (Number(q.correct) || 0));
+              tkpScore += Math.max(1, 5 - dist);
+            }
+          }
+        });
+
+        const twkScore = twkCorrect * 5; // 30 soal x 5 = maks 150 (PG >= 65)
+        const tiuScore = tiuCorrect * 5; // 35 soal x 5 = maks 175 (PG >= 80)
+        // TKP: 45 soal x 5 = maks 225 (PG >= 166)
+        const totalSkd = twkScore + tiuScore + tkpScore; // Maks 550
+        const passTwk = twkScore >= 65;
+        const passTiu = tiuScore >= 80;
+        const passTkp = tkpScore >= 166;
+        const passPgSkd = passTwk && passTiu && passTkp;
+        const statusStr = passPgSkd
+          ? `LULUS PG SKD (${totalSkd}/550)`
+          : `BELUM LULUS PG (${totalSkd}/550)`;
+        const detailStr = `TWK: ${twkScore}/150 (${passTwk ? 'MS' : 'TMS'}) | TIU: ${tiuScore}/175 (${passTiu ? 'MS' : 'TMS'}) | TKP: ${tkpScore}/225 (${passTkp ? 'MS' : 'TMS'}) • Total SKD: ${totalSkd}/550`;
+
+        const record = {
+          id: `CPNS-SKD-${p.noreg}-${sessionUniqueId}`,
+          createdAt: Date.now(),
+          timestamp: timeStr,
+          nama: p.nama,
+          noreg: p.noreg,
+          kelas: p.kelas,
+          examType: 'cpns_skd_terpadu',
+          examLabel: 'Simulasi CAT SKD CPNS Terpadu (110 Soal • 100 Menit)',
+          score: totalSkd,
+          twkScore,
+          tiuScore,
+          tkpScore,
+          passPgSkd,
+          status: statusStr,
+          detailText: detailStr
+        };
+
+        const isSavedCloud = await persistNewResultToCloud(record);
+
+        document.getElementById('cat-arena').classList.add('hidden');
+        document.getElementById('cat-result').classList.remove('hidden');
+
+        document.getElementById('cat-res-title').textContent = 'Simulasi CAT SKD CPNS Terpadu (TWK 30 + TIU 35 + TKP 45)';
+        document.getElementById('cat-res-participant').textContent = `${p.nama} • ${p.noreg} (${p.kelas})`;
+        document.getElementById('cat-res-score-label').textContent = `Total Skor SKD BKN (Maks 550) — TWK: ${twkScore}/150 • TIU: ${tiuScore}/175 • TKP: ${tkpScore}/225`;
+        document.getElementById('cat-res-score').textContent = `${totalSkd}`;
+
+        const statusBadge = document.getElementById('cat-res-status');
+        statusBadge.textContent = passPgSkd
+          ? `LULUS PASSING GRADE SKD BKN (TWK ${twkScore} • TIU ${tiuScore} • TKP ${tkpScore})`
+          : `BELUM MEMENUHI PASSING GRADE (TWK ${twkScore}/65 • TIU ${tiuScore}/80 • TKP ${tkpScore}/166)`;
+        statusBadge.className = passPgSkd
+          ? 'inline-block px-4 py-1.5 rounded-xl text-xs font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+          : 'inline-block px-4 py-1.5 rounded-xl text-xs font-extrabold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40';
+
+        updateCatResultCloudStatusUI(isSavedCloud);
+
+        const waMsg = `Halo Admin TNF CLASS Mataram, saya *${p.nama}* (${p.noreg} - ${p.kelas}) telah menyelesaikan *Simulasi CAT SKD CPNS Terpadu (110 Soal • 100 Menit)* dengan hasil: TWK *${twkScore}/150*, TIU *${tiuScore}/175*, TKP *${tkpScore}/225*, Total SKD *${totalSkd}/550* (${passPgSkd ? 'LULUS PG' : 'BELUM LULUS PG'}).`;
+        const waConsultBtn = document.getElementById('cat-wa-consult');
+        if (waConsultBtn) {
+          waConsultBtn.href = `https://wa.me/6282339260231?text=${encodeURIComponent(waMsg)}`;
+        }
       } else {
         const examType = examRuntime.examType;
         const tCfg = CAT_CONFIG.tka[examType];
@@ -10309,7 +10462,16 @@ service cloud.firestore {
         if (r.nama) entry.nama = r.nama;
         if (r.kelas) entry.kelas = r.kelas;
 
-        if (Object.prototype.hasOwnProperty.call(entry.cpnsScores, r.examType)) {
+        if (r.examType === 'cpns_skd_terpadu') {
+          const twkDirect = Number(r.twkScore) || 0;
+          const tiuDirect = Number(r.tiuScore) || 0;
+          const tkpDirect = Number(r.tkpScore) || 0;
+          const totalDirect = twkDirect + tiuDirect + tkpDirect;
+          const prevTotal = (entry.directSkd ? (entry.directSkd.twk + entry.directSkd.tiu + entry.directSkd.tkp) : -1);
+          if (totalDirect >= prevTotal) {
+            entry.directSkd = { twk: twkDirect, tiu: tiuDirect, tkp: tkpDirect };
+          }
+        } else if (Object.prototype.hasOwnProperty.call(entry.cpnsScores, r.examType)) {
           const val = Number(r.score) || 0;
           if (entry.cpnsScores[r.examType] === null || val > entry.cpnsScores[r.examType]) {
             entry.cpnsScores[r.examType] = val;
@@ -10318,10 +10480,10 @@ service cloud.firestore {
       });
 
       const rows = Array.from(participantMap.values()).map(p => {
-        // Konversi nilai persentase CAT (0-100) ke skala resmi SKD BKN (TWK maks 150, TIU maks 175, TKP maks 225)
-        const twkBkn = p.cpnsScores.cpns_twk !== null ? Math.round((p.cpnsScores.cpns_twk / 100) * 150) : null;
-        const tiuBkn = p.cpnsScores.cpns_tiu !== null ? Math.round((p.cpnsScores.cpns_tiu / 100) * 175) : null;
-        const tkpBkn = p.cpnsScores.cpns_tkp !== null ? Math.round((p.cpnsScores.cpns_tkp / 100) * 225) : null;
+        // Prioritaskan skor resmi 1 sesi SKD Terpadu (TWK 150, TIU 175, TKP 225), fallback ke riwayat subtes satuan
+        const twkBkn = p.directSkd ? p.directSkd.twk : (p.cpnsScores.cpns_twk !== null ? Math.round((p.cpnsScores.cpns_twk / 100) * 150) : null);
+        const tiuBkn = p.directSkd ? p.directSkd.tiu : (p.cpnsScores.cpns_tiu !== null ? Math.round((p.cpnsScores.cpns_tiu / 100) * 175) : null);
+        const tkpBkn = p.directSkd ? p.directSkd.tkp : (p.cpnsScores.cpns_tkp !== null ? Math.round((p.cpnsScores.cpns_tkp / 100) * 225) : null);
         const skbRaw100 = p.cpnsScores.cpns_skb !== null ? p.cpnsScores.cpns_skb : null;
 
         const totalSkd550 = (twkBkn || 0) + (tiuBkn || 0) + (tkpBkn || 0);
@@ -11488,9 +11650,7 @@ service cloud.firestore {
         { key: 'tka_twk', label: 'TKA: Wawasan Kebangsaan (TWK)' },
         { key: 'tka_tbi', label: 'TKA: Bahasa Inggris (TBI)' },
         { key: 'tka_mtk', label: 'TKA: Matematika (MTK)' },
-        { key: 'cpns_twk', label: 'CPNS SKD: Wawasan Kebangsaan (TWK)' },
-        { key: 'cpns_tiu', label: 'CPNS SKD: Intelegensia Umum (TIU)' },
-        { key: 'cpns_tkp', label: 'CPNS SKD: Karakteristik Pribadi (TKP)' },
+        { key: 'cpns_skd_terpadu', label: 'CPNS SKD Terpadu: 1 Sesi Penuh (TWK 30 + TIU 35 + TKP 45 • 100 Menit)' },
         { key: 'cpns_skb', label: 'CPNS SKB: Kompetensi Bidang ASN' }
       ];
 
@@ -11843,6 +12003,122 @@ service cloud.firestore {
       if (textWrap) textWrap.classList.toggle('hidden', validMode === 'image');
       if (imgWrap) imgWrap.classList.toggle('hidden', validMode === 'text');
 
+      updateQuestionEditorPreview();
+    }
+
+    function compressImageFileToDataUrl(file, maxWidth = 900, maxHeight = 900, quality = 0.78) {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type || !file.type.startsWith('image/')) {
+          reject(new Error('File yang dipilih bukan gambar yang valid.'));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Gagal membaca file gambar.'));
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('Gagal memproses file gambar.'));
+          img.onload = () => {
+            let w = img.naturalWidth || img.width;
+            let h = img.naturalHeight || img.height;
+            const ratio = Math.min(1, maxWidth / w, maxHeight / h);
+            w = Math.max(1, Math.round(w * ratio));
+            h = Math.max(1, Math.round(h * ratio));
+
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(String(ev.target?.result || ''));
+              return;
+            }
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+
+            let dataUrl = '';
+            try {
+              dataUrl = canvas.toDataURL('image/webp', quality);
+              if (!dataUrl || !dataUrl.startsWith('data:image/webp')) {
+                dataUrl = canvas.toDataURL('image/jpeg', quality);
+              }
+            } catch (e) {
+              dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+
+            // Jika masih terlalu besar (> 95 KB), turunkan ukuran & kualitas agar ringan di Cloud Firestore
+            if (dataUrl.length > 130000) {
+              const scale2 = 0.72;
+              canvas.width = Math.max(1, Math.round(w * scale2));
+              canvas.height = Math.max(1, Math.round(h * scale2));
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              try {
+                dataUrl = canvas.toDataURL('image/webp', 0.65);
+                if (!dataUrl || !dataUrl.startsWith('data:image/webp')) {
+                  dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+                }
+              } catch (e) {
+                dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+              }
+            }
+            resolve(dataUrl);
+          };
+          img.src = String(ev.target?.result || '');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleQuestionImageFileUpload(event, targetInputId, statusElId, sectionType = 'question', optIndex = null) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+      const statusEl = statusElId ? document.getElementById(statusElId) : null;
+      const targetInput = document.getElementById(targetInputId);
+      if (statusEl) {
+        statusEl.textContent = 'Mengompresi gambar...';
+        statusEl.className = 'text-[10px] font-bold text-amber-300';
+      }
+      try {
+        const maxDim = sectionType === 'option' ? 680 : 960;
+        const compressedDataUrl = await compressImageFileToDataUrl(file, maxDim, maxDim, 0.78);
+        if (targetInput) {
+          targetInput.value = compressedDataUrl;
+        }
+        // Pastikan mode gambar aktif agar gambar langsung muncul
+        if (sectionType === 'question') {
+          const curMode = document.getElementById('qedit-question-type')?.value || 'both';
+          if (curMode === 'text') setQuestionMainType('both');
+        } else if (sectionType === 'option' && optIndex !== null) {
+          const curMode = document.getElementById(`qedit-opt-type-${optIndex}`)?.value || 'text';
+          if (curMode === 'text') setQuestionOptionType(optIndex, 'both');
+        } else if (sectionType === 'explanation') {
+          const curMode = document.getElementById('qedit-explanation-type')?.value || 'both';
+          if (curMode === 'text') setQuestionExplanationType('both');
+        }
+        const approxKb = Math.max(1, Math.round((compressedDataUrl.length * 0.75) / 1024));
+        if (statusEl) {
+          statusEl.textContent = `Terunggah: ${file.name} (${approxKb} KB • Siap Cloud)`;
+          statusEl.className = 'text-[10px] font-bold text-emerald-300';
+        }
+        updateQuestionEditorPreview();
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = err?.message || 'Gagal mengunggah gambar.';
+          statusEl.className = 'text-[10px] font-bold text-rose-400';
+        }
+      }
+      event.target.value = '';
+    }
+
+    function clearQuestionImageInput(targetInputId, statusElId) {
+      const targetInput = document.getElementById(targetInputId);
+      if (targetInput) targetInput.value = '';
+      const statusEl = statusElId ? document.getElementById(statusElId) : null;
+      if (statusEl) {
+        statusEl.textContent = '';
+      }
       updateQuestionEditorPreview();
     }
 
@@ -12290,23 +12566,35 @@ service cloud.firestore {
               </div>
 
               <div id="qedit-question-img-wrap" class="${existing?.questionType === 'text' ? 'hidden' : ''} space-y-2">
-                <label for="qedit-img" class="block text-[11px] font-bold text-sky-300">
-                  <i class="fa-brands fa-google-drive mr-1"></i>Tautan Gambar Soal dari Google Drive (Opsional)
-                </label>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <label for="qedit-img" class="block text-[11px] font-bold text-sky-300">
+                    <i class="fa-solid fa-image mr-1"></i>Upload File Gambar Soal / Tautan Google Drive (Opsional)
+                  </label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="file" id="qedit-img-file" accept="image/*" class="hidden" onchange="handleQuestionImageFileUpload(event, 'qedit-img', 'qedit-img-upload-status', 'question', null)" />
+                    <button type="button" onclick="document.getElementById('qedit-img-file').click()" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold flex items-center gap-1 transition">
+                      <i class="fa-solid fa-upload"></i><span>Upload File Gambar</span>
+                    </button>
+                    <button type="button" onclick="clearQuestionImageInput('qedit-img', 'qedit-img-upload-status')" class="px-2 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[10px] font-bold" title="Hapus gambar soal">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                </div>
                 <div class="relative">
                   <input
                     type="text"
                     id="qedit-img"
                     value="${existing?.imageUrl || ''}"
                     oninput="updateQuestionEditorPreview()"
-                    placeholder="Tempel link gambar Google Drive untuk Soal (https://drive.google.com/file/d/.../view)"
+                    placeholder="Upload file gambar di atas atau tempel link Google Drive (https://drive.google.com/file/d/...)"
                     class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-navy-950 border border-sky-500/35 text-white font-semibold focus:border-gold-500 focus:outline-none"
                   />
-                  <i class="fa-brands fa-google-drive text-sky-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                  <i class="fa-solid fa-image text-sky-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                 </div>
+                <div id="qedit-img-upload-status" class="text-[10px] font-bold text-slate-400"></div>
                 <div id="qedit-question-thumb-box" class="hidden p-2.5 rounded-xl bg-navy-950 border border-sky-500/30 inline-flex items-center gap-2.5">
                   <img id="qedit-question-thumb" src="" alt="Preview Gambar Soal Utama" class="max-h-24 w-auto rounded-lg object-contain" />
-                  <span class="text-[10px] text-emerald-300 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>Gambar Soal Google Drive Siap Ditampilkan</span>
+                  <span class="text-[10px] text-emerald-300 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>Gambar Soal Siap Ditampilkan</span>
                 </div>
               </div>
             </div>
@@ -12378,17 +12666,27 @@ service cloud.firestore {
                     </div>
 
                     <div id="qedit-opt-img-wrap-${idx}" class="${initMode === 'text' ? 'hidden' : ''} space-y-2">
-                      <div class="relative">
-                        <input
-                          type="text"
-                          id="qedit-opt-img-${idx}"
-                          value="${optImgs[idx] || ''}"
-                          oninput="updateQuestionEditorPreview()"
-                          placeholder="Tempel link gambar Google Drive untuk Pilihan ${ltr} (https://drive.google.com/file/d/...)"
-                          class="w-full pl-9 pr-3 py-2 rounded-xl bg-navy-950 border border-sky-500/35 text-white font-semibold focus:border-gold-500 focus:outline-none"
-                        />
-                        <i class="fa-brands fa-google-drive text-sky-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative flex-1 min-w-[200px]">
+                          <input
+                            type="text"
+                            id="qedit-opt-img-${idx}"
+                            value="${optImgs[idx] || ''}"
+                            oninput="updateQuestionEditorPreview()"
+                            placeholder="Upload file gambar atau tempel link Google Drive untuk Pilihan ${ltr}..."
+                            class="w-full pl-9 pr-3 py-2 rounded-xl bg-navy-950 border border-sky-500/35 text-white font-semibold focus:border-gold-500 focus:outline-none"
+                          />
+                          <i class="fa-solid fa-image text-sky-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                        </div>
+                        <input type="file" id="qedit-opt-img-file-${idx}" accept="image/*" class="hidden" onchange="handleQuestionImageFileUpload(event, 'qedit-opt-img-${idx}', 'qedit-opt-upload-status-${idx}', 'option', ${idx})" />
+                        <button type="button" onclick="document.getElementById('qedit-opt-img-file-${idx}').click()" class="px-2.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold flex items-center gap-1 shrink-0 transition">
+                          <i class="fa-solid fa-upload"></i><span>Upload Gambar</span>
+                        </button>
+                        <button type="button" onclick="clearQuestionImageInput('qedit-opt-img-${idx}', 'qedit-opt-upload-status-${idx}')" class="px-2 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[10px] font-bold shrink-0" title="Hapus gambar opsi ${ltr}">
+                          <i class="fa-solid fa-xmark"></i>
+                        </button>
                       </div>
+                      <div id="qedit-opt-upload-status-${idx}" class="text-[10px] font-bold text-slate-400"></div>
                       <div id="qedit-opt-thumb-box-${idx}" class="hidden p-2 rounded-xl bg-navy-950 border border-white/10 inline-flex items-center gap-2">
                         <img id="qedit-opt-thumb-${idx}" src="" alt="Preview Pilihan ${ltr}" class="max-h-20 w-auto rounded-lg object-contain" />
                         <span class="text-[10px] text-emerald-300 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>Gambar Pilihan ${ltr} Siap</span>
@@ -12442,23 +12740,35 @@ service cloud.firestore {
               </div>
 
               <div id="qedit-explanation-img-wrap" class="${existing?.explanationType === 'text' ? 'hidden' : ''} space-y-2">
-                <label for="qedit-explanation-img" class="block text-[11px] font-bold text-sky-300">
-                  <i class="fa-brands fa-google-drive mr-1"></i>Tautan Gambar Pembahasan dari Google Drive (Opsional)
-                </label>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <label for="qedit-explanation-img" class="block text-[11px] font-bold text-sky-300">
+                    <i class="fa-solid fa-image mr-1"></i>Upload File Gambar Pembahasan / Tautan Google Drive (Opsional)
+                  </label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="file" id="qedit-explanation-img-file" accept="image/*" class="hidden" onchange="handleQuestionImageFileUpload(event, 'qedit-explanation-img', 'qedit-exp-upload-status', 'explanation', null)" />
+                    <button type="button" onclick="document.getElementById('qedit-explanation-img-file').click()" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold flex items-center gap-1 transition">
+                      <i class="fa-solid fa-upload"></i><span>Upload File Gambar</span>
+                    </button>
+                    <button type="button" onclick="clearQuestionImageInput('qedit-explanation-img', 'qedit-exp-upload-status')" class="px-2 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[10px] font-bold" title="Hapus gambar pembahasan">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                </div>
                 <div class="relative">
                   <input
                     type="text"
                     id="qedit-explanation-img"
                     value="${existing?.explanationImageUrl || ''}"
                     oninput="updateQuestionEditorPreview()"
-                    placeholder="Tempel link gambar Google Drive untuk Pembahasan (https://drive.google.com/file/d/.../view)"
+                    placeholder="Upload file gambar di atas atau tempel link Google Drive untuk Pembahasan..."
                     class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-navy-950 border border-sky-500/35 text-white font-semibold focus:border-gold-500 focus:outline-none"
                   />
-                  <i class="fa-brands fa-google-drive text-sky-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                  <i class="fa-solid fa-image text-sky-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                 </div>
+                <div id="qedit-exp-upload-status" class="text-[10px] font-bold text-slate-400"></div>
                 <div id="qedit-explanation-thumb-box" class="hidden p-2.5 rounded-xl bg-navy-950 border border-sky-500/30 inline-flex items-center gap-2.5">
                   <img id="qedit-explanation-thumb" src="" alt="Preview Gambar Pembahasan" class="max-h-24 w-auto rounded-lg object-contain" />
-                  <span class="text-[10px] text-emerald-300 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>Gambar Pembahasan Google Drive Siap Ditampilkan</span>
+                  <span class="text-[10px] text-emerald-300 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>Gambar Pembahasan Siap Ditampilkan</span>
                 </div>
               </div>
             </div>
@@ -12559,6 +12869,7 @@ service cloud.firestore {
     function isLikelyGoogleDriveOrImageUrl(str) {
       const v = String(str || '').trim();
       if (!v) return false;
+      if (/^data:image\//i.test(v)) return true;
       if (/^https?:\/\/(drive\.google\.com|lh3\.googleusercontent\.com|docs\.google\.com)/i.test(v)) return true;
       if (/^https?:\/\/.+\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(v)) return true;
       if (/^gdrive:/i.test(v)) return true;
@@ -14474,33 +14785,6 @@ service cloud.firestore {
       const container = document.getElementById('cpns-lobby-cat-cards');
       if (!container) return;
 
-      const cpnsExams = [
-        {
-          key: 'cpns_twk',
-          badge: 'Subtes 1 SKD • TWK',
-          color: 'sky',
-          desc: 'Nasionalisme, Integritas, Bela Negara, Pilar Negara & Bahasa Negara (Ambang Batas ≥ 65).'
-        },
-        {
-          key: 'cpns_tiu',
-          badge: 'Subtes 2 SKD • TIU',
-          color: 'gold',
-          desc: 'Kemampuan Verbal (Analogi, Silogisme, Analitis), Numerik (Deret, Berhitung) & Figural (Ambang Batas ≥ 80).'
-        },
-        {
-          key: 'cpns_tkp',
-          badge: 'Subtes 3 SKD • TKP',
-          color: 'emerald',
-          desc: 'Pelayanan Publik, Jejaring Kerja, Sosial Budaya, TIK, Profesionalisme & Anti-Radikalisme (Ambang Batas ≥ 166).'
-        },
-        {
-          key: 'cpns_skb',
-          badge: 'Tahap Lanjutan • SKB ASN',
-          color: 'amber',
-          desc: 'Seleksi Kompetensi Bidang (Bobot 60%), UU ASN No. 20/2023, Core Values BerAKHLAK & Literasi Digital.'
-        }
-      ];
-
       const perms = getParticipantPermissions();
       const blockedByPackage = perms.isAuthenticated && !perms.canAccessCatCpns;
       const cpnsRestrictedBanner = document.getElementById('cpns-cat-restricted-banner');
@@ -14512,40 +14796,104 @@ service cloud.firestore {
         cpnsRestrictedDesc.innerHTML = `Akun Anda saat ini terdaftar pada paket <strong class="text-gold-400">${currentVerifiedUser.batch}</strong> yang tidak mencakup <strong>Simulasi CAT CPNS</strong>. Silakan ajukan penambahan <strong>Paket Simulasi CAT SKD CPNS (1x CAT)</strong> atau <strong>Paket Bimbel CPNS (Silver/Gold/Premium)</strong> dan tunggu konfirmasi Admin di Dashboard Admin.`;
       }
 
-      container.innerHTML = cpnsExams.map(ex => {
-        const cfg = CAT_CONFIG.tka[ex.key] || { label: ex.key, short: ex.key, count: 30, durationMin: 30 };
-        const customCount = Array.isArray(QUESTION_BANK[ex.key]) ? QUESTION_BANK[ex.key].length : 0;
-        const isAdminLocked = Boolean(CAT_CONFIG.locks[ex.key]);
-        const isLocked = isAdminLocked || blockedByPackage;
+      const skdCfg = CAT_CONFIG.tka.cpns_skd_terpadu || DEFAULT_CAT_CONFIG.tka.cpns_skd_terpadu;
+      const twkCustom = Array.isArray(QUESTION_BANK.cpns_twk) ? QUESTION_BANK.cpns_twk.length : 0;
+      const tiuCustom = Array.isArray(QUESTION_BANK.cpns_tiu) ? QUESTION_BANK.cpns_tiu.length : 0;
+      const tkpCustom = Array.isArray(QUESTION_BANK.cpns_tkp) ? QUESTION_BANK.cpns_tkp.length : 0;
+      const skdAdminLocked = Boolean(CAT_CONFIG.locks.cpns_skd_terpadu);
+      const skdLocked = skdAdminLocked || blockedByPackage;
 
-        return `
-          <div class="p-5 rounded-2xl bg-navy-950/90 border ${isLocked ? 'border-rose-500/30 opacity-80' : 'border-white/10 hover:border-gold-500/40'} flex flex-col justify-between space-y-4 transition-all">
-            <div class="space-y-2">
-              <div class="flex items-center justify-between gap-2">
-                <span class="px-2.5 py-1 rounded-lg bg-gold-500/15 text-gold-400 text-[10px] font-extrabold uppercase">${ex.badge}</span>
-                <span class="text-[10px] font-extrabold ${isLocked ? 'text-rose-400' : 'text-emerald-400'}">
-                  <i class="fa-solid ${isLocked ? 'fa-lock' : 'fa-lock-open'} mr-1"></i>${isAdminLocked ? 'DIKUNCI ADMIN' : (blockedByPackage ? 'TERKUNCI PAKET' : 'TERBUKA')}
-                </span>
+      const skbCfg = CAT_CONFIG.tka.cpns_skb || DEFAULT_CAT_CONFIG.tka.cpns_skb;
+      const skbCustom = Array.isArray(QUESTION_BANK.cpns_skb) ? QUESTION_BANK.cpns_skb.length : 0;
+      const skbAdminLocked = Boolean(CAT_CONFIG.locks.cpns_skb);
+      const skbLocked = skbAdminLocked || blockedByPackage;
+
+      container.innerHTML = `
+        <!-- KARTU UTAMA: SIMULASI CAT SKD CPNS TERPADU 1 SESI PENUH (110 SOAL • 100 MENIT) -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-navy-950/95 border-2 ${skdLocked ? 'border-rose-500/35 opacity-80' : 'border-gold-500/50 hover:border-gold-400'} flex flex-col justify-between space-y-4 transition-all shadow-lg">
+          <div class="space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="px-3 py-1 rounded-lg bg-gold-500/20 border border-gold-500/40 text-gold-300 text-[10px] font-extrabold uppercase tracking-wider">
+                <i class="fa-solid fa-building-columns mr-1"></i>Standar CAT BKN • 1 Sesi Penuh SKD
+              </span>
+              <span class="text-[10px] font-extrabold ${skdLocked ? 'text-rose-400' : 'text-emerald-400'}">
+                <i class="fa-solid ${skdLocked ? 'fa-lock' : 'fa-lock-open'} mr-1"></i>${skdAdminLocked ? 'DIKUNCI ADMIN' : (blockedByPackage ? 'TERKUNCI PAKET' : 'TERBUKA')}
+              </span>
+            </div>
+
+            <div>
+              <h4 class="font-extrabold text-white text-base sm:text-lg leading-snug">Simulasi CAT SKD CPNS Terpadu (TWK + TIU + TKP)</h4>
+              <p class="text-xs text-slate-300 leading-relaxed mt-1">
+                Ujian SKD digabung dalam <strong>1 sesi tes penuh</strong> sesuai standar resmi CAT BKN dengan total <strong>110 soal</strong> dan durasi hitung mundur <strong>100 menit</strong>.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+              <div class="p-2.5 rounded-xl bg-navy-900 border border-sky-500/30">
+                <div class="font-extrabold text-sky-300">TWK</div>
+                <div class="text-white font-black text-sm mt-0.5">${skdCfg.twkCount || 30} Soal</div>
+                <div class="text-[10px] text-slate-400">PG ≥ 65 • No. 1–30</div>
               </div>
-              <h3 class="text-sm sm:text-base font-extrabold text-white leading-snug">${cfg.label}</h3>
-              <p class="text-xs text-slate-300 leading-relaxed">${ex.desc}</p>
-              <div class="pt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-                <span><i class="fa-regular fa-file-lines text-gold-400 mr-1"></i>${cfg.count} Soal (${customCount} Bank Admin)</span>
-                <span>•</span>
-                <span><i class="fa-regular fa-clock text-gold-400 mr-1"></i>${cfg.durationMin} Menit</span>
+              <div class="p-2.5 rounded-xl bg-navy-900 border border-gold-500/30">
+                <div class="font-extrabold text-gold-400">TIU</div>
+                <div class="text-white font-black text-sm mt-0.5">${skdCfg.tiuCount || 35} Soal</div>
+                <div class="text-[10px] text-slate-400">PG ≥ 80 • No. 31–65</div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-navy-900 border border-emerald-500/30">
+                <div class="font-extrabold text-emerald-300">TKP</div>
+                <div class="text-white font-black text-sm mt-0.5">${skdCfg.tkpCount || 45} Soal</div>
+                <div class="text-[10px] text-slate-400">PG ≥ 166 • No. 66–110</div>
               </div>
             </div>
-            <button type="button" onclick="startCpnsFullCatSubtest('${ex.key}')" class="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 ${
-              isLocked
-                ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed'
-                : 'bg-gold-500/20 hover:bg-gold-500 text-gold-400 hover:text-navy-950 border border-gold-500/40'
-            }">
-              <i class="fa-solid ${isLocked ? 'fa-lock' : 'fa-play'}"></i>
-              <span>${isAdminLocked ? 'Dikunci Admin' : (blockedByPackage ? 'Terkunci Paket' : 'Mulai ' + cfg.short)}</span>
-            </button>
+
+            <div class="flex flex-wrap gap-2 pt-1 text-[11px] font-bold text-slate-300">
+              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-list-ol text-gold-400 mr-1"></i>Total 110 Soal</span>
+              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-regular fa-clock text-gold-400 mr-1"></i>Durasi 100 Menit</span>
+              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-database text-emerald-400 mr-1"></i>Bank Admin: ${twkCustom} TWK • ${tiuCustom} TIU • ${tkpCustom} TKP</span>
+            </div>
           </div>
-        `;
-      }).join('');
+
+          <button type="button" onclick="startCpnsFullCatSubtest('cpns_skd_terpadu')" class="w-full py-3.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all ${
+            skdLocked
+              ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed'
+              : 'btn-gold shadow-lg'
+          }">
+            <i class="fa-solid ${skdLocked ? 'fa-lock' : 'fa-play'}"></i>
+            <span>${skdAdminLocked ? 'Dikunci Admin' : (blockedByPackage ? 'Terkunci Paket' : 'Mulai Simulasi CAT SKD (110 Soal • 100 Menit)')}</span>
+          </button>
+        </div>
+
+        <!-- KARTU TAHAP LANJUTAN: SIMULASI CAT SKB CPNS -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-navy-950/90 border ${skbLocked ? 'border-rose-500/30 opacity-80' : 'border-white/10 hover:border-gold-500/40'} flex flex-col justify-between space-y-4 transition-all">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 text-[10px] font-extrabold uppercase">Tahap Lanjutan • SKB ASN (Bobot 60%)</span>
+              <span class="text-[10px] font-extrabold ${skbLocked ? 'text-rose-400' : 'text-emerald-400'}">
+                <i class="fa-solid ${skbLocked ? 'fa-lock' : 'fa-lock-open'} mr-1"></i>${skbAdminLocked ? 'DIKUNCI ADMIN' : (blockedByPackage ? 'TERKUNCI PAKET' : 'TERBUKA')}
+              </span>
+            </div>
+            <div>
+              <h4 class="font-extrabold text-white text-base leading-snug">${skbCfg.label}</h4>
+              <p class="text-xs text-slate-300 leading-relaxed mt-1">
+                Seleksi Kompetensi Bidang (Bobot 60%), UU ASN No. 20/2023, Core Values BerAKHLAK, Manajemen ASN &amp; Literasi Digital untuk menguji integrasi akhir SKD (40%) + SKB (60%).
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1 text-[11px] font-bold text-slate-400">
+              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-list-ol text-gold-400 mr-1"></i>${skbCfg.count} Soal</span>
+              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-regular fa-clock text-gold-400 mr-1"></i>${skbCfg.durationMin} Menit</span>
+              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-database text-emerald-400 mr-1"></i>${skbCustom} Bank Admin</span>
+            </div>
+          </div>
+          <button type="button" onclick="startCpnsFullCatSubtest('cpns_skb')" class="w-full py-3.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${
+            skbLocked
+              ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed'
+              : 'btn-gold'
+          }">
+            <i class="fa-solid ${skbLocked ? 'fa-lock' : 'fa-play'}"></i>
+            <span>${skbAdminLocked ? 'Dikunci Admin' : (blockedByPackage ? 'Terkunci Paket' : 'Mulai ' + skbCfg.short)}</span>
+          </button>
+        </div>
+      `;
     }
 
     function startCpnsFullCatSubtest(examKey) {
