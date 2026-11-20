@@ -4818,6 +4818,87 @@ service cloud.firestore {
               </div>
             </div>
 
+            <!-- KONFIGURASI SIMULASI CAT CPNS (SKD TERPADU & SKB: JUMLAH SOAL, DURASI & PERSENTASE NILAI) -->
+            <div class="pt-6 border-t border-white/10 space-y-5">
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Pengaturan Divisi CPNS &amp; Kedinasan (BKN)</span>
+                  <h2 class="text-lg sm:text-xl font-extrabold text-white mt-0.5">Konfigurasi Simulasi CAT CPNS (Jumlah Soal, Durasi &amp; Persentase Nilai)</h2>
+                  <p class="text-xs text-slate-300 mt-0.5">Atur jumlah soal TWK, TIU, TKP dalam 1 sesi SKD Terpadu, durasi ujian, jumlah soal SKB, serta persentase bobot nilai integrasi SKD + SKB.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span id="cfg-cpns-skd-total-indicator" class="px-3.5 py-2 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-300 text-xs font-extrabold">
+                    Total Soal SKD: 110 Soal
+                  </span>
+                  <span id="cfg-cpns-weight-indicator" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold">
+                    Total Bobot CPNS (SKD+SKB): 100%
+                  </span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 rounded-2xl bg-navy-950/85 border border-sky-500/30 space-y-3">
+                  <h3 class="font-extrabold text-sky-300 text-sm">1. SKD — TWK (Sesi 1)</h3>
+                  <div>
+                    <label for="cfg-cpns-twk-count" class="block text-xs text-slate-400 mb-1">Jumlah Soal TWK (Default: 30)</label>
+                    <input type="number" id="cfg-cpns-twk-count" min="1" max="150" oninput="updateAdminWeightCheck()" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-white/15 text-white font-bold text-sm" />
+                  </div>
+                  <div>
+                    <label for="cfg-cpns-pg-twk" class="block text-xs text-slate-400 mb-1">Passing Grade TWK (Default: 65)</label>
+                    <input type="number" id="cfg-cpns-pg-twk" min="0" max="500" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-sky-500/40 text-sky-300 font-bold text-sm" />
+                  </div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-navy-950/85 border border-gold-500/30 space-y-3">
+                  <h3 class="font-extrabold text-gold-400 text-sm">2. SKD — TIU (Sesi 1)</h3>
+                  <div>
+                    <label for="cfg-cpns-tiu-count" class="block text-xs text-slate-400 mb-1">Jumlah Soal TIU (Default: 35)</label>
+                    <input type="number" id="cfg-cpns-tiu-count" min="1" max="150" oninput="updateAdminWeightCheck()" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-white/15 text-white font-bold text-sm" />
+                  </div>
+                  <div>
+                    <label for="cfg-cpns-pg-tiu" class="block text-xs text-slate-400 mb-1">Passing Grade TIU (Default: 80)</label>
+                    <input type="number" id="cfg-cpns-pg-tiu" min="0" max="500" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-gold-500/40 text-gold-400 font-bold text-sm" />
+                  </div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-navy-950/85 border border-emerald-500/30 space-y-3">
+                  <h3 class="font-extrabold text-emerald-300 text-sm">3. SKD — TKP &amp; Durasi Sesi</h3>
+                  <div>
+                    <label for="cfg-cpns-tkp-count" class="block text-xs text-slate-400 mb-1">Jumlah Soal TKP (Default: 45)</label>
+                    <input type="number" id="cfg-cpns-tkp-count" min="1" max="150" oninput="updateAdminWeightCheck()" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-white/15 text-white font-bold text-sm" />
+                  </div>
+                  <div>
+                    <label for="cfg-cpns-pg-tkp" class="block text-xs text-slate-400 mb-1">Passing Grade TKP (Default: 166)</label>
+                    <input type="number" id="cfg-cpns-pg-tkp" min="0" max="500" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-emerald-500/40 text-emerald-300 font-bold text-sm" />
+                  </div>
+                  <div>
+                    <label for="cfg-cpns-skd-dur" class="block text-xs text-slate-400 mb-1">Durasi Sesi SKD (Menit, Default: 100)</label>
+                    <input type="number" id="cfg-cpns-skd-dur" min="5" max="240" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-white/15 text-white font-bold text-sm" />
+                  </div>
+                  <div>
+                    <label for="cfg-cpns-skd-weight" class="block text-xs text-slate-400 mb-1">Persentase Nilai SKD (% • Default: 40%)</label>
+                    <input type="number" id="cfg-cpns-skd-weight" min="0" max="100" oninput="updateAdminWeightCheck()" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-gold-500/40 text-gold-400 font-bold text-sm" />
+                  </div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-navy-950/85 border border-amber-500/30 space-y-3">
+                  <h3 class="font-extrabold text-amber-300 text-sm">4. SKB CPNS (Tahap Lanjutan)</h3>
+                  <div>
+                    <label for="cfg-cpns-skb-count" class="block text-xs text-slate-400 mb-1">Jumlah Soal SKB (Default: 50)</label>
+                    <input type="number" id="cfg-cpns-skb-count" min="1" max="150" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-white/15 text-white font-bold text-sm" />
+                  </div>
+                  <div>
+                    <label for="cfg-cpns-skb-dur" class="block text-xs text-slate-400 mb-1">Durasi Tes SKB (Menit, Default: 60)</label>
+                    <input type="number" id="cfg-cpns-skb-dur" min="5" max="240" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-white/15 text-white font-bold text-sm" />
+                  </div>
+                  <div>
+                    <label for="cfg-cpns-skb-weight" class="block text-xs text-slate-400 mb-1">Persentase Nilai SKB (% • Default: 60%)</label>
+                    <input type="number" id="cfg-cpns-skb-weight" min="0" max="100" oninput="updateAdminWeightCheck()" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-gold-500/40 text-gold-400 font-bold text-sm" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="flex flex-wrap items-center justify-end gap-3 pt-3 border-t border-white/10">
               <button type="button" onclick="resetAdminConfigsToDefault()" class="px-5 py-3 rounded-xl bg-navy-900 hover:bg-navy-800 border border-white/15 text-xs font-bold text-slate-300">
                 Reset ke Standar Polri
@@ -4900,6 +4981,10 @@ service cloud.firestore {
                 <button type="button" onclick="openBulkQuestionImportPanel('paste')" class="px-3.5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-extrabold flex items-center gap-2 transition">
                   <i class="fa-solid fa-paste"></i>
                   <span>Copy-Paste Cepat</span>
+                </button>
+                <button type="button" id="btn-delete-all-qbank-category" onclick="confirmDeleteAllQuestionsInCategory()" class="px-3.5 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/35 border border-rose-500/45 text-rose-300 text-xs font-extrabold flex items-center gap-2 transition">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span id="btn-delete-all-qbank-label">Hapus Semua Soal Kategori Ini</span>
                 </button>
                 <input type="file" id="qbank-csv-file-input" accept=".csv,.tsv,.txt" class="hidden" onchange="handleQuestionBankFileUpload(event)" />
               </div>
@@ -8053,12 +8138,15 @@ service cloud.firestore {
           tiuCount: 35,
           tkpCount: 45,
           durationMin: 100,
-          weight: 100
+          weight: 40,
+          pgTwk: 65,
+          pgTiu: 80,
+          pgTkp: 166
         },
         cpns_twk: { label: 'CPNS SKD: Wawasan Kebangsaan (TWK)', short: 'CPNS TWK', count: 30, durationMin: 30, weight: 30 },
         cpns_tiu: { label: 'CPNS SKD: Intelegensia Umum (TIU)', short: 'CPNS TIU', count: 35, durationMin: 35, weight: 35 },
         cpns_tkp: { label: 'CPNS SKD: Karakteristik Pribadi (TKP)', short: 'CPNS TKP', count: 45, durationMin: 35, weight: 35 },
-        cpns_skb: { label: 'CPNS SKB: Kompetensi Bidang ASN', short: 'CPNS SKB', count: 50, durationMin: 60, weight: 100 }
+        cpns_skb: { label: 'CPNS SKB: Kompetensi Bidang ASN', short: 'CPNS SKB', count: 50, durationMin: 60, weight: 60 }
       }
     };
 
@@ -10035,18 +10123,32 @@ service cloud.firestore {
           }
         });
 
-        const twkScore = twkCorrect * 5; // 30 soal x 5 = maks 150 (PG >= 65)
-        const tiuScore = tiuCorrect * 5; // 35 soal x 5 = maks 175 (PG >= 80)
-        // TKP: 45 soal x 5 = maks 225 (PG >= 166)
-        const totalSkd = twkScore + tiuScore + tkpScore; // Maks 550
-        const passTwk = twkScore >= 65;
-        const passTiu = tiuScore >= 80;
-        const passTkp = tkpScore >= 166;
+        const skdCfg = CAT_CONFIG.tka.cpns_skd_terpadu || DEFAULT_CAT_CONFIG.tka.cpns_skd_terpadu;
+        const cfgTwkCount = Number(skdCfg.twkCount) || 30;
+        const cfgTiuCount = Number(skdCfg.tiuCount) || 35;
+        const cfgTkpCount = Number(skdCfg.tkpCount) || 45;
+        const cfgSkdDur = Number(skdCfg.durationMin) || 100;
+        const cfgSkdWeight = Number(skdCfg.weight ?? 40);
+        const pgTwk = Number(skdCfg.pgTwk ?? 65);
+        const pgTiu = Number(skdCfg.pgTiu ?? 80);
+        const pgTkp = Number(skdCfg.pgTkp ?? 166);
+        const maxTwk = cfgTwkCount * 5;
+        const maxTiu = cfgTiuCount * 5;
+        const maxTkp = cfgTkpCount * 5;
+        const maxSkdTotal = maxTwk + maxTiu + maxTkp;
+
+        const twkScore = twkCorrect * 5;
+        const tiuScore = tiuCorrect * 5;
+        const totalSkd = twkScore + tiuScore + tkpScore;
+        const passTwk = twkScore >= pgTwk;
+        const passTiu = tiuScore >= pgTiu;
+        const passTkp = tkpScore >= pgTkp;
         const passPgSkd = passTwk && passTiu && passTkp;
+        const skdWeightedPts = maxSkdTotal > 0 ? ((totalSkd / maxSkdTotal) * 100 * (cfgSkdWeight / 100)) : 0;
         const statusStr = passPgSkd
-          ? `LULUS PG SKD (${totalSkd}/550)`
-          : `BELUM LULUS PG (${totalSkd}/550)`;
-        const detailStr = `TWK: ${twkScore}/150 (${passTwk ? 'MS' : 'TMS'}) | TIU: ${tiuScore}/175 (${passTiu ? 'MS' : 'TMS'}) | TKP: ${tkpScore}/225 (${passTkp ? 'MS' : 'TMS'}) • Total SKD: ${totalSkd}/550`;
+          ? `LULUS PG SKD (${totalSkd}/${maxSkdTotal} • Bobot ${cfgSkdWeight}%: ${skdWeightedPts.toFixed(2)})`
+          : `BELUM LULUS PG (${totalSkd}/${maxSkdTotal})`;
+        const detailStr = `TWK: ${twkScore}/${maxTwk} (${passTwk ? 'MS' : 'TMS'}) | TIU: ${tiuScore}/${maxTiu} (${passTiu ? 'MS' : 'TMS'}) | TKP: ${tkpScore}/${maxTkp} (${passTkp ? 'MS' : 'TMS'}) • Total SKD: ${totalSkd}/${maxSkdTotal}`;
 
         const record = {
           id: `CPNS-SKD-${p.noreg}-${sessionUniqueId}`,
@@ -10056,8 +10158,9 @@ service cloud.firestore {
           noreg: p.noreg,
           kelas: p.kelas,
           examType: 'cpns_skd_terpadu',
-          examLabel: 'Simulasi CAT SKD CPNS Terpadu (110 Soal • 100 Menit)',
+          examLabel: `Simulasi CAT SKD CPNS Terpadu (${cfgTwkCount + cfgTiuCount + cfgTkpCount} Soal • ${cfgSkdDur} Menit)`,
           score: totalSkd,
+          maxSkdTotal,
           twkScore,
           tiuScore,
           tkpScore,
@@ -10071,15 +10174,15 @@ service cloud.firestore {
         document.getElementById('cat-arena').classList.add('hidden');
         document.getElementById('cat-result').classList.remove('hidden');
 
-        document.getElementById('cat-res-title').textContent = 'Simulasi CAT SKD CPNS Terpadu (TWK 30 + TIU 35 + TKP 45)';
+        document.getElementById('cat-res-title').textContent = `Simulasi CAT SKD CPNS Terpadu (TWK ${cfgTwkCount} + TIU ${cfgTiuCount} + TKP ${cfgTkpCount})`;
         document.getElementById('cat-res-participant').textContent = `${p.nama} • ${p.noreg} (${p.kelas})`;
-        document.getElementById('cat-res-score-label').textContent = `Total Skor SKD BKN (Maks 550) — TWK: ${twkScore}/150 • TIU: ${tiuScore}/175 • TKP: ${tkpScore}/225`;
+        document.getElementById('cat-res-score-label').textContent = `Total Skor SKD BKN (Maks ${maxSkdTotal} • Bobot ${cfgSkdWeight}%: ${skdWeightedPts.toFixed(2)}) — TWK: ${twkScore}/${maxTwk} • TIU: ${tiuScore}/${maxTiu} • TKP: ${tkpScore}/${maxTkp}`;
         document.getElementById('cat-res-score').textContent = `${totalSkd}`;
 
         const statusBadge = document.getElementById('cat-res-status');
         statusBadge.textContent = passPgSkd
           ? `LULUS PASSING GRADE SKD BKN (TWK ${twkScore} • TIU ${tiuScore} • TKP ${tkpScore})`
-          : `BELUM MEMENUHI PASSING GRADE (TWK ${twkScore}/65 • TIU ${tiuScore}/80 • TKP ${tkpScore}/166)`;
+          : `BELUM MEMENUHI PASSING GRADE (TWK ${twkScore}/${pgTwk} • TIU ${tiuScore}/${pgTiu} • TKP ${tkpScore}/${pgTkp})`;
         statusBadge.className = passPgSkd
           ? 'inline-block px-4 py-1.5 rounded-xl text-xs font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
           : 'inline-block px-4 py-1.5 rounded-xl text-xs font-extrabold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40';
@@ -10114,8 +10217,9 @@ service cloud.firestore {
           statusStr = `SKOR BKN: ${bknPts}/225 (${bknPts >= 166 ? 'LULUS PG ≥ 166' : 'DI BAWAH PG 166'})`;
           detailStr = `Benar ${correctCount}/${examRuntime.questions.length} Soal • Setara Skor TKP BKN: ${bknPts}/225`;
         } else if (examType === 'cpns_skb') {
-          statusStr = `BOBOT SKB 60% (${(rawScore * 0.60).toFixed(2)} POIN)`;
-          detailStr = `Benar ${correctCount}/${examRuntime.questions.length} Soal • Kontribusi Integrasi SKB (60%): ${(rawScore * 0.60).toFixed(2)}`;
+          const skbW = Number(tCfg.weight ?? 60);
+          statusStr = `BOBOT SKB ${skbW}% (${(rawScore * (skbW / 100)).toFixed(2)} POIN)`;
+          detailStr = `Benar ${correctCount}/${examRuntime.questions.length} Soal • Kontribusi Integrasi SKB (${skbW}%): ${(rawScore * (skbW / 100)).toFixed(2)}`;
         }
 
         const record = {
@@ -10486,15 +10590,23 @@ service cloud.firestore {
         const tkpBkn = p.directSkd ? p.directSkd.tkp : (p.cpnsScores.cpns_tkp !== null ? Math.round((p.cpnsScores.cpns_tkp / 100) * 225) : null);
         const skbRaw100 = p.cpnsScores.cpns_skb !== null ? p.cpnsScores.cpns_skb : null;
 
-        const totalSkd550 = (twkBkn || 0) + (tiuBkn || 0) + (tkpBkn || 0);
-        const passPgSkd = (twkBkn !== null && twkBkn >= 65) &&
-                          (tiuBkn !== null && tiuBkn >= 80) &&
-                          (tkpBkn !== null && tkpBkn >= 166) &&
-                          totalSkd550 >= 311;
+        const skdCfg = CAT_CONFIG.tka.cpns_skd_terpadu || DEFAULT_CAT_CONFIG.tka.cpns_skd_terpadu;
+        const skbCfg = CAT_CONFIG.tka.cpns_skb || DEFAULT_CAT_CONFIG.tka.cpns_skb;
+        const maxSkdPts = ((Number(skdCfg.twkCount) || 30) + (Number(skdCfg.tiuCount) || 35) + (Number(skdCfg.tkpCount) || 45)) * 5;
+        const pgTwk = Number(skdCfg.pgTwk ?? 65);
+        const pgTiu = Number(skdCfg.pgTiu ?? 80);
+        const pgTkp = Number(skdCfg.pgTkp ?? 166);
+        const skdWeightRatio = (Number(skdCfg.weight ?? 40)) / 100;
+        const skbWeightRatio = (Number(skbCfg.weight ?? 60)) / 100;
 
-        const skdScale100 = (totalSkd550 / 550) * 100;
-        const skdWeighted40 = skdScale100 * 0.40;
-        const skbWeighted60 = (skbRaw100 || 0) * 0.60;
+        const totalSkd550 = (twkBkn || 0) + (tiuBkn || 0) + (tkpBkn || 0);
+        const passPgSkd = (twkBkn !== null && twkBkn >= pgTwk) &&
+                          (tiuBkn !== null && tiuBkn >= pgTiu) &&
+                          (tkpBkn !== null && tkpBkn >= pgTkp);
+
+        const skdScale100 = maxSkdPts > 0 ? (totalSkd550 / maxSkdPts) * 100 : 0;
+        const skdWeighted40 = skdScale100 * skdWeightRatio;
+        const skbWeighted60 = (skbRaw100 || 0) * skbWeightRatio;
         const integratedCpns100 = skdWeighted40 + skbWeighted60;
 
         return {
@@ -11733,6 +11845,20 @@ service cloud.firestore {
       document.getElementById('cfg-mtk-dur').value = t.tka_mtk.durationMin;
       document.getElementById('cfg-mtk-weight').value = t.tka_mtk.weight;
 
+      const skd = t.cpns_skd_terpadu || DEFAULT_CAT_CONFIG.tka.cpns_skd_terpadu;
+      const skb = t.cpns_skb || DEFAULT_CAT_CONFIG.tka.cpns_skb;
+      if (document.getElementById('cfg-cpns-twk-count')) document.getElementById('cfg-cpns-twk-count').value = skd.twkCount ?? 30;
+      if (document.getElementById('cfg-cpns-tiu-count')) document.getElementById('cfg-cpns-tiu-count').value = skd.tiuCount ?? 35;
+      if (document.getElementById('cfg-cpns-tkp-count')) document.getElementById('cfg-cpns-tkp-count').value = skd.tkpCount ?? 45;
+      if (document.getElementById('cfg-cpns-pg-twk')) document.getElementById('cfg-cpns-pg-twk').value = skd.pgTwk ?? 65;
+      if (document.getElementById('cfg-cpns-pg-tiu')) document.getElementById('cfg-cpns-pg-tiu').value = skd.pgTiu ?? 80;
+      if (document.getElementById('cfg-cpns-pg-tkp')) document.getElementById('cfg-cpns-pg-tkp').value = skd.pgTkp ?? 166;
+      if (document.getElementById('cfg-cpns-skd-dur')) document.getElementById('cfg-cpns-skd-dur').value = skd.durationMin ?? 100;
+      if (document.getElementById('cfg-cpns-skd-weight')) document.getElementById('cfg-cpns-skd-weight').value = skd.weight ?? 40;
+      if (document.getElementById('cfg-cpns-skb-count')) document.getElementById('cfg-cpns-skb-count').value = skb.count ?? 50;
+      if (document.getElementById('cfg-cpns-skb-dur')) document.getElementById('cfg-cpns-skb-dur').value = skb.durationMin ?? 60;
+      if (document.getElementById('cfg-cpns-skb-weight')) document.getElementById('cfg-cpns-skb-weight').value = skb.weight ?? 60;
+
       updateAdminWeightCheck();
     }
 
@@ -11749,6 +11875,26 @@ service cloud.firestore {
         ind.className = sum === 100
           ? 'px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold'
           : 'px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-extrabold';
+      }
+
+      const cTwk = Number(document.getElementById('cfg-cpns-twk-count')?.value) || 0;
+      const cTiu = Number(document.getElementById('cfg-cpns-tiu-count')?.value) || 0;
+      const cTkp = Number(document.getElementById('cfg-cpns-tkp-count')?.value) || 0;
+      const totalSkdSoal = cTwk + cTiu + cTkp;
+      const skdTotalInd = document.getElementById('cfg-cpns-skd-total-indicator');
+      if (skdTotalInd) {
+        skdTotalInd.textContent = `Total Soal SKD: ${totalSkdSoal} Soal`;
+      }
+
+      const wSkd = Number(document.getElementById('cfg-cpns-skd-weight')?.value) || 0;
+      const wSkb = Number(document.getElementById('cfg-cpns-skb-weight')?.value) || 0;
+      const cpnsWeightSum = wSkd + wSkb;
+      const cpnsWeightInd = document.getElementById('cfg-cpns-weight-indicator');
+      if (cpnsWeightInd) {
+        cpnsWeightInd.textContent = `Total Bobot CPNS (SKD+SKB): ${cpnsWeightSum}%`;
+        cpnsWeightInd.className = cpnsWeightSum === 100
+          ? 'px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold'
+          : 'px-3.5 py-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-extrabold';
       }
     }
 
@@ -11785,8 +11931,41 @@ service cloud.firestore {
       CAT_CONFIG.tka.tka_mtk.durationMin = Math.max(1, Number(document.getElementById('cfg-mtk-dur').value) || 60);
       CAT_CONFIG.tka.tka_mtk.weight = Number(document.getElementById('cfg-mtk-weight').value) || 20;
 
+      if (!CAT_CONFIG.tka.cpns_skd_terpadu) {
+        CAT_CONFIG.tka.cpns_skd_terpadu = JSON.parse(JSON.stringify(DEFAULT_CAT_CONFIG.tka.cpns_skd_terpadu));
+      }
+      const cpnsTwkCount = Math.max(1, Number(document.getElementById('cfg-cpns-twk-count')?.value) || 30);
+      const cpnsTiuCount = Math.max(1, Number(document.getElementById('cfg-cpns-tiu-count')?.value) || 35);
+      const cpnsTkpCount = Math.max(1, Number(document.getElementById('cfg-cpns-tkp-count')?.value) || 45);
+      const cpnsSkdDur = Math.max(5, Number(document.getElementById('cfg-cpns-skd-dur')?.value) || 100);
+      const cpnsSkdWeight = Math.max(0, Math.min(100, Number(document.getElementById('cfg-cpns-skd-weight')?.value ?? 40)));
+      const cpnsPgTwk = Math.max(0, Number(document.getElementById('cfg-cpns-pg-twk')?.value ?? 65));
+      const cpnsPgTiu = Math.max(0, Number(document.getElementById('cfg-cpns-pg-tiu')?.value ?? 80));
+      const cpnsPgTkp = Math.max(0, Number(document.getElementById('cfg-cpns-pg-tkp')?.value ?? 166));
+
+      CAT_CONFIG.tka.cpns_skd_terpadu.twkCount = cpnsTwkCount;
+      CAT_CONFIG.tka.cpns_skd_terpadu.tiuCount = cpnsTiuCount;
+      CAT_CONFIG.tka.cpns_skd_terpadu.tkpCount = cpnsTkpCount;
+      CAT_CONFIG.tka.cpns_skd_terpadu.count = cpnsTwkCount + cpnsTiuCount + cpnsTkpCount;
+      CAT_CONFIG.tka.cpns_skd_terpadu.durationMin = cpnsSkdDur;
+      CAT_CONFIG.tka.cpns_skd_terpadu.weight = cpnsSkdWeight;
+      CAT_CONFIG.tka.cpns_skd_terpadu.pgTwk = cpnsPgTwk;
+      CAT_CONFIG.tka.cpns_skd_terpadu.pgTiu = cpnsPgTiu;
+      CAT_CONFIG.tka.cpns_skd_terpadu.pgTkp = cpnsPgTkp;
+      CAT_CONFIG.tka.cpns_skd_terpadu.label = `Simulasi CAT SKD CPNS Terpadu (TWK ${cpnsTwkCount} + TIU ${cpnsTiuCount} + TKP ${cpnsTkpCount})`;
+
+      CAT_CONFIG.tka.cpns_twk.count = cpnsTwkCount;
+      CAT_CONFIG.tka.cpns_tiu.count = cpnsTiuCount;
+      CAT_CONFIG.tka.cpns_tkp.count = cpnsTkpCount;
+
+      CAT_CONFIG.tka.cpns_skb.count = Math.max(1, Number(document.getElementById('cfg-cpns-skb-count')?.value) || 50);
+      CAT_CONFIG.tka.cpns_skb.durationMin = Math.max(5, Number(document.getElementById('cfg-cpns-skb-dur')?.value) || 60);
+      CAT_CONFIG.tka.cpns_skb.weight = Math.max(0, Math.min(100, Number(document.getElementById('cfg-cpns-skb-weight')?.value ?? 60)));
+
       saveCatConfigToStorage();
       renderCatLobby();
+      if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
+      if (isAdminAuthenticated && typeof renderAdminResultsTable === 'function') renderAdminResultsTable();
 
       openCustomModal({
         badge: 'Pengaturan Tersimpan',
@@ -12442,7 +12621,31 @@ service cloud.firestore {
         }`;
       }
 
+      const delAllBtn = document.getElementById('btn-delete-all-qbank-category');
+      const delAllLabel = document.getElementById('btn-delete-all-qbank-label');
+      if (delAllLabel) {
+        delAllLabel.textContent = `Hapus Semua Soal (${bankLabel.split(':')[1]?.trim() || bankLabel})`;
+      }
+      if (delAllBtn) {
+        delAllBtn.disabled = list.length === 0;
+        delAllBtn.classList.toggle('opacity-50', list.length === 0);
+        delAllBtn.classList.toggle('cursor-not-allowed', list.length === 0);
+      }
+
       if (!listEl) return;
+      if (list.length === 0) {
+        listEl.innerHTML = `
+          <div class="p-8 rounded-2xl bg-navy-950/85 border border-white/10 text-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 flex items-center justify-center mx-auto text-lg">
+              <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <p class="text-sm font-extrabold text-white">Bank Soal "${bankLabel}" Saat Ini Kosong (0 Soal)</p>
+            <p class="text-xs text-slate-400">Klik tombol <strong>Tambah Soal Baru</strong>, <strong>Impor Soal (CSV/Excel)</strong>, atau <strong>Copy-Paste Cepat</strong> untuk mulai mengisi butir soal baru.</p>
+          </div>
+        `;
+        return;
+      }
+
       const letters = ['A', 'B', 'C', 'D', 'E'];
 
       listEl.innerHTML = list.map((item, idx) => {
@@ -13570,12 +13773,68 @@ service cloud.firestore {
       const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
       if (Array.isArray(QUESTION_BANK[bankKey])) {
         QUESTION_BANK[bankKey].splice(index, 1);
-        saveQuestionBankToStorage();
+        saveQuestionBankToStorage(bankKey);
         renderAdminQuestionList();
         if (typeof renderMiniSkd === 'function') renderMiniSkd();
         if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
-      if (typeof renderLatihanPsikoLobby === 'function') renderLatihanPsikoLobby();
+        if (typeof renderLatihanPsikoLobby === 'function') renderLatihanPsikoLobby();
       }
+    }
+
+    function confirmDeleteAllQuestionsInCategory() {
+      const bankKey = document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
+      const bankLabel = QUESTION_BANK_LABELS[bankKey] || bankKey.toUpperCase();
+      const count = Array.isArray(QUESTION_BANK[bankKey]) ? QUESTION_BANK[bankKey].length : 0;
+
+      if (count === 0) {
+        openCustomModal({
+          badge: 'Bank Soal Sudah Kosong',
+          title: bankLabel,
+          bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Saat ini tidak ada butir soal kustom pada kategori <strong class="text-gold-400">${bankLabel}</strong>.</p>`
+        });
+        return;
+      }
+
+      openCustomModal({
+        badge: 'Konfirmasi Hapus Massal Bank Soal',
+        title: `Hapus Seluruh Soal ${bankLabel}?`,
+        bodyHtml: `
+          <div class="space-y-2.5 text-xs sm:text-sm text-slate-300">
+            <p>Anda akan menghapus seluruh <strong class="text-rose-400">${count} butir soal</strong> yang tersimpan pada kategori <strong class="text-gold-400">${bankLabel}</strong>.</p>
+            <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/35 text-rose-200 text-xs">
+              <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>
+              Tindakan ini akan mengosongkan kategori soal tersebut secara permanen di perangkat ini sekaligus di <strong>Cloud Firestore</strong>. Pastikan Anda sudah menekan <strong>Ekspor Soal (CSV/Excel)</strong> terlebih dahulu jika membutuhkan cadangan.
+            </div>
+          </div>
+        `,
+        actionsHtml: `
+          <button type="button" onclick="closeCustomModal()" class="px-4 py-2.5 rounded-xl bg-navy-900 text-slate-300 text-xs font-bold border border-white/10">Batal</button>
+          <button type="button" onclick="executeDeleteAllQuestionsInCategory('${bankKey}')" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-lg">
+            <i class="fa-solid fa-trash-can"></i><span>Ya, Hapus Semua (${count} Soal)</span>
+          </button>
+        `
+      });
+    }
+
+    function executeDeleteAllQuestionsInCategory(bankKey) {
+      const targetKey = bankKey || document.getElementById('admin-qbank-select')?.value || 'psiko_kecerdasan';
+      const bankLabel = QUESTION_BANK_LABELS[targetKey] || targetKey.toUpperCase();
+      const deletedCount = Array.isArray(QUESTION_BANK[targetKey]) ? QUESTION_BANK[targetKey].length : 0;
+
+      QUESTION_BANK[targetKey] = [];
+      saveQuestionBankToStorage(targetKey);
+      closeCustomModal();
+      renderAdminQuestionList();
+      if (typeof renderMiniSkd === 'function') renderMiniSkd();
+      if (typeof renderCatLobby === 'function') renderCatLobby();
+      if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
+      if (typeof renderLatihanPsikoLobby === 'function') renderLatihanPsikoLobby();
+
+      openCustomModal({
+        badge: 'Bank Soal Berhasil Dikosongkan',
+        title: `Seluruh Soal ${bankLabel} Dihapus`,
+        bodyHtml: `<p class="text-xs sm:text-sm text-slate-300">Sebanyak <strong class="text-rose-400">${deletedCount} butir soal</strong> pada kategori <strong class="text-gold-400">${bankLabel}</strong> telah dihapus dan disinkronkan ke <strong>Cloud Firestore</strong>.</p>`
+      });
     }
 
     // =========================================================================
@@ -14824,7 +15083,7 @@ service cloud.firestore {
             <div>
               <h4 class="font-extrabold text-white text-base sm:text-lg leading-snug">Simulasi CAT SKD CPNS Terpadu (TWK + TIU + TKP)</h4>
               <p class="text-xs text-slate-300 leading-relaxed mt-1">
-                Ujian SKD digabung dalam <strong>1 sesi tes penuh</strong> sesuai standar resmi CAT BKN dengan total <strong>110 soal</strong> dan durasi hitung mundur <strong>100 menit</strong>.
+                Ujian SKD digabung dalam <strong>1 sesi tes penuh</strong> sesuai standar resmi CAT BKN dengan total <strong>${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + (skdCfg.tkpCount || 45)} soal</strong>, durasi <strong>${skdCfg.durationMin || 100} menit</strong>, dan bobot integrasi <strong>${skdCfg.weight ?? 40}%</strong>.
               </p>
             </div>
 
@@ -14832,23 +15091,24 @@ service cloud.firestore {
               <div class="p-2.5 rounded-xl bg-navy-900 border border-sky-500/30">
                 <div class="font-extrabold text-sky-300">TWK</div>
                 <div class="text-white font-black text-sm mt-0.5">${skdCfg.twkCount || 30} Soal</div>
-                <div class="text-[10px] text-slate-400">PG ≥ 65 • No. 1–30</div>
+                <div class="text-[10px] text-slate-400">PG ≥ ${skdCfg.pgTwk ?? 65} • No. 1–${skdCfg.twkCount || 30}</div>
               </div>
               <div class="p-2.5 rounded-xl bg-navy-900 border border-gold-500/30">
                 <div class="font-extrabold text-gold-400">TIU</div>
                 <div class="text-white font-black text-sm mt-0.5">${skdCfg.tiuCount || 35} Soal</div>
-                <div class="text-[10px] text-slate-400">PG ≥ 80 • No. 31–65</div>
+                <div class="text-[10px] text-slate-400">PG ≥ ${skdCfg.pgTiu ?? 80} • No. ${(skdCfg.twkCount || 30) + 1}–${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35)}</div>
               </div>
               <div class="p-2.5 rounded-xl bg-navy-900 border border-emerald-500/30">
                 <div class="font-extrabold text-emerald-300">TKP</div>
                 <div class="text-white font-black text-sm mt-0.5">${skdCfg.tkpCount || 45} Soal</div>
-                <div class="text-[10px] text-slate-400">PG ≥ 166 • No. 66–110</div>
+                <div class="text-[10px] text-slate-400">PG ≥ ${skdCfg.pgTkp ?? 166} • No. ${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + 1}–${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + (skdCfg.tkpCount || 45)}</div>
               </div>
             </div>
 
             <div class="flex flex-wrap gap-2 pt-1 text-[11px] font-bold text-slate-300">
-              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-list-ol text-gold-400 mr-1"></i>Total 110 Soal</span>
-              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-regular fa-clock text-gold-400 mr-1"></i>Durasi 100 Menit</span>
+              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-list-ol text-gold-400 mr-1"></i>Total ${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + (skdCfg.tkpCount || 45)} Soal</span>
+              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-regular fa-clock text-gold-400 mr-1"></i>Durasi ${skdCfg.durationMin || 100} Menit</span>
+              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-percent text-sky-400 mr-1"></i>Bobot ${skdCfg.weight ?? 40}%</span>
               <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-database text-emerald-400 mr-1"></i>Bank Admin: ${twkCustom} TWK • ${tiuCustom} TIU • ${tkpCustom} TKP</span>
             </div>
           </div>
@@ -14859,7 +15119,7 @@ service cloud.firestore {
               : 'btn-gold shadow-lg'
           }">
             <i class="fa-solid ${skdLocked ? 'fa-lock' : 'fa-play'}"></i>
-            <span>${skdAdminLocked ? 'Dikunci Admin' : (blockedByPackage ? 'Terkunci Paket' : 'Mulai Simulasi CAT SKD (110 Soal • 100 Menit)')}</span>
+            <span>${skdAdminLocked ? 'Dikunci Admin' : (blockedByPackage ? 'Terkunci Paket' : `Mulai Simulasi CAT SKD (${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + (skdCfg.tkpCount || 45)} Soal • ${skdCfg.durationMin || 100} Menit)`)}</span>
           </button>
         </div>
 
@@ -14867,7 +15127,7 @@ service cloud.firestore {
         <div class="p-5 sm:p-6 rounded-2xl bg-navy-950/90 border ${skbLocked ? 'border-rose-500/30 opacity-80' : 'border-white/10 hover:border-gold-500/40'} flex flex-col justify-between space-y-4 transition-all">
           <div class="space-y-3">
             <div class="flex items-center justify-between gap-2">
-              <span class="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 text-[10px] font-extrabold uppercase">Tahap Lanjutan • SKB ASN (Bobot 60%)</span>
+              <span class="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 text-[10px] font-extrabold uppercase">Tahap Lanjutan • SKB ASN (Bobot ${skbCfg.weight ?? 60}%)</span>
               <span class="text-[10px] font-extrabold ${skbLocked ? 'text-rose-400' : 'text-emerald-400'}">
                 <i class="fa-solid ${skbLocked ? 'fa-lock' : 'fa-lock-open'} mr-1"></i>${skbAdminLocked ? 'DIKUNCI ADMIN' : (blockedByPackage ? 'TERKUNCI PAKET' : 'TERBUKA')}
               </span>
