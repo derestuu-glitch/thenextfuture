@@ -1604,18 +1604,6 @@
             </div>
           </div>
 
-          <!-- Paket Soal Simulasi CAT TNI/POLRI Aktif (Dikelola Admin di Editor Bank Soal) -->
-          <div id="tni-active-sim-packets-wrapper" class="hidden glass-card rounded-3xl p-5 sm:p-6 border border-gold-500/35 space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <span class="text-[11px] font-extrabold uppercase tracking-wider text-gold-400"><i class="fa-solid fa-layer-group mr-1.5"></i>Paket Soal Simulasi Aktif</span>
-                <h3 class="text-base sm:text-lg font-extrabold text-white">Pilih Paket Soal Simulasi CAT TNI / POLRI</h3>
-              </div>
-              <span class="text-[11px] text-slate-400">Hanya paket yang diaktifkan Admin yang tampil di sini</span>
-            </div>
-            <div id="tni-active-sim-packets-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
-          </div>
-
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Tes Psikologi Terpadu (Psiko I) -->
             <div class="lg:col-span-5 glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between space-y-5">
@@ -1653,7 +1641,8 @@
                 <div id="lobby-psiko-subtests" class="space-y-2.5"></div>
               </div>
 
-              <button type="button" id="btn-start-psiko" onclick="initiateExamStart('psiko_terpadu')" class="w-full btn-gold py-3.5 px-5 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2.5">
+              <div id="lobby-psiko-packets-list" class="space-y-2.5"></div>
+              <button type="button" id="btn-start-psiko" onclick="initiateExamStart('psiko_terpadu')" class="hidden w-full btn-gold py-3.5 px-5 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2.5">
                 <i class="fa-solid fa-play"></i>
                 <span>Mulai Tes Psikologi Terpadu</span>
               </button>
@@ -3385,7 +3374,7 @@
             </p>
           </div>
 
-          <div id="cpns-lobby-cat-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div id="cpns-lobby-cat-cards" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <button type="button" onclick="startCpnsFullCatSubtest('cpns_twk')" class="hidden">Mulai Simulasi CAT TWK</button>
             <button type="button" onclick="startCpnsFullCatSubtest('cpns_tiu')" class="hidden">Mulai Simulasi CAT TIU</button>
             <button type="button" onclick="startCpnsFullCatSubtest('cpns_tkp')" class="hidden">Mulai Simulasi CAT TKP/PU</button>
@@ -5532,25 +5521,6 @@ service cloud.firestore {
               </div>
             </div>
 
-            <!-- Navigasi Cepat Kategori Bank Soal TNI/POLRI vs Bank Soal CPNS -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div class="p-4 rounded-2xl bg-navy-950/90 border border-white/10 space-y-2.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-gold-400"><i class="fa-solid fa-shield-halved mr-1.5"></i>Bank Soal Divisi TNI / POLRI</span>
-                  <span class="text-[10px] text-slate-400 font-semibold">Psiko I &amp; Akademik TKA</span>
-                </div>
-                <div id="admin-qbank-quick-tnipolri" class="flex flex-wrap gap-1.5"></div>
-              </div>
-
-              <div class="p-4 rounded-2xl bg-navy-950/90 border border-sky-500/35 space-y-2.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-300"><i class="fa-solid fa-building-columns mr-1.5"></i>Bank Soal Divisi CPNS &amp; Kedinasan</span>
-                  <span class="text-[10px] text-slate-400 font-semibold">Standar CAT BKN (SKD &amp; SKB)</span>
-                </div>
-                <div id="admin-qbank-quick-cpns" class="flex flex-wrap gap-1.5"></div>
-              </div>
-            </div>
-
             <!-- Navigasi Cepat Bank Soal Paket Latihan Psikologi (99k Selamanya) -->
             <div class="p-4 rounded-2xl bg-navy-950/90 border border-emerald-500/35 space-y-3">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
@@ -6186,6 +6156,7 @@ service cloud.firestore {
       }
 
       if (pageId === 'cpns' && typeof switchCpnsSubTab === 'function') {
+        if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
         switchCpnsSubTab(subTab || currentActiveCpnsSubTab || 'pg');
       }
 
@@ -9805,42 +9776,112 @@ service cloud.firestore {
         tkaRestrictedBanner.classList.toggle('hidden', !tkaBlockedByPackage);
       }
 
-      const tkaCardsEl = document.getElementById('lobby-tka-cards');
-      if (tkaCardsEl) {
-        tkaCardsEl.innerHTML = tkaKeys.map(k => {
-          const cfg = CAT_CONFIG.tka[k];
-          const isAdminLocked = Boolean(CAT_CONFIG.locks[k]);
-          const isLocked = isAdminLocked || tkaBlockedByPackage;
-          const lockLabel = tkaBlockedByPackage
-            ? '<i class="fa-solid fa-lock mr-1"></i>TERKUNCI PAKET'
-            : (isAdminLocked ? '<i class="fa-solid fa-lock mr-1"></i>TERKUNCI' : '<i class="fa-solid fa-lock-open mr-1"></i>TERBUKA');
-          const btnLabel = tkaBlockedByPackage
-            ? 'Terkunci Paket'
-            : (isAdminLocked ? 'Dikunci Admin' : 'Mulai ' + cfg.short);
-
-          return `
-            <div class="p-4 rounded-2xl bg-navy-950/85 border ${isLocked ? 'border-rose-500/25 opacity-80' : 'border-white/10 hover:border-gold-500/40'} flex flex-col justify-between space-y-3 transition-all">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="px-2 py-0.5 rounded bg-gold-500/15 text-gold-400 text-[10px] font-extrabold">Bobot ${cfg.weight}%</span>
-                  <span class="text-[10px] font-extrabold ${isLocked ? 'text-rose-400' : 'text-emerald-400'}">
-                    ${lockLabel}
-                  </span>
-                </div>
-                <h4 class="font-extrabold text-white text-sm leading-snug">${cfg.label}</h4>
-                <p class="text-[11px] text-slate-400">${cfg.count} Soal • Durasi ${cfg.durationMin} Menit</p>
-              </div>
-              <button type="button" onclick="initiateExamStart('${k}')" class="w-full py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 ${
-                isLocked
-                  ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed'
-                  : 'bg-gold-500/15 hover:bg-gold-500 text-gold-400 hover:text-navy-950 border border-gold-500/40'
-              }">
-                <i class="fa-solid ${isLocked ? 'fa-lock' : 'fa-play'}"></i>
-                <span>${btnLabel}</span>
-              </button>
+      // Render Daftar Paket Soal Simulasi CAT Psikologi Aktif langsung di dalam kartu Psiko
+      const psikoPacketsEl = document.getElementById('lobby-psiko-packets-list');
+      const activePsikoPackets = (typeof SIMULATION_PACKETS !== 'undefined' ? SIMULATION_PACKETS : []).filter(
+        pkt => pkt.active && pkt.division === 'tnipolri' && pkt.examType === 'psiko_terpadu'
+      );
+      if (psikoPacketsEl) {
+        if (activePsikoPackets.length === 0) {
+          psikoPacketsEl.innerHTML = `
+            <div class="p-3.5 rounded-2xl bg-navy-950/90 border border-amber-500/30 text-xs text-amber-300 text-center font-semibold">
+              <i class="fa-solid fa-circle-info mr-1.5"></i>Belum ada Paket Soal Simulasi CAT Psikologi yang diaktifkan Admin saat ini.
             </div>
           `;
-        }).join('');
+        } else {
+          psikoPacketsEl.innerHTML = `
+            <div class="flex items-center justify-between text-[11px] font-extrabold text-gold-400 uppercase tracking-wider pt-1">
+              <span><i class="fa-solid fa-layer-group mr-1"></i>Daftar Paket Soal Simulasi Psiko (${activePsikoPackets.length} Paket Aktif)</span>
+            </div>
+          ` + activePsikoPackets.map((pkt, pIdx) => {
+            const cKec = (QUESTION_BANK[`simpack_${pkt.id}_kecerdasan`] || []).length || (QUESTION_BANK.psiko_kecerdasan || []).length;
+            const cKep = (QUESTION_BANK[`simpack_${pkt.id}_kepribadian`] || []).length || (QUESTION_BANK.psiko_kepribadian || []).length;
+            return `
+              <div class="p-3.5 rounded-2xl bg-navy-950/90 border ${psikoLocked ? 'border-rose-500/30 opacity-80' : 'border-gold-500/40 hover:border-gold-400'} space-y-2.5 transition-all">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <span class="px-2 py-0.5 rounded bg-gold-500/15 text-gold-300 text-[10px] font-extrabold uppercase">Paket #${pIdx + 1}</span>
+                    <div class="text-xs sm:text-sm font-extrabold text-white mt-1">${pkt.name}</div>
+                    ${pkt.desc ? `<div class="text-[11px] text-slate-400 mt-0.5">${pkt.desc}</div>` : ''}
+                  </div>
+                </div>
+                <div class="text-[10px] text-slate-400 font-bold">
+                  <i class="fa-solid fa-database text-emerald-400 mr-1"></i>Bank Soal: ${cKec} Kecerdasan • ${cKep} Kepribadian • Kecermatan Otomatis
+                </div>
+                <button type="button" onclick="initiateExamStart('psiko_terpadu', '${pkt.id}')" class="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${
+                  psikoLocked
+                    ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed'
+                    : 'btn-gold shadow'
+                }">
+                  <i class="fa-solid ${psikoLocked ? 'fa-lock' : 'fa-play'}"></i>
+                  <span>${psikoBlockedByPackage ? 'Terkunci Paket' : (psikoAdminLocked ? 'Dikunci Admin' : `Mulai ${pkt.name}`)}</span>
+                </button>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+      if (startPsikoBtn) {
+        startPsikoBtn.classList.add('hidden');
+      }
+
+      // Render Paket Simulasi CAT Akademik Polri (1 Paket: PU, TWK, MTK & Bahasa Inggris) langsung di dalam kartu TKA (Tanpa Duplikasi)
+      const tkaCardsEl = document.getElementById('lobby-tka-cards');
+      if (tkaCardsEl) {
+        const activeTkaPackets = (typeof SIMULATION_PACKETS !== 'undefined' ? SIMULATION_PACKETS : []).filter(
+          pkt => pkt.active && pkt.division === 'tnipolri' && (pkt.examType === 'tka_terpadu' || pkt.examType.startsWith('tka_'))
+        );
+
+        if (activeTkaPackets.length === 0) {
+          tkaCardsEl.innerHTML = `
+            <div class="col-span-full p-5 rounded-2xl bg-navy-950/90 border border-amber-500/30 text-xs text-amber-300 text-center font-semibold">
+              <i class="fa-solid fa-circle-info mr-1.5"></i>Belum ada Paket Simulasi CAT Akademik Polri yang diaktifkan Admin saat ini.
+            </div>
+          `;
+        } else {
+          tkaCardsEl.innerHTML = activeTkaPackets.map(pkt => {
+            const subList = pkt.examType === 'tka_terpadu'
+              ? ['tka_pu', 'tka_twk', 'tka_mtk', 'tka_tbi']
+              : [pkt.examType];
+
+            const subButtonsHtml = subList.map(k => {
+              const cfg = CAT_CONFIG.tka[k] || { label: k, short: k.toUpperCase(), count: 50, durationMin: 60, weight: 25 };
+              const isAdminLocked = Boolean(CAT_CONFIG.locks[k]);
+              const isLocked = isAdminLocked || tkaBlockedByPackage;
+              return `
+                <button type="button" onclick="initiateExamStart('${k}', '${pkt.id}')" class="p-3 rounded-xl text-left border transition-all flex flex-col justify-between gap-1.5 ${
+                  isLocked
+                    ? 'bg-rose-500/10 border-rose-500/30 text-rose-300 cursor-not-allowed'
+                    : 'bg-navy-900 hover:bg-gold-500/15 border-white/10 hover:border-gold-500/45 text-white'
+                }">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-xs font-extrabold text-gold-400">${cfg.short}</span>
+                    <span class="text-[10px] font-bold text-slate-400">Bobot ${cfg.weight}%</span>
+                  </div>
+                  <div class="text-[10px] text-slate-300">${cfg.count} Soal • ${cfg.durationMin} Mnt</div>
+                  <div class="text-[10px] font-extrabold ${isLocked ? 'text-rose-400' : 'text-emerald-300'} pt-0.5">
+                    <i class="fa-solid ${isLocked ? 'fa-lock' : 'fa-play'} mr-1"></i>${tkaBlockedByPackage ? 'Terkunci Paket' : (isAdminLocked ? 'Dikunci Admin' : `Mulai ${cfg.short}`)}
+                  </div>
+                </button>
+              `;
+            }).join('');
+
+            return `
+              <div class="col-span-full p-4 sm:p-5 rounded-2xl bg-navy-950/90 border border-gold-500/35 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-extrabold uppercase">Paket Simulasi Akademik Aktif • 4 Subtes</span>
+                    <h4 class="font-extrabold text-white text-sm sm:text-base mt-1">${pkt.name}</h4>
+                    ${pkt.desc ? `<p class="text-[11px] text-slate-300 mt-0.5">${pkt.desc}</p>` : ''}
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  ${subButtonsHtml}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
       }
 
       refreshParticipantAcademicAccumulation();
@@ -13173,59 +13214,6 @@ service cloud.firestore {
     }
 
     function renderAdminQuestionQuickNav(activeBankKey) {
-      const tniPolriContainer = document.getElementById('admin-qbank-quick-tnipolri');
-      const cpnsContainer = document.getElementById('admin-qbank-quick-cpns');
-
-      const tniPolriBanks = [
-        { key: 'psiko_kecerdasan', short: 'Kecerdasan' },
-        { key: 'psiko_kepribadian', short: 'Kepribadian' },
-        { key: 'tka_pu', short: 'TKA PU' },
-        { key: 'tka_twk', short: 'TKA TWK' },
-        { key: 'tka_tbi', short: 'TKA TBI' },
-        { key: 'tka_mtk', short: 'TKA MTK' }
-      ];
-
-      const cpnsBanks = [
-        { key: 'cpns_twk', short: 'CPNS TWK' },
-        { key: 'cpns_tiu', short: 'CPNS TIU' },
-        { key: 'cpns_tkp', short: 'CPNS TKP' },
-        { key: 'cpns_skb', short: 'CPNS SKB' }
-      ];
-
-      if (tniPolriContainer) {
-        tniPolriContainer.innerHTML = tniPolriBanks.map(b => {
-          const count = Array.isArray(QUESTION_BANK[b.key]) ? QUESTION_BANK[b.key].length : 0;
-          const isAct = b.key === activeBankKey;
-          return `
-            <button type="button" onclick="selectAdminQuestionBankCategory('${b.key}')" class="px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1.5 ${
-              isAct
-                ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 shadow'
-                : 'bg-navy-900 hover:bg-white/10 text-slate-300 border border-white/10'
-            }">
-              <span>${b.short}</span>
-              <span class="px-1.5 py-0.2 rounded-md text-[10px] ${isAct ? 'bg-navy-950/20 text-navy-950' : 'bg-white/10 text-gold-400'}">${count}</span>
-            </button>
-          `;
-        }).join('');
-      }
-
-      if (cpnsContainer) {
-        cpnsContainer.innerHTML = cpnsBanks.map(b => {
-          const count = Array.isArray(QUESTION_BANK[b.key]) ? QUESTION_BANK[b.key].length : 0;
-          const isAct = b.key === activeBankKey;
-          return `
-            <button type="button" onclick="selectAdminQuestionBankCategory('${b.key}')" class="px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1.5 ${
-              isAct
-                ? 'bg-gradient-to-r from-sky-400 to-sky-500 text-navy-950 shadow'
-                : 'bg-navy-900 hover:bg-sky-500/15 text-sky-200 border border-sky-500/30'
-            }">
-              <span>${b.short}</span>
-              <span class="px-1.5 py-0.2 rounded-md text-[10px] ${isAct ? 'bg-navy-950/20 text-navy-950' : 'bg-sky-500/20 text-sky-300'}">${count}</span>
-            </button>
-          `;
-        }).join('');
-      }
-
       const latContainer = document.getElementById('admin-qbank-quick-latihan');
       const latBanks = [
         { key: 'lat_num_deret_angka', short: 'Deret Angka' },
@@ -15738,104 +15726,168 @@ service cloud.firestore {
       }
 
       const skdCfg = CAT_CONFIG.tka.cpns_skd_terpadu || DEFAULT_CAT_CONFIG.tka.cpns_skd_terpadu;
-      const twkCustom = Array.isArray(QUESTION_BANK.cpns_twk) ? QUESTION_BANK.cpns_twk.length : 0;
-      const tiuCustom = Array.isArray(QUESTION_BANK.cpns_tiu) ? QUESTION_BANK.cpns_tiu.length : 0;
-      const tkpCustom = Array.isArray(QUESTION_BANK.cpns_tkp) ? QUESTION_BANK.cpns_tkp.length : 0;
+      const skbCfg = CAT_CONFIG.tka.cpns_skb || DEFAULT_CAT_CONFIG.tka.cpns_skb;
+
+      const twkC = skdCfg.twkCount || 30;
+      const tiuC = skdCfg.tiuCount || 35;
+      const tkpC = skdCfg.tkpCount || 45;
+      const totSoalSkd = twkC + tiuC + tkpC;
+      const durMinSkd = skdCfg.durationMin || 100;
+      const skdWeight = skdCfg.weight ?? 40;
+      const skbWeight = skbCfg.weight ?? 60;
+
       const skdAdminLocked = Boolean(CAT_CONFIG.locks.cpns_skd_terpadu);
       const skdLocked = skdAdminLocked || blockedByPackage;
-
-      const skbCfg = CAT_CONFIG.tka.cpns_skb || DEFAULT_CAT_CONFIG.tka.cpns_skb;
-      const skbCustom = Array.isArray(QUESTION_BANK.cpns_skb) ? QUESTION_BANK.cpns_skb.length : 0;
       const skbAdminLocked = Boolean(CAT_CONFIG.locks.cpns_skb);
       const skbLocked = skbAdminLocked || blockedByPackage;
 
+      const allCpnsPackets = (typeof SIMULATION_PACKETS !== 'undefined' ? SIMULATION_PACKETS : []).filter(
+        p => p.active && p.division === 'cpns'
+      );
+      const activeSkdPackets = allCpnsPackets.filter(p => p.examType === 'cpns_skd_terpadu');
+      const activeSkbPackets = allCpnsPackets.filter(p => p.examType === 'cpns_skb');
+
+      // Render Daftar Paket Soal Simulasi SKD (Gaya Identik dengan Daftar Paket Psiko di TNF POLRI)
+      const skdPacketsHtml = activeSkdPackets.length === 0
+        ? `
+          <div class="p-3.5 rounded-2xl bg-navy-950/90 border border-amber-500/30 text-xs text-amber-300 text-center font-semibold">
+            <i class="fa-solid fa-circle-info mr-1.5"></i>Belum ada Paket Soal Simulasi CAT SKD CPNS yang diaktifkan Admin saat ini.
+          </div>
+        `
+        : `
+          <div class="flex items-center justify-between text-[11px] font-extrabold text-gold-400 uppercase tracking-wider pt-1">
+            <span><i class="fa-solid fa-layer-group mr-1"></i>Daftar Paket Soal Simulasi SKD (${activeSkdPackets.length} Paket Aktif)</span>
+          </div>
+        ` + activeSkdPackets.map((pkt, pIdx) => {
+          const cTwk = (QUESTION_BANK[`simpack_${pkt.id}_twk`] || []).length || (QUESTION_BANK.cpns_twk || []).length;
+          const cTiu = (QUESTION_BANK[`simpack_${pkt.id}_tiu`] || []).length || (QUESTION_BANK.cpns_tiu || []).length;
+          const cTkp = (QUESTION_BANK[`simpack_${pkt.id}_tkp`] || []).length || (QUESTION_BANK.cpns_tkp || []).length;
+          return `
+            <div class="p-3.5 rounded-2xl bg-navy-950/90 border ${skdLocked ? 'border-rose-500/30 opacity-80' : 'border-gold-500/40 hover:border-gold-400'} space-y-2.5 transition-all">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-gold-500/15 text-gold-300 text-[10px] font-extrabold uppercase">Paket #${pIdx + 1}</span>
+                <div class="text-xs sm:text-sm font-extrabold text-white mt-1">${pkt.name}</div>
+                ${pkt.desc ? `<div class="text-[11px] text-slate-400 mt-0.5">${pkt.desc}</div>` : ''}
+              </div>
+              <div class="text-[10px] text-slate-400 font-bold">
+                <i class="fa-solid fa-database text-emerald-400 mr-1"></i>Bank Soal: ${cTwk} TWK • ${cTiu} TIU • ${cTkp} TKP (${totSoalSkd} Soal • ${durMinSkd} Menit)
+              </div>
+              <button type="button" onclick="startCpnsFullCatSubtest('cpns_skd_terpadu', '${pkt.id}')" class="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${
+                skdLocked
+                  ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed'
+                  : 'btn-gold shadow'
+              }">
+                <i class="fa-solid ${skdLocked ? 'fa-lock' : 'fa-play'}"></i>
+                <span>${blockedByPackage ? 'Terkunci Paket' : (skdAdminLocked ? 'Dikunci Admin' : `Mulai ${pkt.name}`)}</span>
+              </button>
+            </div>
+          `;
+        }).join('');
+
+      // Render Daftar Paket Soal Simulasi SKB (Gaya Identik dengan Kartu TKA di TNF POLRI)
+      const skbPacketsHtml = activeSkbPackets.length === 0
+        ? `
+          <div class="p-5 rounded-2xl bg-navy-950/90 border border-amber-500/30 text-xs text-amber-300 text-center font-semibold">
+            <i class="fa-solid fa-circle-info mr-1.5"></i>Belum ada Paket Soal Simulasi CAT SKB CPNS yang diaktifkan Admin saat ini.
+          </div>
+        `
+        : activeSkbPackets.map((pkt, pIdx) => {
+          const cSkb = (QUESTION_BANK[`simpack_${pkt.id}`] || []).length || (QUESTION_BANK.cpns_skb || []).length;
+          return `
+            <div class="p-4 sm:p-5 rounded-2xl bg-navy-950/90 border ${skbLocked ? 'border-rose-500/30 opacity-80' : 'border-gold-500/35 hover:border-gold-400'} space-y-3 transition-all">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-extrabold uppercase">Paket Simulasi SKB Aktif #${pIdx + 1}</span>
+                  <h4 class="font-extrabold text-white text-sm sm:text-base mt-1">${pkt.name}</h4>
+                  ${pkt.desc ? `<p class="text-[11px] text-slate-300 mt-0.5">${pkt.desc}</p>` : ''}
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-2 text-[11px] font-bold text-slate-300">
+                <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-list-ol text-gold-400 mr-1"></i>${skbCfg.count || 50} Soal</span>
+                <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-regular fa-clock text-gold-400 mr-1"></i>${skbCfg.durationMin || 60} Menit</span>
+                <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-database text-emerald-400 mr-1"></i>${cSkb} Bank Soal</span>
+              </div>
+              <button type="button" onclick="startCpnsFullCatSubtest('cpns_skb', '${pkt.id}')" class="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${
+                skbLocked
+                  ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed'
+                  : 'bg-gold-500/15 hover:bg-gold-500 text-gold-400 hover:text-navy-950 border border-gold-500/40'
+              }">
+                <i class="fa-solid ${skbLocked ? 'fa-lock' : 'fa-play'}"></i>
+                <span>${blockedByPackage ? 'Terkunci Paket' : (skbAdminLocked ? 'Dikunci Admin' : `Mulai ${pkt.name}`)}</span>
+              </button>
+            </div>
+          `;
+        }).join('');
+
       container.innerHTML = `
-        <!-- KARTU UTAMA: SIMULASI CAT SKD CPNS TERPADU 1 SESI PENUH (110 SOAL • 100 MENIT) -->
-        <div class="p-5 sm:p-6 rounded-2xl bg-navy-950/95 border-2 ${skdLocked ? 'border-rose-500/35 opacity-80' : 'border-gold-500/50 hover:border-gold-400'} flex flex-col justify-between space-y-4 transition-all shadow-lg">
-          <div class="space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="px-3 py-1 rounded-lg bg-gold-500/20 border border-gold-500/40 text-gold-300 text-[10px] font-extrabold uppercase tracking-wider">
-                <i class="fa-solid fa-building-columns mr-1"></i>Standar CAT BKN • 1 Sesi Penuh SKD
+        <!-- KOLOM KIRI (lg:col-span-5): TES SKD CPNS TERPADU — DESAIN IDENTIK DENGAN KARTU PSIKO TNF POLRI -->
+        <div class="lg:col-span-5 glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between space-y-5">
+          <div class="space-y-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <span class="text-xs font-extrabold uppercase tracking-wider text-gold-400">Bobot Nilai Akhir: ${skdWeight}%</span>
+                <h3 class="text-xl font-extrabold text-white mt-0.5">Tes SKD CPNS (1 Sesi Terpadu)</h3>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold uppercase shrink-0 ${
+                skdLocked
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/35'
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35'
+              }">
+                ${skdLocked ? 'TERKUNCI' : 'TERBUKA'}
               </span>
-              <span class="text-[10px] font-extrabold ${skdLocked ? 'text-rose-400' : 'text-emerald-400'}">
-                <i class="fa-solid ${skdLocked ? 'fa-lock' : 'fa-lock-open'} mr-1"></i>${skdAdminLocked ? 'DIKUNCI ADMIN' : (blockedByPackage ? 'TERKUNCI PAKET' : 'TERBUKA')}
-              </span>
             </div>
 
-            <div>
-              <h4 class="font-extrabold text-white text-base sm:text-lg leading-snug">Simulasi CAT SKD CPNS Terpadu (TWK + TIU + TKP)</h4>
-              <p class="text-xs text-slate-300 leading-relaxed mt-1">
-                Ujian SKD digabung dalam <strong>1 sesi tes penuh</strong> sesuai standar resmi CAT BKN dengan total <strong>${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + (skdCfg.tkpCount || 45)} soal</strong>, durasi <strong>${skdCfg.durationMin || 100} menit</strong>, dan bobot integrasi <strong>${skdCfg.weight ?? 40}%</strong>.
-              </p>
-            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Simulasi 1 sesi penuh standar CAT BKN berjumlah <strong class="text-gold-400">${totSoalSkd} Soal</strong> dengan durasi <strong class="text-white">${durMinSkd} Menit</strong>.
+            </p>
 
-            <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
-              <div class="p-2.5 rounded-xl bg-navy-900 border border-sky-500/30">
-                <div class="font-extrabold text-sky-300">TWK</div>
-                <div class="text-white font-black text-sm mt-0.5">${skdCfg.twkCount || 30} Soal</div>
-                <div class="text-[10px] text-slate-400">PG ≥ ${skdCfg.pgTwk ?? 65} • No. 1–${skdCfg.twkCount || 30}</div>
+            <div class="space-y-2.5">
+              <div class="p-3 rounded-xl bg-navy-950/80 border border-white/10 flex justify-between items-center text-xs">
+                <span class="font-bold text-white">1. TWK (Wawasan Kebangsaan)</span>
+                <span class="text-slate-400">${twkC} Soal • PG ≥ ${skdCfg.pgTwk ?? 65}</span>
               </div>
-              <div class="p-2.5 rounded-xl bg-navy-900 border border-gold-500/30">
-                <div class="font-extrabold text-gold-400">TIU</div>
-                <div class="text-white font-black text-sm mt-0.5">${skdCfg.tiuCount || 35} Soal</div>
-                <div class="text-[10px] text-slate-400">PG ≥ ${skdCfg.pgTiu ?? 80} • No. ${(skdCfg.twkCount || 30) + 1}–${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35)}</div>
+              <div class="p-3 rounded-xl bg-navy-950/80 border border-white/10 flex justify-between items-center text-xs">
+                <span class="font-bold text-white">2. TIU (Intelegensia Umum)</span>
+                <span class="text-slate-400">${tiuC} Soal • PG ≥ ${skdCfg.pgTiu ?? 80}</span>
               </div>
-              <div class="p-2.5 rounded-xl bg-navy-900 border border-emerald-500/30">
-                <div class="font-extrabold text-emerald-300">TKP</div>
-                <div class="text-white font-black text-sm mt-0.5">${skdCfg.tkpCount || 45} Soal</div>
-                <div class="text-[10px] text-slate-400">PG ≥ ${skdCfg.pgTkp ?? 166} • No. ${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + 1}–${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + (skdCfg.tkpCount || 45)}</div>
+              <div class="p-3 rounded-xl bg-navy-950/80 border border-white/10 flex justify-between items-center text-xs">
+                <span class="font-bold text-white">3. TKP (Karakteristik Pribadi)</span>
+                <span class="text-slate-400">${tkpC} Soal • PG ≥ ${skdCfg.pgTkp ?? 166}</span>
               </div>
-            </div>
-
-            <div class="flex flex-wrap gap-2 pt-1 text-[11px] font-bold text-slate-300">
-              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-list-ol text-gold-400 mr-1"></i>Total ${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + (skdCfg.tkpCount || 45)} Soal</span>
-              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-regular fa-clock text-gold-400 mr-1"></i>Durasi ${skdCfg.durationMin || 100} Menit</span>
-              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-percent text-sky-400 mr-1"></i>Bobot ${skdCfg.weight ?? 40}%</span>
-              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-database text-emerald-400 mr-1"></i>Bank Admin: ${twkCustom} TWK • ${tiuCustom} TIU • ${tkpCustom} TKP</span>
             </div>
           </div>
 
-          <button type="button" onclick="startCpnsFullCatSubtest('cpns_skd_terpadu')" class="w-full py-3.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all ${
-            skdLocked
-              ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed'
-              : 'btn-gold shadow-lg'
-          }">
-            <i class="fa-solid ${skdLocked ? 'fa-lock' : 'fa-play'}"></i>
-            <span>${skdAdminLocked ? 'Dikunci Admin' : (blockedByPackage ? 'Terkunci Paket' : `Mulai Simulasi CAT SKD (${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + (skdCfg.tkpCount || 45)} Soal • ${skdCfg.durationMin || 100} Menit)`)}</span>
-          </button>
+          <div class="space-y-2.5">
+            ${skdPacketsHtml}
+          </div>
         </div>
 
-        <!-- KARTU TAHAP LANJUTAN: SIMULASI CAT SKB CPNS -->
-        <div class="p-5 sm:p-6 rounded-2xl bg-navy-950/90 border ${skbLocked ? 'border-rose-500/30 opacity-80' : 'border-white/10 hover:border-gold-500/40'} flex flex-col justify-between space-y-4 transition-all">
-          <div class="space-y-3">
-            <div class="flex items-center justify-between gap-2">
-              <span class="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 text-[10px] font-extrabold uppercase">Tahap Lanjutan • SKB ASN (Bobot ${skbCfg.weight ?? 60}%)</span>
-              <span class="text-[10px] font-extrabold ${skbLocked ? 'text-rose-400' : 'text-emerald-400'}">
-                <i class="fa-solid ${skbLocked ? 'fa-lock' : 'fa-lock-open'} mr-1"></i>${skbAdminLocked ? 'DIKUNCI ADMIN' : (blockedByPackage ? 'TERKUNCI PAKET' : 'TERBUKA')}
+        <!-- KOLOM KANAN (lg:col-span-7): TES SKB CPNS — DESAIN IDENTIK DENGAN KARTU AKADEMIK TKA TNF POLRI -->
+        <div class="lg:col-span-7 glass-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between space-y-5">
+          <div class="space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <span class="text-xs font-extrabold uppercase tracking-wider text-gold-400">Bobot Nilai Akhir: ${skbWeight}%</span>
+                <h3 class="text-xl font-extrabold text-white mt-0.5">Tes Kompetensi Bidang (SKB ASN)</h3>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold uppercase w-fit ${
+                skbLocked
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/35'
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35'
+              }">
+                ${skbLocked ? 'TERKUNCI' : `TERBUKA (${activeSkbPackets.length} PAKET)`}
               </span>
             </div>
-            <div>
-              <h4 class="font-extrabold text-white text-base leading-snug">${skbCfg.label}</h4>
-              <p class="text-xs text-slate-300 leading-relaxed mt-1">
-                Seleksi Kompetensi Bidang (Bobot 60%), UU ASN No. 20/2023, Core Values BerAKHLAK, Manajemen ASN &amp; Literasi Digital untuk menguji integrasi akhir SKD (40%) + SKB (60%).
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-2 pt-1 text-[11px] font-bold text-slate-400">
-              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-list-ol text-gold-400 mr-1"></i>${skbCfg.count} Soal</span>
-              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-regular fa-clock text-gold-400 mr-1"></i>${skbCfg.durationMin} Menit</span>
-              <span class="px-2.5 py-1 rounded-lg bg-navy-900 border border-white/10"><i class="fa-solid fa-database text-emerald-400 mr-1"></i>${skbCustom} Bank Admin</span>
+
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Simulasi lanjutan CAT SKB CPNS mencakup regulasi <strong>UU ASN No. 20/2023</strong>, Core Values <strong>BerAKHLAK</strong>, serta literasi digital untuk menguji akumulasi integrasi akhir <strong>SKD (${skdWeight}%) + SKB (${skbWeight}%)</strong>.
+            </p>
+
+            <div class="space-y-3">
+              ${skbPacketsHtml}
             </div>
           </div>
-          <button type="button" onclick="startCpnsFullCatSubtest('cpns_skb')" class="w-full py-3.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${
-            skbLocked
-              ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed'
-              : 'btn-gold'
-          }">
-            <i class="fa-solid ${skbLocked ? 'fa-lock' : 'fa-play'}"></i>
-            <span>${skbAdminLocked ? 'Dikunci Admin' : (blockedByPackage ? 'Terkunci Paket' : 'Mulai ' + skbCfg.short)}</span>
-          </button>
         </div>
-        ${typeof buildActiveCpnsSimulationPacketCardsHtml === 'function' ? buildActiveCpnsSimulationPacketCardsHtml(blockedByPackage) : ''}
       `;
     }
 
@@ -18155,6 +18207,14 @@ service cloud.firestore {
         active: true
       },
       {
+        id: 'sim_cpns_skb_1',
+        division: 'cpns',
+        examType: 'cpns_skb',
+        name: 'Paket Simulasi SKB 1 — Kompetensi Bidang ASN',
+        desc: 'Seleksi Kompetensi Bidang (Bobot 60%), UU ASN No. 20/2023, Core Values BerAKHLAK & Literasi Digital.',
+        active: true
+      },
+      {
         id: 'sim_tni_psiko_1',
         division: 'tnipolri',
         examType: 'psiko_terpadu',
@@ -18503,92 +18563,6 @@ service cloud.firestore {
           }).join('');
         }
       }
-    }
-
-    function renderTniActiveSimulationPackets() {
-      const wrap = document.getElementById('tni-active-sim-packets-wrapper');
-      const grid = document.getElementById('tni-active-sim-packets-grid');
-      if (!wrap || !grid) return;
-
-      const activeTniPackets = SIMULATION_PACKETS.filter(p => p.active && p.division === 'tnipolri');
-      if (activeTniPackets.length === 0) {
-        wrap.classList.add('hidden');
-        grid.innerHTML = '';
-        return;
-      }
-
-      wrap.classList.remove('hidden');
-      grid.innerHTML = activeTniPackets.map(p => {
-        if (p.examType === 'tka_terpadu') {
-          return `
-            <div class="p-4 rounded-2xl bg-navy-950/90 border border-sky-500/45 flex flex-col justify-between space-y-3">
-              <div class="space-y-1">
-                <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-extrabold uppercase">AKADEMIK POLRI • 4 SUBTES LENGKAP</span>
-                <h4 class="text-sm font-extrabold text-white">${p.name}</h4>
-                <p class="text-[11px] text-slate-300">${p.desc || '1 Paket mencakup PU, TWK, MTK & Bahasa Inggris.'}</p>
-              </div>
-              <div class="grid grid-cols-2 gap-1.5 pt-1">
-                <button type="button" onclick="initiateExamStart('tka_pu', '${p.id}')" class="py-2 px-2.5 rounded-xl bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-navy-950 border border-sky-500/40 text-[11px] font-extrabold transition flex items-center justify-center gap-1">
-                  <i class="fa-solid fa-play text-[10px]"></i><span>PU</span>
-                </button>
-                <button type="button" onclick="initiateExamStart('tka_twk', '${p.id}')" class="py-2 px-2.5 rounded-xl bg-gold-500/20 hover:bg-gold-500 text-gold-300 hover:text-navy-950 border border-gold-500/40 text-[11px] font-extrabold transition flex items-center justify-center gap-1">
-                  <i class="fa-solid fa-play text-[10px]"></i><span>TWK</span>
-                </button>
-                <button type="button" onclick="initiateExamStart('tka_mtk', '${p.id}')" class="py-2 px-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-navy-950 border border-emerald-500/40 text-[11px] font-extrabold transition flex items-center justify-center gap-1">
-                  <i class="fa-solid fa-play text-[10px]"></i><span>MTK</span>
-                </button>
-                <button type="button" onclick="initiateExamStart('tka_tbi', '${p.id}')" class="py-2 px-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500 text-purple-300 hover:text-navy-950 border border-purple-500/40 text-[11px] font-extrabold transition flex items-center justify-center gap-1">
-                  <i class="fa-solid fa-play text-[10px]"></i><span>B. Inggris</span>
-                </button>
-              </div>
-            </div>
-          `;
-        }
-        return `
-          <div class="p-4 rounded-2xl bg-navy-950/90 border border-gold-500/35 flex flex-col justify-between space-y-3">
-            <div class="space-y-1">
-              <span class="px-2 py-0.5 rounded bg-gold-500/20 text-gold-300 text-[10px] font-extrabold uppercase">${p.examType.replace('_', ' ')}</span>
-              <h4 class="text-sm font-extrabold text-white">${p.name}</h4>
-              <p class="text-[11px] text-slate-300">${p.desc || ''}</p>
-            </div>
-            <button type="button" onclick="initiateExamStart('${p.examType}', '${p.id}')" class="w-full btn-gold py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-play"></i><span>Mulai Paket Simulasi Ini</span>
-            </button>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function buildActiveCpnsSimulationPacketCardsHtml(blockedByPackage) {
-      const activeCpnsPackets = SIMULATION_PACKETS.filter(p => p.active && p.division === 'cpns');
-      if (activeCpnsPackets.length === 0) return '';
-      return activeCpnsPackets.map(p => {
-        const isSkd = p.examType === 'cpns_skd_terpadu';
-        const skdCfg = CAT_CONFIG.tka.cpns_skd_terpadu || DEFAULT_CAT_CONFIG.tka.cpns_skd_terpadu;
-        const skbCfg = CAT_CONFIG.tka.cpns_skb || DEFAULT_CAT_CONFIG.tka.cpns_skb;
-        const isLocked = Boolean(CAT_CONFIG.locks[p.examType]) || blockedByPackage;
-        return `
-          <div class="p-5 rounded-2xl bg-navy-950/95 border ${isLocked ? 'border-rose-500/30 opacity-80' : 'border-sky-500/45 hover:border-sky-400'} flex flex-col justify-between space-y-4 transition-all">
-            <div class="space-y-2">
-              <div class="flex items-center justify-between gap-2">
-                <span class="px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 text-[10px] font-extrabold uppercase"><i class="fa-solid fa-layer-group mr-1"></i>Paket Simulasi Aktif</span>
-                <span class="text-[10px] font-extrabold ${isLocked ? 'text-rose-400' : 'text-emerald-400'}">${isLocked ? 'TERKUNCI' : 'AKTIF'}</span>
-              </div>
-              <h4 class="font-extrabold text-white text-base leading-snug">${p.name}</h4>
-              <p class="text-xs text-slate-300 leading-relaxed">${p.desc || ''}</p>
-              <div class="text-[11px] text-slate-400 font-bold">
-                ${isSkd ? `${(skdCfg.twkCount || 30) + (skdCfg.tiuCount || 35) + (skdCfg.tkpCount || 45)} Soal • ${skdCfg.durationMin || 100} Menit` : `${skbCfg.count || 50} Soal • ${skbCfg.durationMin || 60} Menit`}
-              </div>
-            </div>
-            <button type="button" onclick="startCpnsFullCatSubtest('${p.examType}', '${p.id}')" class="w-full py-3 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 ${
-              isLocked ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 cursor-not-allowed' : 'btn-gold'
-            }">
-              <i class="fa-solid ${isLocked ? 'fa-lock' : 'fa-play'}"></i>
-              <span>${isLocked ? 'Terkunci' : 'Mulai ' + p.name}</span>
-            </button>
-          </div>
-        `;
-      }).join('');
     }
 
     // --- PORTAL LATIHAN SOAL SKD CPNS (AUTH, LOBBY, ARENA TANPA TIMER & PEMBAHASAN LANGSUNG) ---
