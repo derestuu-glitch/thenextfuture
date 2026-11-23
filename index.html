@@ -6611,40 +6611,54 @@ service cloud.firestore {
       return AUTHORIZED_USERS_LIST.find(u => u.email.toLowerCase() === clean) || null;
     };
 
+    const LOCALLY_DELETED_USER_EMAILS = new Set();
+
     window.syncAuthorizedUsersFromFirebase = function (cloudUsers) {
       if (!Array.isArray(cloudUsers)) return;
-      const mergedMap = new Map();
+      // Cloud Firestore adalah Single Source of Truth (SSOT):
+      // Akun yang sudah dihapus di perangkat lain (misal Laptop) otomatis ikut terhapus di HP/perangkat ini.
+      const prevMap = new Map();
       AUTHORIZED_USERS_LIST.forEach(u => {
-        if (u && u.email) {
-          const pkgs = getUserPackagesList(u);
-          const item = ensureUserDurationFields({ ...u, packages: pkgs, batch: pkgs.join(' + ') || u.batch });
-          mergedMap.set(u.email.toLowerCase(), item);
-        }
+        if (u && u.email) prevMap.set(u.email.toLowerCase(), u);
       });
+
+      const nextMap = new Map();
       cloudUsers.forEach(u => {
-        if (u && u.email) {
-          const prev = mergedMap.get(u.email.toLowerCase()) || {};
+        if (!u || !u.email) return;
+        const emailKey = u.email.toLowerCase();
+        if (LOCALLY_DELETED_USER_EMAILS.has(emailKey)) return;
+        const prev = prevMap.get(emailKey) || {};
+        const pkgs = getUserPackagesList(u);
+        const firstRegMs = Number(u.registeredAt) || Number(u.activatedAt) || Number(prev.registeredAt) || Number(prev.activatedAt) || Date.now();
+        const item = ensureUserDurationFields({
+          ...u,
+          registeredAt: firstRegMs,
+          activatedAt: firstRegMs,
+          expiresAt: u.expiresAt || null,
+          durationDays: u.durationDays || null,
+          durationLabel: u.durationLabel || '',
+          catPsikoUsed: Number(u.catPsikoUsed) || 0,
+          catAkademikUsed: Number(u.catAkademikUsed) || 0,
+          packages: pkgs,
+          batch: pkgs.join(' + ') || u.batch,
+          synced: true
+        });
+        nextMap.set(emailKey, item);
+      });
+
+      // Pertahankan hanya akun baru yang benar-benar dibuat saat offline (synced === false) & belum dihapus
+      AUTHORIZED_USERS_LIST.forEach(u => {
+        if (!u || !u.email) return;
+        const emailKey = u.email.toLowerCase();
+        if (u.synced === false && !nextMap.has(emailKey) && !LOCALLY_DELETED_USER_EMAILS.has(emailKey)) {
           const pkgs = getUserPackagesList(u);
-          const firstRegMs = Number(u.registeredAt) || Number(prev.registeredAt) || Number(u.activatedAt) || Number(prev.activatedAt) || null;
-          const item = ensureUserDurationFields({
-            ...prev,
-            ...u,
-            registeredAt: firstRegMs,
-            activatedAt: firstRegMs,
-            expiresAt: u.expiresAt || prev.expiresAt || null,
-            durationDays: u.durationDays || prev.durationDays || null,
-            durationLabel: u.durationLabel || prev.durationLabel || '',
-            catPsikoUsed: Number(u.catPsikoUsed ?? prev.catPsikoUsed) || 0,
-            catAkademikUsed: Number(u.catAkademikUsed ?? prev.catAkademikUsed) || 0,
-            packages: pkgs,
-            batch: pkgs.join(' + ') || u.batch,
-            synced: true
-          });
-          mergedMap.set(u.email.toLowerCase(), item);
+          nextMap.set(emailKey, ensureUserDurationFields({ ...u, packages: pkgs, batch: pkgs.join(' + ') || u.batch }));
         }
       });
-      AUTHORIZED_USERS_LIST = Array.from(mergedMap.values());
+
+      AUTHORIZED_USERS_LIST = Array.from(nextMap.values());
       saveAuthorizedUsersCache();
+      const mergedMap = nextMap;
 
       if (currentVerifiedUser && currentVerifiedUser.email) {
         const latestSelf = mergedMap.get(currentVerifiedUser.email.toLowerCase());
@@ -8975,9 +8989,10 @@ service cloud.firestore {
       }
     }
 
+    const LOCALLY_DELETED_RESULT_IDS = new Set();
+
     window.syncResultsFromFirebase = function (cloudRecords, isConnected) {
       if (!Array.isArray(cloudRecords)) return;
-      const mergedMap = new Map();
       const isSystemDoc = (r) => {
         if (!r || !r.id) return true;
         const idStr = String(r.id);
@@ -8990,13 +9005,24 @@ service cloud.firestore {
           r.recordType === 'ebook_library'
         );
       };
-      CAT_RESULTS_STORE.forEach(r => {
-        if (!isSystemDoc(r)) mergedMap.set(r.id, r);
-      });
+
+      // Cloud Firestore adalah Single Source of Truth (SSOT):
+      // Data riwayat & ranking yang dihapus di Laptop otomatis terhapus di HP & tidak muncul lagi saat refresh.
+      const nextMap = new Map();
       cloudRecords.forEach(r => {
-        if (!isSystemDoc(r)) mergedMap.set(r.id, { ...r, synced: true });
+        if (!isSystemDoc(r) && !LOCALLY_DELETED_RESULT_IDS.has(r.id)) {
+          nextMap.set(r.id, { ...r, synced: true });
+        }
       });
-      CAT_RESULTS_STORE = Array.from(mergedMap.values());
+
+      // Pertahankan hanya hasil ujian baru yang belum sempat terkirim ke Cloud (synced === false)
+      CAT_RESULTS_STORE.forEach(r => {
+        if (!isSystemDoc(r) && r.synced === false && !nextMap.has(r.id) && !LOCALLY_DELETED_RESULT_IDS.has(r.id)) {
+          nextMap.set(r.id, r);
+        }
+      });
+
+      CAT_RESULTS_STORE = Array.from(nextMap.values());
       saveLocalBackupResults();
 
       if (typeof window.updateFirebaseStatusBadge === 'function') {
@@ -10958,16 +10984,20 @@ service cloud.firestore {
     }
 
     async function deleteAdminResult(resultId) {
+      if (!resultId) return;
+      LOCALLY_DELETED_RESULT_IDS.add(resultId);
       CAT_RESULTS_STORE = CAT_RESULTS_STORE.filter(r => r.id !== resultId);
       saveLocalBackupResults();
+      renderAdminResultsTable();
       if (window.TNF_FIREBASE && typeof window.TNF_FIREBASE.deleteResult === 'function') {
         try {
           await window.TNF_FIREBASE.deleteResult(resultId);
         } catch (e) {
           console.warn('Gagal menghapus di Firestore:', e);
+        } finally {
+          setTimeout(() => LOCALLY_DELETED_RESULT_IDS.delete(resultId), 4000);
         }
       }
-      renderAdminResultsTable();
     }
 
     function downloadCsvFile(filename, rows) {
@@ -11658,6 +11688,7 @@ service cloud.firestore {
 
     async function adminDeleteEmail(email) {
       const clean = email.trim().toLowerCase();
+      LOCALLY_DELETED_USER_EMAILS.add(clean);
       AUTHORIZED_USERS_LIST = AUTHORIZED_USERS_LIST.filter(u => u.email.toLowerCase() !== clean);
       saveAuthorizedUsersCache();
       renderAdminAuthorizedUsersList();
@@ -11667,7 +11698,42 @@ service cloud.firestore {
           await window.TNF_FIREBASE.removeAuthorizedEmail(clean);
         } catch (e) {
           console.warn('Gagal hapus email di Firestore:', e);
+        } finally {
+          setTimeout(() => LOCALLY_DELETED_USER_EMAILS.delete(clean), 4000);
         }
+      }
+    }
+
+    async function syncPendingOfflineItemsOnly() {
+      if (!window.TNF_FIREBASE || !window.TNF_FIREBASE.connected) return;
+      let changedUsers = false;
+      for (const u of AUTHORIZED_USERS_LIST) {
+        if (u && u.synced === false && u.email && !LOCALLY_DELETED_USER_EMAILS.has(u.email.toLowerCase())) {
+          try {
+            await window.TNF_FIREBASE.grantAuthorizedEmail(u);
+            u.synced = true;
+            changedUsers = true;
+          } catch (e) {}
+        }
+      }
+      if (changedUsers) {
+        saveAuthorizedUsersCache();
+        if (isAdminAuthenticated) renderAdminAuthorizedUsersList();
+      }
+
+      let changedResults = false;
+      for (const r of CAT_RESULTS_STORE) {
+        if (r && r.synced === false && r.id && !LOCALLY_DELETED_RESULT_IDS.has(r.id)) {
+          try {
+            await window.TNF_FIREBASE.saveResult(r);
+            r.synced = true;
+            changedResults = true;
+          } catch (e) {}
+        }
+      }
+      if (changedResults) {
+        saveLocalBackupResults();
+        if (isAdminAuthenticated) renderAdminResultsTable();
       }
     }
 
@@ -15465,11 +15531,11 @@ service cloud.firestore {
     window.syncEbookLibraryFromFirebase = function (cloudData) {
       if (!cloudData || typeof cloudData !== 'object') return;
       let changed = false;
-      if (Array.isArray(cloudData.tnipolriModules) && cloudData.tnipolriModules.length > 0) {
+      if (Array.isArray(cloudData.tnipolriModules)) {
         TNF_EBOOK_MODULES = cloudData.tnipolriModules;
         changed = true;
       }
-      if (Array.isArray(cloudData.cpnsModules) && cloudData.cpnsModules.length > 0) {
+      if (Array.isArray(cloudData.cpnsModules)) {
         CPNS_EBOOK_MODULES = cloudData.cpnsModules;
         changed = true;
       }
@@ -17578,10 +17644,12 @@ service cloud.firestore {
       updateAccessStatusPills();
       startRealtimeAccountCountdownTicker();
       setTimeout(() => {
-        if (typeof syncAllDataToCloud === 'function') {
-          syncAllDataToCloud(true).catch(() => {});
+        // Hanya kirim item yang benar-benar dibuat saat offline (synced === false),
+        // JANGAN menimpa atau menghidupkan kembali data yang sudah diedit/dihapus di Cloud Firestore dari perangkat lain!
+        if (typeof syncPendingOfflineItemsOnly === 'function') {
+          syncPendingOfflineItemsOnly().catch(() => {});
         }
-      }, 2500);
+      }, 3000);
     });
   </script>
 </body>
