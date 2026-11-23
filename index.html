@@ -13942,6 +13942,53 @@ service cloud.firestore {
       };
     }
 
+    function parseDelimitedTableRFC4180(rawText, delimiter) {
+      const rows = [];
+      let currentRow = [];
+      let currentCell = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < rawText.length; i++) {
+        const ch = rawText[i];
+        const nextCh = rawText[i + 1];
+
+        if (ch === '"') {
+          if (inQuotes && nextCh === '"') {
+            // Tanda kutip ganda di dalam sel ter-quote ("") -> satu tanda kutip (")
+            currentCell += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (ch === delimiter && !inQuotes) {
+          currentRow.push(currentCell.trim());
+          currentCell = '';
+        } else if ((ch === '\r' || ch === '\n') && !inQuotes) {
+          if (ch === '\r' && nextCh === '\n') {
+            i++;
+          }
+          currentRow.push(currentCell.trim());
+          if (currentRow.some(cell => cell.length > 0)) {
+            rows.push(currentRow);
+          }
+          currentRow = [];
+          currentCell = '';
+        } else {
+          // Pertahankan karakter (termasuk baris baru \n di dalam sel yang diapit tanda kutip "...")
+          currentCell += ch;
+        }
+      }
+
+      if (currentCell.length > 0 || currentRow.length > 0) {
+        currentRow.push(currentCell.trim());
+        if (currentRow.some(cell => cell.length > 0)) {
+          rows.push(currentRow);
+        }
+      }
+
+      return rows;
+    }
+
     function parseQuestionBankBulkText(rawText) {
       const text = String(rawText || '').replace(/^\uFEFF/, '').trim();
       if (!text) {
@@ -13950,22 +13997,21 @@ service cloud.firestore {
         return;
       }
 
-      const rawLines = text
-        .split(/\r?\n/)
-        .map(l => l.trim())
-        .filter(l => l.length > 0);
+      // Ambil baris logis pertama untuk mendeteksi pemisah kolom (koma, tab, titik koma, atau pipa)
+      const firstLineEnd = text.search(/\r?\n/);
+      const firstLineSample = firstLineEnd >= 0 ? text.slice(0, firstLineEnd) : text;
+      const delimiter = detectBestDelimiter(firstLineSample);
 
-      if (!rawLines.length) {
+      // Gunakan parser RFC-4180 agar baris baru (Enter) di dalam tanda kutip "..." pada Pertanyaan/Pembahasan TIDAK memecah soal menjadi baris ganda
+      const allRows = parseDelimitedTableRFC4180(text, delimiter);
+      if (!allRows.length) {
         PENDING_IMPORT_QUESTIONS = [];
         renderBulkQuestionPreviewTable();
         return;
       }
 
-      const delimiter = detectBestDelimiter(rawLines[0]);
       const parsedList = [];
-
-      rawLines.forEach((line, idx) => {
-        const cols = parseDelimitedLine(line, delimiter);
+      allRows.forEach((cols, idx) => {
         if (idx === 0 && isHeaderRow(cols)) return;
         if (cols.length < 2) return;
         const qObj = convertColumnsToQuestionObject(cols);
@@ -14181,11 +14227,12 @@ service cloud.firestore {
       }
 
       if (!PENDING_IMPORT_QUESTIONS.length) {
-        openCustomModal(
-          'Pratinjau Soal Masih Kosong',
-          '<p class="text-xs text-slate-300">Silakan unggah file CSV/Excel atau tempelkan daftar soal pada kolom <strong>Copy-Paste Cepat</strong> terlebih dahulu sebelum menekan <strong>Simpan Semua</strong>.</p>',
-          `<button type="button" onclick="closeCustomModal()" class="btn-gold px-5 py-2 rounded-xl text-xs font-extrabold">Mengerti</button>`
-        );
+        openCustomModal({
+          badge: 'Impor Bank Soal',
+          title: 'Pratinjau Soal Masih Kosong',
+          bodyHtml: '<p class="text-xs text-slate-300">Silakan unggah file CSV/Excel atau tempelkan daftar soal pada kolom <strong>Copy-Paste Cepat</strong> terlebih dahulu sebelum menekan <strong>Simpan Semua</strong>.</p>',
+          actionsHtml: `<button type="button" onclick="closeCustomModal()" class="btn-gold px-5 py-2 rounded-xl text-xs font-extrabold">Mengerti</button>`
+        });
         return;
       }
 
@@ -14209,14 +14256,15 @@ service cloud.firestore {
       if (typeof renderCpnsCatLobby === 'function') renderCpnsCatLobby();
       if (typeof renderLatihanPsikoLobby === 'function') renderLatihanPsikoLobby();
 
-      openCustomModal(
-        'Berhasil Menyimpan Semua Soal',
-        `<div class="space-y-2 text-xs text-slate-200">
+      openCustomModal({
+        badge: 'Impor Massal Berhasil',
+        title: 'Berhasil Menyimpan Semua Soal',
+        bodyHtml: `<div class="space-y-2 text-xs text-slate-200">
           <p>Sebanyak <strong class="text-emerald-400">${importedCount} butir soal baru</strong> berhasil dimasukkan sekaligus ke bank soal <strong class="text-gold-400">${bankLabel}</strong>.</p>
           <p class="text-slate-400">Total soal pada subtes ini sekarang: <strong class="text-white">${QUESTION_BANK[bankKey].length} soal</strong>.</p>
         </div>`,
-        `<button type="button" onclick="closeCustomModal()" class="btn-gold px-5 py-2 rounded-xl text-xs font-extrabold">Selesai</button>`
-      );
+        actionsHtml: `<button type="button" onclick="closeCustomModal()" class="btn-gold px-5 py-2 rounded-xl text-xs font-extrabold">Selesai</button>`
+      });
     }
 
     function escapeCsvCell(val) {
