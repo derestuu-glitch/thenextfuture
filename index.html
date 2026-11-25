@@ -13,6 +13,17 @@
   <!-- Font Awesome CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+  <!-- KaTeX CDN (Rendering Persamaan Matematika / LaTeX Full Equation: Pecahan, Akar Bertingkat, Matriks, Limit, Integral) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <style>
+    .katex { font-size: 1.05em; color: inherit; }
+    .katex-display { margin: 0.45em 0; overflow-x: auto; overflow-y: hidden; }
+    .tnf-math-matrix { display: inline-flex; align-items: center; vertical-align: middle; margin: 0 2px; }
+    .tnf-math-matrix-paren { font-size: 1.8em; font-weight: 300; line-height: 1; transform: scaleY(1.15); }
+    .tnf-math-matrix-grid { display: inline-grid; gap: 2px 10px; padding: 0 4px; text-align: center; font-size: 0.9em; line-height: 1.25; }
+  </style>
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -5462,6 +5473,49 @@ service cloud.firestore {
                     <span class="text-xs font-extrabold text-amber-300 uppercase tracking-wider"><i class="fa-solid fa-paste mr-1.5"></i>2. Copy-Paste Cepat Baris Soal (Excel / Spreadsheet / Teks)</span>
                     <span class="text-[10px] text-slate-400">Pemisah otomatis: Tab (Excel), Titik Koma (;), Pipa (|), atau Koma (,)</span>
                   </div>
+                  <div class="p-2 rounded-xl bg-navy-950/90 border border-gold-500/25 space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-[10px] font-extrabold text-gold-400 uppercase tracking-wider"><i class="fa-solid fa-square-root-variable mr-1"></i>Sisipkan Cepat Simbol Matematika ke Kotak Impor</span>
+                      <span class="text-[9px] text-slate-400">Klik simbol untuk menyisipkan di posisi kursor</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1" id="qbank-bulk-math-bar">
+                      <button type="button" onclick="insertMathToBulkInput('√')" title="Akar Kuadrat" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">√</button>
+                      <button type="button" onclick="insertMathToBulkInput('∛')" title="Akar Pangkat 3" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">∛</button>
+                      <button type="button" onclick="insertMathToBulkInput('²')" title="Kuadrat" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">²</button>
+                      <button type="button" onclick="insertMathToBulkInput('³')" title="Kubik" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">³</button>
+                      <button type="button" onclick="insertMathToBulkInput('ⁿ')" title="Pangkat n" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">ⁿ</button>
+                      <button type="button" onclick="insertMathToBulkInput('⁻¹')" title="Pangkat -1 / Invers" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">⁻¹</button>
+                      <button type="button" onclick="insertMathToBulkInput('×')" title="Kali" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">×</button>
+                      <button type="button" onclick="insertMathToBulkInput('÷')" title="Bagi" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">÷</button>
+                      <button type="button" onclick="insertMathToBulkInput('±')" title="Plus Minus" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">±</button>
+                      <button type="button" onclick="insertMathToBulkInput('·')" title="Titik Perkalian Vektor" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">·</button>
+                      <button type="button" onclick="insertMathToBulkInput('°')" title="Derajat" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">°</button>
+                      <button type="button" onclick="insertMathToBulkInput('∘')" title="Komposisi Fungsi" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">∘</button>
+                      <button type="button" onclick="insertMathToBulkInput('α')" title="Alpha" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">α</button>
+                      <button type="button" onclick="insertMathToBulkInput('β')" title="Beta" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">β</button>
+                      <button type="button" onclick="insertMathToBulkInput('θ')" title="Teta" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">θ</button>
+                      <button type="button" onclick="insertMathToBulkInput('π')" title="Pi" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">π</button>
+                      <button type="button" onclick="insertMathToBulkInput('Δ')" title="Delta" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">Δ</button>
+                      <button type="button" onclick="insertMathToBulkInput('≤')" title="Kurang dari atau sama dengan" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">≤</button>
+                      <button type="button" onclick="insertMathToBulkInput('≥')" title="Lebih dari atau sama dengan" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">≥</button>
+                      <button type="button" onclick="insertMathToBulkInput('≠')" title="Tidak sama dengan" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">≠</button>
+                      <button type="button" onclick="insertMathToBulkInput('≈')" title="Mendekati" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">≈</button>
+                      <button type="button" onclick="insertMathToBulkInput('→')" title="Panah Pemetaan / Limit" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">→</button>
+                      <button type="button" onclick="insertMathToBulkInput('⇒')" title="Implikasi" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">⇒</button>
+                      <button type="button" onclick="insertMathToBulkInput('⇔')" title="Biimplikasi" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">⇔</button>
+                      <button type="button" onclick="insertMathToBulkInput('∞')" title="Tak Hingga" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">∞</button>
+                      <button type="button" onclick="insertMathToBulkInput('∑')" title="Sigma" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">∑</button>
+                      <button type="button" onclick="insertMathToBulkInput('∫')" title="Integral" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">∫</button>
+                      <button type="button" onclick="insertMathToBulkInput('∠')" title="Sudut" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">∠</button>
+                      <button type="button" onclick="insertMathToBulkInput('⊥')" title="Tegak Lurus" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">⊥</button>
+                      <button type="button" onclick="insertMathToBulkInput('∥')" title="Sejajar" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">∥</button>
+                      <button type="button" onclick="insertMathToBulkInput('ℝ')" title="Bilangan Real" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">ℝ</button>
+                      <button type="button" onclick="insertMathToBulkInput('½')" title="1/2" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">½</button>
+                      <button type="button" onclick="insertMathToBulkInput('¼')" title="1/4" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">¼</button>
+                      <button type="button" onclick="insertMathToBulkInput('¾')" title="3/4" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">¾</button>
+                      <button type="button" onclick="insertMathToBulkInput('–')" title="En-Dash" class="px-2 py-0.5 rounded-md bg-navy-900 hover:bg-gold-500 text-white hover:text-navy-950 border border-white/15 text-[11px] font-extrabold transition">–</button>
+                    </div>
+                  </div>
                   <textarea
                     id="qbank-bulk-paste-input"
                     rows="4"
@@ -5971,9 +6025,139 @@ service cloud.firestore {
     // =========================================================================
     // HELPER: FORMAT PERPANGKATAN & SIMBOL MATEMATIKA
     // =========================================================================
+    function escapeHtmlAttr(val) {
+      return String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function renderLatexOfflineFallback(latexExpr) {
+      let s = String(latexExpr || '').trim();
+      if (!s) return '';
+
+      // 1. Render pmatrix / bmatrix / vmatrix menjadi grid CSS rapi
+      s = s.replace(/\\begin\{(p|b|v)?matrix\}([\s\S]*?)\\end\{(?:p|b|v)?matrix\}/g, (_, mType, body) => {
+        const rows = body.trim().split(/\\\\/).map(r => r.split('&').map(c => c.trim()));
+        const maxCols = Math.max(1, ...rows.map(r => r.length));
+        const lp = mType === 'b' ? '[' : (mType === 'v' ? '|' : '(');
+        const rp = mType === 'b' ? ']' : (mType === 'v' ? '|' : ')');
+        const cells = rows.flatMap(r => {
+          const padded = [...r];
+          while (padded.length < maxCols) padded.push('');
+          return padded.map(c => `<span>${renderLatexOfflineFallback(c)}</span>`);
+        }).join('');
+        return `<span class="tnf-math-matrix"><span class="tnf-math-matrix-paren">${lp}</span><span class="tnf-math-matrix-grid" style="grid-template-columns:repeat(${maxCols},auto)">${cells}</span><span class="tnf-math-matrix-paren">${rp}</span></span>`;
+      });
+
+      // 2. Hapus perintah sizing \left / \right dan \text{...}
+      s = s.replace(/\\left\s*([(\[{|.]|\\\{)/g, (_, d) => d === '.' ? '' : d.replace('\\', ''));
+      s = s.replace(/\\right\s*([)\]}|.]|\\\})/g, (_, d) => d === '.' ? '' : d.replace('\\', ''));
+      s = s.replace(/\\text\{([^{}]*)\}/g, '$1');
+      s = s.replace(/\\log\b/g, 'log');
+      s = s.replace(/\\lim\b/g, 'lim');
+      s = s.replace(/\\sin\b/g, 'sin');
+      s = s.replace(/\\cos\b/g, 'cos');
+      s = s.replace(/\\tan\b/g, 'tan');
+
+      // 3. Simbol LaTeX dasar
+      const symMap = [
+        [/\\times\b/g, '×'], [/\\div\b/g, '÷'], [/\\pm\b/g, '±'], [/\\mp\b/g, '∓'],
+        [/\\cdot\b/g, '·'], [/\\circ\b/g, '∘'], [/\\neq\b/g, '≠'], [/\\leq\b/g, '≤'],
+        [/\\geq\b/g, '≥'], [/\\approx\b/g, '≈'], [/\\equiv\b/g, '≡'], [/\\infty\b/g, '∞'],
+        [/\\alpha\b/g, 'α'], [/\\beta\b/g, 'β'], [/\\gamma\b/g, 'γ'], [/\\delta\b/g, 'δ'],
+        [/\\theta\b/g, 'θ'], [/\\lambda\b/g, 'λ'], [/\\mu\b/g, 'μ'], [/\\pi\b/g, 'π'],
+        [/\\sigma\b/g, 'σ'], [/\\omega\b/g, 'ω'], [/\\Omega\b/g, 'Ω'], [/\\Delta\b/g, 'Δ'],
+        [/\\sum\b/g, '∑'], [/\\prod\b/g, '∏'], [/\\int\b/g, '∫'], [/\\partial\b/g, '∂'],
+        [/\\rightarrow\b/g, '→'], [/\\to\b/g, '→'], [/\\Rightarrow\b/g, '⇒'], [/\\Leftrightarrow\b/g, '⇔'],
+        [/\\in\b/g, '∈'], [/\\notin\b/g, '∉'], [/\\subset\b/g, '⊂'], [/\\subseteq\b/g, '⊆'],
+        [/\\cup\b/g, '∪'], [/\\cap\b/g, '∩'], [/\\emptyset\b/g, '∅'], [/\\forall\b/g, '∀'],
+        [/\\exists\b/g, '∃'], [/\\angle\b/g, '∠'], [/\\perp\b/g, '⊥'], [/\\parallel\b/g, '∥'],
+        [/\\triangle\b/g, '△'], [/\\degree\b/g, '°'], [/\\deg\b/g, '°'], [/\\therefore\b/g, '∴'],
+        [/\\mathbb\{R\}/g, 'ℝ'], [/\\mathbb\{Z\}/g, 'ℤ'], [/\\mathbb\{N\}/g, 'ℕ'],
+        [/\\mathbb\{Q\}/g, 'ℚ'], [/\\mathbb\{C\}/g, 'ℂ']
+      ];
+      for (const [rx, sym] of symMap) s = s.replace(rx, sym);
+
+      // 4. Iteratif untuk nested \frac{a}{b}, \sqrt[n]{x}, \sqrt{x}, ^{...}, _{...}
+      for (let pass = 0; pass < 4; pass++) {
+        s = s.replace(
+          /\\frac\{([^{}]+)\}\{([^{}]+)\}/g,
+          '<span class="inline-flex flex-col items-center align-middle mx-1 leading-none text-[0.84em]"><span class="border-b border-current px-1 pb-0.5 font-bold">$1</span><span class="pt-0.5 px-1 font-bold">$2</span></span>'
+        );
+        s = s.replace(
+          /\\sqrt\[([^\]]+)\]\{([^{}]+)\}/g,
+          '<span class="inline-flex items-baseline font-semibold"><sup class="text-[0.65em] font-extrabold mr-0.5 leading-none">$1</sup>√<span class="border-t border-current px-0.5 leading-tight">$2</span></span>'
+        );
+        s = s.replace(
+          /\\sqrt\{([^{}]+)\}/g,
+          '<span class="inline-flex items-baseline font-semibold">√<span class="border-t border-current px-0.5 leading-tight">$1</span></span>'
+        );
+        s = s.replace(/\^\{([^{}]+)\}/g, '<sup class="text-[0.72em] font-extrabold leading-none">$1</sup>');
+        s = s.replace(/_\{([^{}]+)\}/g, '<sub class="text-[0.72em] font-bold leading-none">$1</sub>');
+      }
+      return s;
+    }
+
+    function renderSingleLatexBlock(latexExpr, displayMode = false) {
+      const cleaned = String(latexExpr || '').trim();
+      if (!cleaned) return '';
+      if (typeof window !== 'undefined' && window.katex && typeof window.katex.renderToString === 'function') {
+        try {
+          return window.katex.renderToString(cleaned, {
+            throwOnError: false,
+            displayMode: Boolean(displayMode),
+            strict: false,
+            trust: false
+          });
+        } catch (err) {
+          // Fallback ke renderer HTML bawaan jika KaTeX gagal
+        }
+      }
+      const htmlInner = renderLatexOfflineFallback(cleaned);
+      return displayMode ? `<div class="my-1.5 text-center">${htmlInner}</div>` : htmlInner;
+    }
+
     function formatMathExponents(rawText) {
       if (rawText === null || rawText === undefined) return '';
-      const str = String(rawText);
+      let str = String(rawText);
+
+      // 0. Ekstrak seluruh blok persamaan LaTeX ($...$, $$...$$, \[...\], \(...\)) sebelum escaping HTML
+      const mathTokens = [];
+      const pushMathToken = (expr, isDisplay) => {
+        const idx = mathTokens.length;
+        mathTokens.push(renderSingleLatexBlock(expr, isDisplay));
+        return `@@TNFLTX${idx}@@`;
+      };
+
+      str = str.replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => pushMathToken(expr, true));
+      str = str.replace(/\\\[([\s\S]+?)\\\]/g, (_, expr) => pushMathToken(expr, true));
+      str = str.replace(/\\\(([\s\S]+?)\\\)/g, (_, expr) => pushMathToken(expr, false));
+      str = str.replace(/\$([^$\n]+?)\$/g, (_, expr) => pushMathToken(expr, false));
+
+      // Konversi notasi LaTeX polos (di luar $...$) bila ada pada teks impor/editor
+      const latexMap = [
+        [/\\times\b/g, '×'], [/\\div\b/g, '÷'], [/\\pm\b/g, '±'], [/\\mp\b/g, '∓'],
+        [/\\cdot\b/g, '·'], [/\\circ\b/g, '∘'], [/\\neq\b/g, '≠'], [/\\leq\b/g, '≤'],
+        [/\\geq\b/g, '≥'], [/\\approx\b/g, '≈'], [/\\equiv\b/g, '≡'], [/\\infty\b/g, '∞'],
+        [/\\alpha\b/g, 'α'], [/\\beta\b/g, 'β'], [/\\gamma\b/g, 'γ'], [/\\delta\b/g, 'δ'],
+        [/\\theta\b/g, 'θ'], [/\\lambda\b/g, 'λ'], [/\\mu\b/g, 'μ'], [/\\pi\b/g, 'π'],
+        [/\\sigma\b/g, 'σ'], [/\\omega\b/g, 'ω'], [/\\Omega\b/g, 'Ω'], [/\\Delta\b/g, 'Δ'],
+        [/\\sum\b/g, '∑'], [/\\prod\b/g, '∏'], [/\\int\b/g, '∫'], [/\\partial\b/g, '∂'],
+        [/\\rightarrow\b/g, '→'], [/\\to\b/g, '→'], [/\\Rightarrow\b/g, '⇒'], [/\\Leftrightarrow\b/g, '⇔'],
+        [/\\in\b/g, '∈'], [/\\notin\b/g, '∉'], [/\\subset\b/g, '⊂'], [/\\subseteq\b/g, '⊆'],
+        [/\\cup\b/g, '∪'], [/\\cap\b/g, '∩'], [/\\emptyset\b/g, '∅'], [/\\forall\b/g, '∀'],
+        [/\\exists\b/g, '∃'], [/\\angle\b/g, '∠'], [/\\perp\b/g, '⊥'], [/\\parallel\b/g, '∥'],
+        [/\\triangle\b/g, '△'], [/\\degree\b/g, '°'], [/\\therefore\b/g, '∴'],
+        [/\\mathbb\{R\}/g, 'ℝ'], [/\\mathbb\{Z\}/g, 'ℤ'], [/\\mathbb\{N\}/g, 'ℕ'],
+        [/\\mathbb\{Q\}/g, 'ℚ'], [/\\mathbb\{C\}/g, 'ℂ']
+      ];
+      for (const [rx, sym] of latexMap) str = str.replace(rx, sym);
+      str = str.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, 'frac{$1}{$2}');
+      str = str.replace(/\\sqrt\[([^\]]+)\]\{([^{}]+)\}/g, 'root{$1}{$2}');
+      str = str.replace(/\\sqrt\{([^{}]+)\}/g, '√($1)');
 
       const escaped = str
         .replace(/&/g, '&amp;')
@@ -6001,19 +6185,24 @@ service cloud.firestore {
       // 4. Perpangkatan (Superscript): ^{...}, ^(...), dan x^2 / cm^2 / 10^-3
       formatted = formatted.replace(/\^\{([^{}]+)\}/g, '<sup class="text-[0.72em] font-extrabold leading-none">$1</sup>');
       formatted = formatted.replace(/\^\(([^()]+)\)/g, '<sup class="text-[0.72em] font-extrabold leading-none">($1)</sup>');
-      formatted = formatted.replace(/([A-Za-z0-9\)\]])\^([+-]?[A-Za-z0-9]+)/g, '$1<sup class="text-[0.72em] font-extrabold leading-none">$2</sup>');
+      formatted = formatted.replace(/([A-Za-z0-9\)\]α-ωΑ-Ωπ])\^([+-]?[A-Za-z0-9]+)/g, '$1<sup class="text-[0.72em] font-extrabold leading-none">$2</sup>');
 
       // 5. Indeks Bawah (Subscript): _{...} dan x_1 / log_2 / U_n
-      formatted = formatted.replace(/([A-Za-z0-9\)\]])_\{([^{}]+)\}/g, '$1<sub class="text-[0.72em] font-bold leading-none">$2</sub>');
-      formatted = formatted.replace(/([A-Za-z0-9\)\]])_([A-Za-z0-9]+)/g, '$1<sub class="text-[0.72em] font-bold leading-none">$2</sub>');
+      formatted = formatted.replace(/([A-Za-z0-9\)\]α-ωΑ-Ω])_\{([^{}]+)\}/g, '$1<sub class="text-[0.72em] font-bold leading-none">$2</sub>');
+      formatted = formatted.replace(/([A-Za-z0-9\)\]α-ωΑ-Ω])_([A-Za-z0-9]+)/g, '$1<sub class="text-[0.72em] font-bold leading-none">$2</sub>');
 
-      // 6. Akar Kuadrat (√), Akar Pangkat 3 (∛), dan Akar Pangkat 4 (∜) dengan garis atas (vinculum)
+      // 6. Akar Kuadrat (√), Akar Pangkat 3 (∛), dan Akar Pangkat 4 (∜) dengan garis atas (vinculum), termasuk desimal 0,08
       formatted = formatted.replace(/√\(([^()]+)\)/g, '<span class="inline-flex items-baseline font-semibold">√<span class="border-t border-current px-0.5 leading-tight">$1</span></span>');
-      formatted = formatted.replace(/√([A-Za-z0-9]+)/g, '<span class="inline-flex items-baseline font-semibold">√<span class="border-t border-current px-0.5 leading-tight">$1</span></span>');
+      formatted = formatted.replace(/√([A-Za-z0-9]+(?:[.,][0-9]+)?)/g, '<span class="inline-flex items-baseline font-semibold">√<span class="border-t border-current px-0.5 leading-tight">$1</span></span>');
       formatted = formatted.replace(/∛\(([^()]+)\)/g, '<span class="inline-flex items-baseline font-semibold">∛<span class="border-t border-current px-0.5 leading-tight">$1</span></span>');
-      formatted = formatted.replace(/∛([A-Za-z0-9]+)/g, '<span class="inline-flex items-baseline font-semibold">∛<span class="border-t border-current px-0.5 leading-tight">$1</span></span>');
+      formatted = formatted.replace(/∛([A-Za-z0-9]+(?:[.,][0-9]+)?)/g, '<span class="inline-flex items-baseline font-semibold">∛<span class="border-t border-current px-0.5 leading-tight">$1</span></span>');
       formatted = formatted.replace(/∜\(([^()]+)\)/g, '<span class="inline-flex items-baseline font-semibold">∜<span class="border-t border-current px-0.5 leading-tight">$1</span></span>');
-      formatted = formatted.replace(/∜([A-Za-z0-9]+)/g, '<span class="inline-flex items-baseline font-semibold">∜<span class="border-t border-current px-0.5 leading-tight">$1</span></span>');
+      formatted = formatted.replace(/∜([A-Za-z0-9]+(?:[.,][0-9]+)?)/g, '<span class="inline-flex items-baseline font-semibold">∜<span class="border-t border-current px-0.5 leading-tight">$1</span></span>');
+
+      // 7. Kembalikan seluruh blok persamaan KaTeX yang telah dirender
+      if (mathTokens.length) {
+        formatted = formatted.replace(/@@TNFLTX(\d+)@@/g, (_, idx) => mathTokens[Number(idx)] || '');
+      }
 
       return formatted;
     }
@@ -12802,6 +12991,52 @@ service cloud.firestore {
           { display: 'ω', title: 'Omega kecil', insert: 'ω', cursorOffset: 0 },
           { display: 'Ω', title: 'Omega besar', insert: 'Ω', cursorOffset: 0 }
         ]
+      },
+      pangkat_indeks_unicode: {
+        label: 'Pangkat & Indeks (Unicode)',
+        items: [
+          { display: '⁰', title: 'Pangkat 0', insert: '⁰', cursorOffset: 0 },
+          { display: '¹', title: 'Pangkat 1', insert: '¹', cursorOffset: 0 },
+          { display: '²', title: 'Pangkat 2 (Kuadrat)', insert: '²', cursorOffset: 0 },
+          { display: '³', title: 'Pangkat 3 (Kubik)', insert: '³', cursorOffset: 0 },
+          { display: '⁴', title: 'Pangkat 4', insert: '⁴', cursorOffset: 0 },
+          { display: '⁵', title: 'Pangkat 5', insert: '⁵', cursorOffset: 0 },
+          { display: '⁶', title: 'Pangkat 6', insert: '⁶', cursorOffset: 0 },
+          { display: '⁷', title: 'Pangkat 7', insert: '⁷', cursorOffset: 0 },
+          { display: '⁸', title: 'Pangkat 8', insert: '⁸', cursorOffset: 0 },
+          { display: '⁹', title: 'Pangkat 9', insert: '⁹', cursorOffset: 0 },
+          { display: 'ⁿ', title: 'Pangkat n', insert: 'ⁿ', cursorOffset: 0 },
+          { display: '⁻¹', title: 'Pangkat -1 (Invers)', insert: '⁻¹', cursorOffset: 0 },
+          { display: '⁻²', title: 'Pangkat -2', insert: '⁻²', cursorOffset: 0 },
+          { display: '₀', title: 'Indeks 0', insert: '₀', cursorOffset: 0 },
+          { display: '₁', title: 'Indeks 1', insert: '₁', cursorOffset: 0 },
+          { display: '₂', title: 'Indeks 2', insert: '₂', cursorOffset: 0 },
+          { display: '₃', title: 'Indeks 3', insert: '₃', cursorOffset: 0 },
+          { display: 'ₙ', title: 'Indeks n', insert: 'ₙ', cursorOffset: 0 }
+        ]
+      },
+      pecahan_vektor_bilangan: {
+        label: 'Pecahan, Vektor & Bilangan',
+        items: [
+          { display: '½', title: 'Seperdua (1/2)', insert: '½', cursorOffset: 0 },
+          { display: '⅓', title: 'Sepertiga (1/3)', insert: '⅓', cursorOffset: 0 },
+          { display: '⅔', title: 'Dua Pertiga (2/3)', insert: '⅔', cursorOffset: 0 },
+          { display: '¼', title: 'Seperempat (1/4)', insert: '¼', cursorOffset: 0 },
+          { display: '¾', title: 'Tiga Perempat (3/4)', insert: '¾', cursorOffset: 0 },
+          { display: '⅕', title: 'Seperlima (1/5)', insert: '⅕', cursorOffset: 0 },
+          { display: '⅙', title: 'Seperenam (1/6)', insert: '⅙', cursorOffset: 0 },
+          { display: '⅛', title: 'Seperdelapan (1/8)', insert: '⅛', cursorOffset: 0 },
+          { display: 'ℝ', title: 'Bilangan Real (R)', insert: 'ℝ', cursorOffset: 0 },
+          { display: 'ℤ', title: 'Bilangan Bulat (Z)', insert: 'ℤ', cursorOffset: 0 },
+          { display: 'ℕ', title: 'Bilangan Asli (N)', insert: 'ℕ', cursorOffset: 0 },
+          { display: 'ℚ', title: 'Bilangan Rasional (Q)', insert: 'ℚ', cursorOffset: 0 },
+          { display: 'ℂ', title: 'Bilangan Kompleks (C)', insert: 'ℂ', cursorOffset: 0 },
+          { display: 'C(n,r)', title: 'Kombinasi C(n, r)', insert: 'C(n, r)', cursorOffset: 0 },
+          { display: 'P(n,r)', title: 'Permutasi P(n, r)', insert: 'P(n, r)', cursorOffset: 0 },
+          { display: 'n!', title: 'Faktorial', insert: '!', cursorOffset: 0 },
+          { display: '−', title: 'Minus Matematika', insert: ' − ', cursorOffset: 0 },
+          { display: '–', title: 'Rentang / En-Dash', insert: '–', cursorOffset: 0 }
+        ]
       }
     };
 
@@ -13513,7 +13748,7 @@ service cloud.firestore {
                       <input
                         type="text"
                         id="qedit-opt-${idx}"
-                        value="${opts[idx] || ''}"
+                        value="${escapeHtmlAttr(opts[idx] || '')}"
                         onfocus="setActiveMathTarget('qedit-opt-${idx}', 'Pilihan ${ltr}')"
                         oninput="updateQuestionEditorPreview()"
                         placeholder="Ketik teks Pilihan ${ltr} (bisa sisipkan simbol √, ^, pecahan, dll)"
@@ -14015,11 +14250,166 @@ service cloud.firestore {
         if (idx === 0 && isHeaderRow(cols)) return;
         if (cols.length < 2) return;
         const qObj = convertColumnsToQuestionObject(cols);
-        if (qObj) parsedList.push(qObj);
+        if (qObj) {
+          if (typeof normalizeImportedMathText === 'function') {
+            qObj.q = normalizeImportedMathText(qObj.q);
+            if (Array.isArray(qObj.options)) {
+              qObj.options = qObj.options.map(opt => normalizeImportedMathText(opt));
+            }
+            qObj.explanation = normalizeImportedMathText(qObj.explanation);
+          }
+          parsedList.push(qObj);
+        }
       });
 
       PENDING_IMPORT_QUESTIONS = parsedList;
       renderBulkQuestionPreviewTable();
+    }
+
+    function insertMathToBulkInput(symbolStr) {
+      const el = document.getElementById('qbank-bulk-paste-input');
+      if (!el) return;
+      el.focus();
+      const start = typeof el.selectionStart === 'number' ? el.selectionStart : el.value.length;
+      const end = typeof el.selectionEnd === 'number' ? el.selectionEnd : el.value.length;
+      el.value = el.value.substring(0, start) + symbolStr + el.value.substring(end);
+      const nextPos = start + symbolStr.length;
+      el.setSelectionRange(nextPos, nextPos);
+      parseQuestionBankBulkText(el.value);
+    }
+
+    function decodeUploadedCsvBuffer(arrayBuffer) {
+      const bytes = new Uint8Array(arrayBuffer || new ArrayBuffer(0));
+      if (!bytes.length) return { text: '', encoding: 'UTF-8' };
+
+      // 1. Cek BOM UTF-8 / UTF-16LE / UTF-16BE
+      if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+        return { text: new TextDecoder('utf-8').decode(bytes), encoding: 'UTF-8 BOM' };
+      }
+      if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+        return { text: new TextDecoder('utf-16le').decode(bytes), encoding: 'UTF-16LE' };
+      }
+      if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+        return { text: new TextDecoder('utf-16be').decode(bytes), encoding: 'UTF-16BE' };
+      }
+
+      // 2. Coba UTF-8 ketat (fatal: true). Jika gagal (misal file CSV dari Excel ANSI/Windows-1252 yang memuat ×, °, ·, ß, –, ±, ÷, ², ³), fallback otomatis ke Windows-1252!
+      try {
+        const utf8Text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        return { text: utf8Text, encoding: 'UTF-8' };
+      } catch (e) {
+        try {
+          const cp1252Text = new TextDecoder('windows-1252').decode(bytes);
+          return { text: cp1252Text, encoding: 'Excel ANSI / Windows-1252' };
+        } catch (e2) {
+          const latinText = new TextDecoder('iso-8859-1').decode(bytes);
+          return { text: latinText, encoding: 'ISO-8859-1' };
+        }
+      }
+    }
+
+    function normalizeImportedMathText(rawStr) {
+      if (rawStr === null || rawStr === undefined) return '';
+      let s = String(rawStr);
+      if (!s) return '';
+
+      // 0. Lindungi blok persamaan LaTeX ($...$, $$...$$, \[...\], \(...\)) agar sintaks LaTeX asli (\frac, \sqrt, \begin{pmatrix}, \lim, \int, \to, dll) tetap utuh 100% untuk dirender KaTeX!
+      const protectedLatex = [];
+      const protectLatexBlock = (match) => {
+        const idx = protectedLatex.length;
+        protectedLatex.push(match);
+        return `@@PROTLTX${idx}@@`;
+      };
+      s = s.replace(/\$\$[\s\S]+?\$\$/g, protectLatexBlock);
+      s = s.replace(/\\\[[\s\S]+?\\\]/g, protectLatexBlock);
+      s = s.replace(/\\\([\s\S]+?\\\)/g, protectLatexBlock);
+      s = s.replace(/\$[^$\n]+?\$/g, protectLatexBlock);
+
+      // 1. Decode HTML entities matematika bila file CSV berasal dari salinan web / Word
+      const htmlEntityMap = {
+        '&times;': '×', '&divide;': '÷', '&plusmn;': '±', '&deg;': '°', '&middot;': '·',
+        '&le;': '≤', '&ge;': '≥', '&ne;': '≠', '&asymp;': '≈', '&equiv;': '≡',
+        '&infin;': '∞', '&radic;': '√', '&alpha;': 'α', '&beta;': 'β', '&gamma;': 'γ',
+        '&delta;': 'δ', '&Delta;': 'Δ', '&theta;': 'θ', '&pi;': 'π', '&sigma;': 'σ',
+        '&omega;': 'ω', '&Omega;': 'Ω', '&sum;': '∑', '&int;': '∫', '&part;': '∂',
+        '&rarr;': '→', '&rArr;': '⇒', '&hArr;': '⇔', '&ang;': '∠', '&perp;': '⊥',
+        '&isin;': '∈', '&notin;': '∉', '&sub;': '⊂', '&sube;': '⊆', '&cup;': '∪',
+        '&cap;': '∩', '&empty;': '∅', '&forall;': '∀', '&exist;': '∃', '&there4;': '∴',
+        '&sup1;': '¹', '&sup2;': '²', '&sup3;': '³', '&frac12;': '½', '&frac14;': '¼',
+        '&frac34;': '¾', '&ndash;': '–', '&mdash;': '—', '&minus;': '−'
+      };
+      s = s.replace(/&[A-Za-z0-9]+;/g, (m) => htmlEntityMap[m] || m);
+      s = s.replace(/&#(\d+);/g, (_, code) => {
+        const n = Number(code);
+        return Number.isFinite(n) && n > 0 ? String.fromCodePoint(n) : _;
+      });
+
+      // 2. Konversi perintah LaTeX & kode singkat aman-Excel di dalam CSV ke simbol Unicode
+      const tokenMap = [
+        [/\\times\b/g, '×'], [/\\div\b/g, '÷'], [/\\pm\b/g, '±'], [/\\mp\b/g, '∓'],
+        [/\\cdot\b/g, '·'], [/\\circ\b/g, '∘'], [/\\neq\b/g, '≠'], [/\\leq\b/g, '≤'],
+        [/\\geq\b/g, '≥'], [/\\approx\b/g, '≈'], [/\\equiv\b/g, '≡'], [/\\infty\b/g, '∞'],
+        [/\\alpha\b/g, 'α'], [/\\beta\b/g, 'β'], [/\\gamma\b/g, 'γ'], [/\\delta\b/g, 'δ'],
+        [/\\theta\b/g, 'θ'], [/\\lambda\b/g, 'λ'], [/\\mu\b/g, 'μ'], [/\\pi\b/g, 'π'],
+        [/\\sigma\b/g, 'σ'], [/\\omega\b/g, 'ω'], [/\\Omega\b/g, 'Ω'], [/\\Delta\b/g, 'Δ'],
+        [/\\sum\b/g, '∑'], [/\\prod\b/g, '∏'], [/\\int\b/g, '∫'], [/\\partial\b/g, '∂'],
+        [/\\rightarrow\b/g, '→'], [/\\to\b/g, '→'], [/\\Rightarrow\b/g, '⇒'], [/\\Leftrightarrow\b/g, '⇔'],
+        [/\\in\b/g, '∈'], [/\\notin\b/g, '∉'], [/\\subset\b/g, '⊂'], [/\\subseteq\b/g, '⊆'],
+        [/\\cup\b/g, '∪'], [/\\cap\b/g, '∩'], [/\\emptyset\b/g, '∅'], [/\\forall\b/g, '∀'],
+        [/\\exists\b/g, '∃'], [/\\angle\b/g, '∠'], [/\\perp\b/g, '⊥'], [/\\parallel\b/g, '∥'],
+        [/\\triangle\b/g, '△'], [/\\degree\b/g, '°'], [/\\deg\b/g, '°'], [/\\therefore\b/g, '∴'],
+        [/\\mathbb\{R\}/g, 'ℝ'], [/\\mathbb\{Z\}/g, 'ℤ'], [/\\mathbb\{N\}/g, 'ℕ'],
+        [/\\mathbb\{Q\}/g, 'ℚ'], [/\\mathbb\{C\}/g, 'ℂ'],
+        [/\[alpha\]/gi, 'α'], [/\[beta\]/gi, 'β'], [/\[gamma\]/gi, 'γ'], [/\[theta\]/gi, 'θ'],
+        [/\[pi\]/gi, 'π'], [/\[delta\]/gi, 'Δ'], [/\[inf\]/gi, '∞'], [/\[deg\]/gi, '°'],
+        [/\[times\]/gi, '×'], [/\[div\]/gi, '÷'], [/\[pm\]/gi, '±'], [/\[dot\]/gi, '·'],
+        [/\[o\]/gi, '∘'], [/\[int\]/gi, '∫'], [/\[sum\]/gi, '∑'], [/\[sudut\]/gi, '∠'],
+        [/\[tegak\]/gi, '⊥'], [/\[sejajar\]/gi, '∥'], [/\[R\]/g, 'ℝ']
+      ];
+      for (const [rx, sym] of tokenMap) s = s.replace(rx, sym);
+      s = s.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, 'frac{$1}{$2}');
+      s = s.replace(/\\sqrt\[([^\]]+)\]\{([^{}]+)\}/g, 'root{$1}{$2}');
+      s = s.replace(/\\sqrt\{([^{}]+)\}/g, '√($1)');
+
+      // 3. Konversi notasi keyboard/ASCII aman-Excel (sqrt, cbrt, <=, >=, !=, +-, <=>, =>, ->)
+      s = s.replace(/\bcbrt\s*\(/gi, '∛(');
+      s = s.replace(/\bsqrt\s*\(/gi, '√(');
+      s = s.replace(/<=>/g, '⇔');
+      s = s.replace(/=>/g, '⇒');
+      s = s.replace(/->/g, '→');
+      s = s.replace(/<=/g, '≤');
+      s = s.replace(/>=/g, '≥');
+      s = s.replace(/!=/g, '≠');
+      s = s.replace(/~=/g, '≈');
+      s = s.replace(/\+-/g, '±');
+
+      // 4. Perbaiki karakter matematika yang terkonversi oleh Excel ANSI/Windows-1252
+      // 4a. Huruf ß dari Excel ANSI pada soal matematika adalah simbol Beta (β)
+      s = s.replace(/ß/g, 'β');
+      // 4b. Simbol panah pemetaan / limit yang berubah jadi '?' oleh Excel ANSI
+      s = s.replace(/\b([fgh])\s*:\s*R\s*\?\s*R\b/g, '$1 : ℝ → ℝ');
+      s = s.replace(/lim\s*\(\s*([a-zA-Z])\s*\?\s*8\s*\)/g, 'lim ($1 → ∞)');
+      s = s.replace(/lim\s*\(\s*([a-zA-Z])\s*\?\s*([+-]?\d+)\s*\)/g, 'lim ($1 → $2)');
+      s = s.replace(/\(([^()]+)\)\s*\?\s*(Rp\b|\d)/g, '($1) → $2');
+      // 4c. Fungsi invers & komposisi yang terkonversi di Excel ANSI: f-1(x) -> f⁻¹(x), A-1 -> A⁻¹, (g o f) -> (g ∘ f)
+      s = s.replace(/\b([fghFGH])-1(?=[\s(\)])/g, '$1⁻¹');
+      s = s.replace(/\b([A-Z])-1\b/g, '$1⁻¹');
+      s = s.replace(/\(([fgh](?:⁻¹)?)\s+o\s+([fgh](?:⁻¹)?)\)/g, '($1 ∘ $2)');
+      // 4d. Akar pangkat 3 & akar kuadrat yang berubah jadi '3v...' / 'v(' / '2v(' / 'v2' / 'av2' / 'va' / 'vb' / '2va' oleh Excel ANSI
+      s = s.replace(/(?<![A-Za-z0-9])3v([A-Za-z0-9]+)/g, '∛$1');
+      s = s.replace(/(?<![A-Za-z0-9])v\(/g, '√(');
+      s = s.replace(/(\d)v\(/g, '$1√(');
+      s = s.replace(/(?<![A-Za-z0-9])v(\d+(?:[.,]\d+)?)/g, '√$1');
+      s = s.replace(/(\d)v(\d+(?:[.,]\d+)?)/g, '$1√$2');
+      s = s.replace(/(?<![A-Za-z])([a-z])v(\d+(?:[.,]\d+)?)/g, '$1√$2');
+      s = s.replace(/(?<![A-Za-z])(\d*)v([abxy])(?![A-Za-z0-9])/g, '$1√$2');
+
+      // Kembalikan blok persamaan LaTeX ($...$, $$...$$) tanpa mengubah isinya
+      if (protectedLatex.length) {
+        s = s.replace(/@@PROTLTX(\d+)@@/g, (_, idx) => protectedLatex[Number(idx)] || '');
+      }
+
+      return s;
     }
 
     function handleQuestionBankFileUpload(event) {
@@ -14039,12 +14429,16 @@ service cloud.firestore {
 
       const reader = new FileReader();
       reader.onload = function(e) {
-        const content = String(e.target?.result || '');
+        const decoded = decodeUploadedCsvBuffer(e.target?.result);
+        const content = decoded.text || '';
+        if (fileNameEl) {
+          fileNameEl.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB • ${decoded.encoding})`;
+        }
         const pasteInput = document.getElementById('qbank-bulk-paste-input');
         if (pasteInput) pasteInput.value = content;
         parseQuestionBankBulkText(content);
       };
-      reader.readAsText(file, 'UTF-8');
+      reader.readAsArrayBuffer(file);
       event.target.value = '';
     }
 
@@ -14162,7 +14556,7 @@ service cloud.firestore {
                 <span class="font-extrabold text-[11px] ${oIdx === item.correct ? 'text-emerald-400' : 'text-slate-300'}">Opsi ${ltr}</span>
                 <span class="px-1.5 py-0.2 rounded border text-[9px] font-extrabold uppercase ${badgeClass}">${modeLabel}</span>
               </div>
-              ${tVal ? `<div class="text-[11px] text-slate-200 truncate" title="${tVal.replace(/"/g, '&quot;')}">${tVal}</div>` : ''}
+              ${tVal ? `<div class="text-[11px] text-slate-200 leading-relaxed break-words" title="${escapeHtmlAttr(tVal)}">${formatMathExponents(tVal)}</div>` : ''}
               ${iVal ? `<div class="text-[10px] text-sky-300 truncate font-mono" title="${iVal.replace(/"/g, '&quot;')}"><i class="fa-brands fa-google-drive mr-1"></i>${iVal}</div>` : ''}
             </div>
           `;
@@ -14189,7 +14583,7 @@ service cloud.firestore {
             <td class="py-3 px-3 text-center font-extrabold text-gold-400">#${idx + 1}</td>
             <td class="py-3 px-3 space-y-1.5">
               <div>${qModeBadge}</div>
-              <div class="font-semibold text-white leading-relaxed">${item.q}</div>
+              <div class="font-semibold text-white leading-relaxed whitespace-pre-line">${formatMathExponents(item.q)}</div>
               ${item.imageUrl ? `<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-mono truncate max-w-[230px]" title="${item.imageUrl.replace(/"/g, '&quot;')}"><i class="fa-brands fa-google-drive"></i><span>${item.imageUrl}</span></div>` : ''}
             </td>
             <td class="py-3 px-3">
@@ -14202,7 +14596,7 @@ service cloud.firestore {
             </td>
             <td class="py-3 px-3 text-slate-300 text-[11px] leading-relaxed space-y-1.5">
               ${expModeBadge ? `<div>${expModeBadge}</div>` : ''}
-              <div>${item.explanation || (item.explanationImageUrl ? '' : '<span class="text-slate-500 italic">-</span>')}</div>
+              <div class="whitespace-pre-line">${item.explanation ? formatMathExponents(item.explanation) : (item.explanationImageUrl ? '' : '<span class="text-slate-500 italic">-</span>')}</div>
               ${item.explanationImageUrl ? `<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-mono truncate max-w-[220px]" title="${item.explanationImageUrl.replace(/"/g, '&quot;')}"><i class="fa-brands fa-google-drive"></i><span>${item.explanationImageUrl}</span></div>` : ''}
             </td>
             <td class="py-3 px-3 text-center">
@@ -14267,6 +14661,15 @@ service cloud.firestore {
       });
     }
 
+    function createUtf8BomCsvBlob(csvText) {
+      const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+      if (typeof TextEncoder !== 'undefined') {
+        const encoded = new TextEncoder().encode(String(csvText || ''));
+        return new Blob([bom, encoded], { type: 'text/csv;charset=utf-8;' });
+      }
+      return new Blob(['\uFEFF' + String(csvText || '')], { type: 'text/csv;charset=utf-8;' });
+    }
+
     function escapeCsvCell(val) {
       const str = String(val ?? '');
       if (str.includes('"') || str.includes(',') || str.includes(';') || str.includes('\n') || str.includes('\r')) {
@@ -14324,8 +14727,8 @@ service cloud.firestore {
         rows.push(rowCells.join(','));
       });
 
-      const csvContent = '\uFEFF' + rows.join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const csvContent = rows.join('\r\n');
+      const blob = createUtf8BomCsvBlob(csvContent);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -14409,11 +14812,29 @@ service cloud.firestore {
           'C',
           escapeCsvCell(''),
           escapeCsvCell('https://drive.google.com/file/d/1LRoZBhgiplmo65W27Z8uINB2cWHU633n/view?usp=drive_link')
+        ].join(','),
+        // Contoh 4: Soal Matematika dengan Lambang Unicode & Kode Aman-Excel (√, ∛, ², ³, α, β, ×, ÷, °, ≤, ≥, →, ∞, frac{a}{b})
+        [
+          escapeCsvCell('Contoh 4 (Simbol Matematika): Jika α dan β akar-akar x² - 2x - 4 = 0 serta f : ℝ → ℝ dengan f(x) = x³, maka nilai √(16) × ∛(8) + frac{1}{2} × 4 adalah ...'),
+          escapeCsvCell(''),
+          escapeCsvCell('8'),
+          escapeCsvCell(''),
+          escapeCsvCell('10'),
+          escapeCsvCell(''),
+          escapeCsvCell('12'),
+          escapeCsvCell(''),
+          escapeCsvCell('14'),
+          escapeCsvCell(''),
+          escapeCsvCell('16'),
+          escapeCsvCell(''),
+          'B',
+          escapeCsvCell('√(16) = 4, ∛(8) = 2, sehingga 4 × 2 + frac{1}{2} × 4 = 8 + 2 = 10. Tips Excel: boleh ketik simbol langsung (√, ², α, β, ×, °, ≤, ≥, →, ∞) ATAU kode aman-Excel: sqrt(16), cbrt(8), x^2, f^{-1}(x), <=, >=, !=, ->, \\alpha, \\beta, \\times, \\deg, frac{a}{b}.'),
+          escapeCsvCell('')
         ].join(',')
       ];
 
-      const csvContent = '\uFEFF' + sampleRows.join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const csvContent = sampleRows.join('\r\n');
+      const blob = createUtf8BomCsvBlob(csvContent);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
